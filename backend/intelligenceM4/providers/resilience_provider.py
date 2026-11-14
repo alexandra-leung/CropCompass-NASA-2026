@@ -16,18 +16,26 @@ from intelligenceM4.schemas import ProviderResult, ResilienceInput
 RESILIENCE_CALL = "resilienceM5.stress_test.run_stress_test"
 
 
+def _m5_function():
+    try:
+        from resilienceM5 import stress_test
+        return getattr(stress_test, "run_stress_test", None)
+    except Exception:
+        return None
+
+
+def resilience_implemented() -> bool:
+    """Capability probe: does M5 expose the agreed function? (Does not call it.)"""
+    return _m5_function() is not None
+
+
 def get_resilience(
     location_id: str,
     scenario: str,
     year: int,
     rotation: list[str],
 ) -> ProviderResult:
-    try:
-        from resilienceM5 import stress_test
-        m5_run = getattr(stress_test, "run_stress_test", None)
-    except Exception:
-        m5_run = None
-
+    m5_run = _m5_function()
     if m5_run is None:
         return not_implemented(
             "M5", RESILIENCE_CALL,

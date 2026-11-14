@@ -1,17 +1,19 @@
 # M4 — Explainable AI & Integration API Contract
 
-**Project:** CropCompass 2.0 · **Module:** M4 · **Status:** Phase 2. `POST /api/intelligence/evidence` is live.
+**Project:** CropCompass 2.0 · **Module:** M4 · **Status:** Phase 3. `POST /api/intelligence/evidence` and `POST /api/intelligence/blind-spots` are live.
+
+Frontend examples (real data, kept in sync by tests) are in `intelligenceM4/fixtures/`: `example_evidence_request.json` (the body for both endpoints), `example_evidence_response.json` and `example_blind_spots_response.json`.
 
 M4 explains results from M1/M2/M3/M5. It does **not** generate rotations, score crops, compute water use, or run stress tests, and it never fills missing data with default values.
 
-## 1. Endpoints (planned)
+## 1. Endpoints
 
 Prefix: `/api/intelligence` (defined in `intelligenceM4/routes.py`).
 
 | Method | Endpoint | Phase | Request | Response |
 |---|---|---|---|---|
 | POST | `/api/intelligence/evidence` | 2 (live) | `AnalysisBundle` | `EvidencePassport` |
-| POST | `/api/intelligence/blind-spots` | 3 | `AnalysisBundle` | `BlindSpotReport` |
+| POST | `/api/intelligence/blind-spots` | 3 (live) | `AnalysisBundle` | `BlindSpotReport` |
 | POST | `/api/intelligence/assistant` | 4 | `AssistantRequest` | `AssistantResponse` |
 | POST | `/api/intelligence/analyze` | 5 | `AnalyzeRequest` | `AnalyzeResponse` |
 
@@ -30,7 +32,56 @@ All models are defined in `intelligenceM4/schemas.py`, and the running Swagger/O
 | No overall quality score or percentage is produced by M4. | By design |
 | Scenario ids, projection years and location ids are validated against M1's registry, so new M1 entries are accepted with no M4 change. If the registry cannot be read, the identifier passes through and an `M1_REGISTRY_UNREADABLE` blind spot (category `module`, severity `warning`) is emitted. | `ScenarioId`, `ProjectionYear`, `LocationId`, `blind_spot_detector.registry_blind_spots` |
 
-## 3. Module statuses
+## 3. Blind spots
+
+`/evidence` (in `passport.blind_spots`) and `/blind-spots` call the same `detect_blind_spots()`, so they always agree for the same bundle. Detection never modifies the bundle and never fills a default.
+
+- **Text rule:** `message`, `farmer_action` and `team_action` are fixed templates and follow the claim digit rule.
+- **Specific values:** these go in `affects` (crop ids, `model:<id>`, `variable:<name>`, `scenario:<id>`) and in `citations`. Each citation is `{label, value, unit, source_module, field_path}`, and upstream citations are traceability-checked like evidence.
+- **Ordering:** one blind spot per `code`, sorted critical → warning → info, then by the rule order below.
+
+| Code | Category | Severity | Fires when | Action |
+|---|---|---|---|---|
+| `ROTATION_UNAVAILABLE` | module | critical | `agriculture.rotation` is null | farmer + M2 |
+| `CLIMATE_PROJECTIONS_UNAVAILABLE` | module | critical | `climate.scenarios` is null | M1 |
+| `CLIMATE_PROJECTIONS_PARTIAL` | climate | warning | M1 `provenance.missingData` is true or any `modelResults[].status` ≠ `success`. Failed models are listed in `affects` and cited. | M1 |
+| `CLIMATE_HISTORY_UNAVAILABLE` | climate | warning | `climate.history` is null | M1 |
+| `CLIMATE_HISTORY_PARTIAL` | climate | warning | any M1 history `provenance[].missingData` is true | M1 |
+| `CROP_REFERENCE_INCOMPLETE` | crop_reference | warning | an M2 suitability `missing` entry ends in `_reference_range`, meaning the input was given but M2's catalog has no range. Each entry is cited at `suitability[i].missing[j]`. | M2 |
+| `SUITABILITY_INPUT_NOT_PASSED` | module | warning | an M2 `missing` entry is a bare input name (e.g. `temperature_c`), meaning the call never received it. `soil_ph` counts here only when the farmer supplied a pH; otherwise `SOIL_PH_MISSING` covers it. | M4 (orchestrator) |
+| `CROP_SUITABILITY_NOT_SCREENED` | crop_reference | warning | a rotation crop has no M2 suitability result | M4 (orchestrator) |
+| `SOIL_PH_MISSING` | soil | warning | `farm.soil_ph` is null | farmer: soil test pH |
+| `IRRIGATION_BUDGET_MISSING` | water | warning | `farm.irrigation_budget_m3` is null | farmer |
+| `WATER_DEMAND_NOT_IMPLEMENTED` | water | warning | no `agriculture.water` and M2 has no water service | M2 |
+| `M2_WATER_DATA_MISSING` | water | warning | no `agriculture.water` although M2 has a water service | M4 (orchestrator) |
+| `M5_RESILIENCE_DATA_MISSING` | module | warning | no `resilience` although M5 has stress tests | M4 (orchestrator) |
+| `M1_REGISTRY_UNREADABLE` | module | warning | M1 registry unreadable; identifiers passed through | M1 |
+| `CLIMATE_RESOLUTION` | resolution | info | any M1 climate data is present. Cites M1's own `gridResolution` and `caveat`; M4 applies no resolution threshold of its own. | none |
+| `M3_NOT_IMPLEMENTED` | module | info | M3 has not published `get_farm_profile` | M3 |
+| `M5_NOT_IMPLEMENTED` | module | info | M5 has not published `run_stress_test` | M5 |
+
+**M2 `missing` semantics:** M2 checks each input before its catalog range. So when an input is absent, M2 reports the bare input name and never consults the catalog for that factor, and any catalog gap for it stays hidden until the input is supplied.
+
+"Not implemented" is decided by read-only capability probes in the providers (`water_demand_implemented`, `farm_profile_implemented`, `resilience_implemented`), which never execute upstream code.
+
+### `module_status` (always contains `M1`, `M2`, `M3`, `M5`)
+
+| Module | `ok` | `partial` | `unavailable` | `not_implemented` |
+|---|---|---|---|---|
+| M1 | scenarios and history present and complete | one is missing, or M1 flags incompleteness | neither present | n/a |
+| M2 | rotation present, every crop screened, water present | rotation present but screening or water incomplete; or only other M2 data present | no M2 data | n/a |
+| M3 | farm supplied by M3 | n/a | M3 exists but farm came from the farmer | M3 function missing |
+| M5 | resilience present | n/a | M5 exists but no results | M5 function missing |
+
+### `recommendation_status`
+
+| Value | When |
+|---|---|
+| `insufficient_evidence` | rotation or projections missing, or any **critical** blind spot |
+| `supported` | every rotation crop `within_checked_ranges`, complete projections for the selected scenario/year, and **no critical or warning** blind spots |
+| `requires_further_validation` | everything else |
+
+## 4. Module statuses (provider calls)
 
 Every provider returns a `ProviderResult` and **never raises**.
 
@@ -41,7 +92,7 @@ Every provider returns a `ProviderResult` and **never raises**.
 | `unavailable` | Exception, timeout (`M4_PROVIDER_TIMEOUT_SECONDS`, default 90), import failure, or payload failed validation. `error` explains why. |
 | `not_implemented` | Upstream has no usable function yet. |
 
-## 4. What M4 calls (in-process, service layer only)
+## 5. What M4 calls (in-process, service layer only)
 
 ### M1: Climate (live)
 
@@ -93,7 +144,7 @@ def run_stress_test(location_id: str, scenario: str, year: int, rotation: list[s
 
 Until these exist, M4 reports `not_implemented` and records the missing evidence as a blind spot.
 
-## 5. Open issues for other modules
+## 6. Open issues for other modules
 
 | To | Issue |
 |---|---|
@@ -105,7 +156,7 @@ Until these exist, M4 reports `not_implemented` and records the missing evidence
 | M1 | No ET₀ or seasonal projections are available, which M2 needs for water demand. |
 | M3 / M5 | Please confirm or amend the proposed contracts above. |
 
-## 6. Testing
+## 7. Testing
 
 ```bash
 cd backend

@@ -86,5 +86,11 @@ def check_suitability(
     return safe_call("M2", SUITABILITY_CALL, _call, suitability_status)
 
 
+def water_demand_implemented() -> bool:
+    """Capability probe (no M2 code is executed). False until M2 ships a
+    canonical water-demand service in the unified backend."""
+    return False
+
+
 def get_water_demand(crop_ids: list[str]) -> ProviderResult:
     return not_implemented("M2", WATER_CALL, WATER_NOT_AVAILABLE)

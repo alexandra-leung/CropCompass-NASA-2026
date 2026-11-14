@@ -261,14 +261,20 @@ def test_real_data_requires_further_validation():
 
 
 def test_supported_only_when_every_check_passes():
-    # Test-only M2-shaped suitability results: the real catalog has no ranges yet.
+    # Test-only M2-shaped suitability and water results: the real catalog has
+    # no ranges and M2 has no water service yet. Farmer inputs supplied.
     suit = [
         {"crop_id": c, "status": "within_checked_ranges", "checks": [], "missing": [],
          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"}
         for c in ("maize", "cowpea", "cabbage")
     ]
-    _, passport = make_passport(agriculture={
-        "rotation": load_fixture(ROTATION), "suitability": suit})
+    _, passport = make_passport(
+        farm={"location_id": "pamplemousses-04", "soil_ph": 6.2,
+              "irrigation_budget_m3": 12000},
+        agriculture={"rotation": load_fixture(ROTATION), "suitability": suit,
+                     "water": {"assumption_status": "test_only"}},
+    )
+    assert {s.severity for s in passport.blind_spots} <= {"info"}
     assert passport.recommendation_status == "supported"
 
 

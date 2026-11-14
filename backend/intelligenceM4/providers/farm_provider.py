@@ -16,13 +16,21 @@ from intelligenceM4.schemas import FarmContext, ProviderResult
 FARM_CALL = "mappingM3.farm_profile.get_farm_profile"
 
 
-def get_farm_context(farm_id: str) -> ProviderResult:
+def _m3_function():
     try:
         from mappingM3 import farm_profile
-        m3_get = getattr(farm_profile, "get_farm_profile", None)
+        return getattr(farm_profile, "get_farm_profile", None)
     except Exception:
-        m3_get = None
+        return None
 
+
+def farm_profile_implemented() -> bool:
+    """Capability probe: does M3 expose the agreed function? (Does not call it.)"""
+    return _m3_function() is not None
+
+
+def get_farm_context(farm_id: str) -> ProviderResult:
+    m3_get = _m3_function()
     if m3_get is None:
         return not_implemented(
             "M3", FARM_CALL,

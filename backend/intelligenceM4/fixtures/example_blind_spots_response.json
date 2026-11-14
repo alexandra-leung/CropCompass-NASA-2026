@@ -1,0 +1,144 @@
+{
+  "analysis_id": "example-pamplemousses-04",
+  "blind_spots": [
+    {
+      "code": "SUITABILITY_INPUT_NOT_PASSED",
+      "category": "module",
+      "severity": "warning",
+      "message": "M2 suitability screening was run without inputs that should have been supplied to it, so those factors were not checked and any catalog gaps for them stay hidden. The inputs M2 reports as missing are cited.",
+      "affects": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ],
+      "source_module": "M4",
+      "farmer_action": null,
+      "team_action": "M4: the orchestrator must pass M1's projected temperature for the selected scenario and year, and the farmer's soil pH when provided, into M2 suitability.",
+      "citations": [
+        {
+          "label": "Input M2 reports it did not receive",
+          "value": "temperature_c",
+          "unit": null,
+          "source_module": "M2",
+          "field_path": "agriculture.suitability[0].missing[0]"
+        },
+        {
+          "label": "Input M2 reports it did not receive",
+          "value": "temperature_c",
+          "unit": null,
+          "source_module": "M2",
+          "field_path": "agriculture.suitability[1].missing[0]"
+        },
+        {
+          "label": "Input M2 reports it did not receive",
+          "value": "temperature_c",
+          "unit": null,
+          "source_module": "M2",
+          "field_path": "agriculture.suitability[2].missing[0]"
+        }
+      ]
+    },
+    {
+      "code": "SOIL_PH_MISSING",
+      "category": "soil",
+      "severity": "warning",
+      "message": "Soil pH was not provided, so crop soil requirements cannot be checked for this field.",
+      "affects": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ],
+      "source_module": "farmer",
+      "farmer_action": "Provide the soil pH from a recent soil test of this field (laboratory test or calibrated field kit).",
+      "team_action": null,
+      "citations": []
+    },
+    {
+      "code": "IRRIGATION_BUDGET_MISSING",
+      "category": "water",
+      "severity": "warning",
+      "message": "No irrigation water budget was provided, so the rotation cannot be checked against the water you have available.",
+      "affects": [],
+      "source_module": "farmer",
+      "farmer_action": "Provide the irrigation water available for the whole rotation, in cubic metres.",
+      "team_action": null,
+      "citations": []
+    },
+    {
+      "code": "WATER_DEMAND_NOT_IMPLEMENTED",
+      "category": "water",
+      "severity": "warning",
+      "message": "Crop water demand has not been calculated, because M2 does not yet provide a water-demand service in the unified backend.",
+      "affects": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ],
+      "source_module": "M2",
+      "farmer_action": null,
+      "team_action": "M2: provide a water-demand service function (the coefficient file path in the water wallet needs fixing) and agree a reference evapotranspiration source with M1.",
+      "citations": []
+    },
+    {
+      "code": "CLIMATE_RESOLUTION",
+      "category": "resolution",
+      "severity": "info",
+      "message": "Climate values describe regional model-grid conditions, not field-level forecasts. M1's reported grid resolution and caveat are cited.",
+      "affects": [],
+      "source_module": "M1",
+      "farmer_action": null,
+      "team_action": null,
+      "citations": [
+        {
+          "label": "M1 reported projection grid resolution",
+          "value": "0.25° × 0.25° (~25 km)",
+          "unit": null,
+          "source_module": "M1",
+          "field_path": "climate.scenarios.provenance.gridResolution"
+        },
+        {
+          "label": "M1 projection caveat",
+          "value": "Model outputs are sampled at their nearest grid cells. They are regional projections, not field-level forecasts.",
+          "unit": null,
+          "source_module": "M1",
+          "field_path": "climate.scenarios.provenance.caveat"
+        },
+        {
+          "label": "M1 reported observation grid resolution",
+          "value": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+          "unit": null,
+          "source_module": "M1",
+          "field_path": "climate.history.provenance[0].gridResolution"
+        }
+      ]
+    },
+    {
+      "code": "M3_NOT_IMPLEMENTED",
+      "category": "module",
+      "severity": "info",
+      "message": "M3 does not yet provide farm profiles, so farm details come only from what was entered directly.",
+      "affects": [],
+      "source_module": "M3",
+      "farmer_action": null,
+      "team_action": "M3: publish the agreed farm profile function.",
+      "citations": []
+    },
+    {
+      "code": "M5_NOT_IMPLEMENTED",
+      "category": "module",
+      "severity": "info",
+      "message": "M5 does not yet provide climate stress tests, so resilience under future scenarios has not been assessed.",
+      "affects": [],
+      "source_module": "M5",
+      "farmer_action": null,
+      "team_action": "M5: publish the agreed stress-test function.",
+      "citations": []
+    }
+  ],
+  "module_status": {
+    "M1": "ok",
+    "M2": "partial",
+    "M3": "not_implemented",
+    "M5": "not_implemented"
+  }
+}

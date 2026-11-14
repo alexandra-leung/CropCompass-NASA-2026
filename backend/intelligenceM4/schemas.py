@@ -357,15 +357,42 @@ class Limitation(BaseModel):
     source_module: SourceModule
 
 
+class Citation(BaseModel):
+    """An upstream value a blind spot rests on, kept out of the message text."""
+    label: str                # template text, e.g. "M1 reported grid resolution"
+    value: str | float | int | bool | list[str]
+    unit: str | None = None
+    source_module: SourceModule
+    field_path: str | None = None
+
+    @model_validator(mode="after")
+    def upstream_citations_must_be_traceable(self) -> "Citation":
+        if self.source_module in UPSTREAM_MODULES and not self.field_path:
+            raise ValueError(
+                f"Citation attributed to {self.source_module} requires field_path")
+        return self
+
+
 class BlindSpot(BaseModel):
-    code: str                 # e.g. "SOIL_PH_MISSING", "CLIMATE_MODEL_PARTIAL"
+    code: str                 # e.g. "SOIL_PH_MISSING", "CLIMATE_PROJECTIONS_PARTIAL"
     category: Literal["soil", "water", "climate", "crop_reference", "resolution", "module"]
     severity: Severity
-    message: str
-    affects: list[str] = Field(default_factory=list)   # evidence ids / crop ids
+    message: str              # template text; same digit rule as evidence claims
+    affects: list[str] = Field(default_factory=list)   # crop ids, "model:<id>", ...
     source_module: SourceModule
     farmer_action: str | None = None   # what the farmer can provide
     team_action: str | None = None     # which module must supply it
+    citations: list[Citation] = Field(default_factory=list)
+
+    @field_validator("message", "farmer_action", "team_action")
+    @classmethod
+    def text_has_no_numbers(cls, text: str | None) -> str | None:
+        if text is not None and claim_has_disallowed_digits(text):
+            raise ValueError(
+                "Blind-spot text must not contain numbers other than module ids "
+                "and M1-registered scenario ids/labels/years; use citations instead"
+            )
+        return text
 
 
 class EvidencePassport(BaseModel):

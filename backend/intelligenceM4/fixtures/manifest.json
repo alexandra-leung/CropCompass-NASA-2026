@@ -1,4 +1,21 @@
 {
+  "example_blind_spots_response.json": {
+    "module": "M4",
+    "called": "POST /api/intelligence/blind-spots",
+    "inputs": {
+      "rotation": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ],
+      "scenario": "ssp370",
+      "year": 2050,
+      "location_id": "pamplemousses-04",
+      "note": "built from the real M1/M2 fixtures in this folder"
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T19:56:26.163299+00:00"
+  },
   "example_evidence_request.json": {
     "module": "M4",
     "called": "POST /api/intelligence/evidence",
@@ -14,7 +31,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T19:39:59.298467+00:00"
+    "generated_at": "2026-11-14T19:56:26.163299+00:00"
   },
   "example_evidence_response.json": {
     "module": "M4",
@@ -31,7 +48,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T19:39:59.298467+00:00"
+    "generated_at": "2026-11-14T19:56:26.163299+00:00"
   },
   "m1_history__pamplemousses-04.json": {
     "module": "M1",

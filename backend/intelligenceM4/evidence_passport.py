@@ -19,12 +19,17 @@ compared, so a passport can never cite a value that is not in the bundle.
 
 from __future__ import annotations
 
-import re
 from datetime import datetime, timezone
 from typing import Any
 
 from intelligenceM4 import blind_spot_detector
 from intelligenceM4.providers import climate_provider
+from intelligenceM4.traceability import (  # noqa: F401 (re-exported for callers)
+    TraceabilityError,
+    check_value,
+    resolve_field_path,
+    verify_citations,
+)
 from intelligenceM4.schemas import (
     UPSTREAM_MODULES,
     AnalysisBundle,
@@ -108,37 +113,15 @@ RULES: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# Field-path resolution (traceability guard)
+# Traceability guard (evidence values + blind-spot citations)
 # ---------------------------------------------------------------------------
-
-_TOKEN = re.compile(r"([^.\[\]]+)|\[(\d+)\]")
-
-
-class TraceabilityError(RuntimeError):
-    """An evidence value does not match the bundle field it cites."""
-
-
-def resolve_field_path(data: Any, path: str) -> Any:
-    current = data
-    for key, index in _TOKEN.findall(path):
-        current = current[int(index)] if index else current[key]
-    return current
-
 
 def verify_traceability(passport: EvidencePassport, bundle_json: dict[str, Any]) -> None:
     for record in passport.evidence:
         prov = record.provenance
-        if prov.source_module not in UPSTREAM_MODULES or record.value is None:
-            continue
-        try:
-            resolved = resolve_field_path(bundle_json, prov.field_path or "")
-        except (KeyError, IndexError, TypeError) as exc:
-            raise TraceabilityError(
-                f"{record.id}: field_path '{prov.field_path}' does not exist") from exc
-        if resolved != record.value:
-            raise TraceabilityError(
-                f"{record.id}: value {record.value!r} != bundle value {resolved!r} "
-                f"at '{prov.field_path}'")
+        if prov.source_module in UPSTREAM_MODULES and record.value is not None:
+            check_value(bundle_json, record.id, record.value, prov.field_path)
+    verify_citations(passport.blind_spots, bundle_json)
 
 
 # ---------------------------------------------------------------------------
@@ -519,13 +502,18 @@ class _PassportBuilder:
     # -- Status ---------------------------------------------------------------
 
     def _rotation_crops(self) -> list[str]:
-        if self.bundle.agriculture.rotation is not None:
-            return list(self.bundle.agriculture.rotation.rotation)
-        return list(self.bundle.farm.current_rotation or [])
+        return blind_spot_detector.rotation_crops(self.bundle)
 
     def recommendation_status(self, blind_spots: list[BlindSpot]) -> RecommendationStatus:
+        """
+        insufficient_evidence  - rotation or projections missing, or any critical blind spot
+        supported              - every crop within checked ranges, complete projections,
+                                 AND no critical or warning blind spots
+        requires_further_validation - everything else
+        """
         b = self.bundle
-        if b.agriculture.rotation is None or b.climate.scenarios is None:
+        if (b.agriculture.rotation is None or b.climate.scenarios is None
+                or any(s.severity == "critical" for s in blind_spots)):
             return "insufficient_evidence"
         by_id = {e.id: e for e in self.evidence}
         crops = set(self._rotation_crops())
@@ -535,8 +523,8 @@ class _PassportBuilder:
         climate_ok = (
             by_id.get("ev-proj") is not None and by_id["ev-proj"].status == "supported"
             and "ev-proj-rain-mean" in by_id)
-        no_critical = not any(s.severity == "critical" for s in blind_spots)
-        if suitability_ok and climate_ok and no_critical:
+        no_blocking = not any(s.severity in ("critical", "warning") for s in blind_spots)
+        if suitability_ok and climate_ok and no_blocking:
             return "supported"
         return "requires_further_validation"
 

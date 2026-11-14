@@ -65,6 +65,7 @@ def _write(name: str, result, inputs: dict, manifest: dict) -> None:
 
 EXAMPLE_ROTATION = ["maize", "cowpea", "cabbage"]
 EVIDENCE_ENDPOINT = "POST /api/intelligence/evidence"
+BLIND_SPOTS_ENDPOINT = "POST /api/intelligence/blind-spots"
 
 
 def _dump(name: str, payload) -> None:
@@ -106,25 +107,31 @@ def _write_evidence_example(manifest: dict) -> None:
             "suitability": suitability,
         },
     }
-    response = TestClient(app).post("/api/intelligence/evidence", json=request)
-    if response.status_code != 200:
-        print(f"SKIP evidence example: HTTP {response.status_code} {response.text[:300]}")
-        return
+    client = TestClient(app)
+    response = client.post("/api/intelligence/evidence", json=request)
+    spots = client.post("/api/intelligence/blind-spots", json=request)
+    for resp in (response, spots):
+        if resp.status_code != 200:
+            print(f"SKIP examples: HTTP {resp.status_code} {resp.text[:300]}")
+            return
 
     now = datetime.now(timezone.utc).isoformat()
     _dump("example_evidence_request.json", request)
     _dump("example_evidence_response.json", response.json())
-    for name in ("example_evidence_request.json", "example_evidence_response.json"):
+    _dump("example_blind_spots_response.json", spots.json())
+    for name, called in (("example_evidence_request.json", EVIDENCE_ENDPOINT),
+                         ("example_evidence_response.json", EVIDENCE_ENDPOINT),
+                         ("example_blind_spots_response.json", BLIND_SPOTS_ENDPOINT)):
         manifest[name] = {
             "module": "M4",
-            "called": EVIDENCE_ENDPOINT,
+            "called": called,
             "inputs": {"rotation": EXAMPLE_ROTATION, "scenario": "ssp370", "year": 2050,
                        "location_id": LOCATION_ID,
                        "note": "built from the real M1/M2 fixtures in this folder"},
             "provider_status": "ok",
             "generated_at": now,
         }
-    print("OK   example_evidence_request.json / example_evidence_response.json: HTTP 200")
+    print("OK   example_evidence_request/response + example_blind_spots_response: HTTP 200")
 
 
 async def main(example_only: bool = False) -> None:
