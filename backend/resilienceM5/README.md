@@ -12,7 +12,11 @@ It does not install a new dependency environment or own a separate application.
   documented candidate-location pool only.
 - Climate Twin validates and ranks source-backed records. It does not infer crop
   suitability, yield, profit, or market outcomes.
-- Until M2 adapter registration, `/stress-test` returns an explicit HTTP 503.
+- `/stress-test` is wired to M2's `score_rotations()` and
+  `check_crop_suitability()` callables.
+- M2 currently does not compute rotation feasibility, per-rotation scores,
+  rankings, or climate-derived irrigation demand. Those results remain null;
+  M5 does not claim that a rotation passed an agronomic test.
 - Real network acquisition was verified for NASA POWER monthly history and the
   configured NASA NEX NetCDF subset endpoint at the registered Pamplemousses
   coordinates. No verified farmer parcel coordinates have been supplied.
@@ -76,34 +80,47 @@ summaries only.
 See [API_CONTRACT.md](API_CONTRACT.md) for request and response shapes. Supported
 scenarios are the two configured by M1: `ssp245` and `ssp370`.
 
-## Real M2 integration
+## M2 integration and current model limits
 
-**Do not guess** `agricultureM2` symbols. Inspect:
-`agricultureM2/API_CONTRACT.md`, `agricultureM2/routes.py`,
-`agricultureM2/rotation_engine.py`, `agricultureM2/water_wallet.py`,
-`agricultureM2/scoring.py`, `agricultureM2/providers/m1_climate.py`.
+The root `backend/agricultureM2/API_CONTRACT.md` does not exist. The supported
+callables found in the checked-in M2 source are:
 
-Register an in-process M2 wrapper via:
+- `score_rotations(rotations: list[list[str]])`: requires at least three
+  sequences, delegates to `compare_rotations`, and returns positional IDs such
+  as `rotation_1`. `overall_score`, `recommended_rotation`, and `ranking` are
+  currently null/not calibrated.
+- `check_crop_suitability(crop_id, temperature_c=None, soil_ph=None)`: screens
+  one scalar temperature and/or pH against catalog reference ranges. The current
+  catalog has no temperature, rainfall, or pH ranges, so these checks report
+  insufficient data.
+- `calculate_crop_water_demand(crop_id, daily_et0_mm)`: uses the FAO-style
+  `Kc × ET0` calculation. M1/M5 provide monthly temperature and precipitation,
+  not daily reference ET0; the M2 function also does not calculate irrigation
+  requirement.
+- `providers/m1_climate.py` fetches raw M1 responses but does not map them into
+  an M2 decision calculation.
 
-```python
-from resilienceM5.stress_test import register_m2_evaluator
+M5's `m2_adapter.py` maps named `{id, crops}` candidates to the real M2
+`score_rotations` call and applies M2's temperature suitability callable to each
+calendar-month temperature as a diagnostic only. It does not assume that crops
+are planted or growing in every month. The monthly precipitation and farmer
+water budget are retained in scenario provenance but are not consumed by M2;
+feasibility and water requirement are therefore `null`, not guessed.
 
-# Implement after reading M2's true input/output contract:
-# def real_m2_adapter(original_request: dict, climate: MonthlyClimate,
-#                     water_budget_m3: float | None) -> dict:
-#     <copy input; map climate and water to REAL M2 request fields>
-#     <call SAME M2 rotation engine used by normal app>
-#     <return normalized {"rotations": [{"id": ..., "feasible": ..., ...}, ...]}>
-# register_m2_evaluator(real_m2_adapter)
-```
+The `/stress-test` endpoint requires a farmer-entered `baseline_water_budget_m3`.
+If a reduction fraction is supplied, M5 creates the four requested conditions
+and sends the reduced budget through the adapter. The current M2 decision
+callables ignore that budget, so this is a recorded what-if rather than a
+verified feasibility change. `verified_m2_climate_sensitivity` remains false
+until actual M2 calculations consume validated climate variables and the
+catalog/model supplies the necessary reference data.
 
-`rotations` must include the current plan and at least two alternatives. Preserve
-IDs and report infeasible alternatives rather than dropping them. M5 will run
-the wrapper with four conditions if irrigation is reduced: historical, future,
-historical with reduced irrigation, and future with reduced irrigation.
-
-If M2 never consumes changed monthly rainfall/temperature inputs, the stress
-test is NOT valid. Add or repair M2's climate sensitivity before demo.
+No separate recommendation engine, hardcoded crop thresholds, survival
+probability, yield estimate, or invented scores are used. A real climate-based
+water feasibility repair still needs, at minimum, sourced crop suitability
+ranges and a defensible crop calendar, plus daily/reference ET0 and a supported
+rainfall/soil-water calculation. Those inputs cannot be inferred from the
+current M2/M1 interfaces.
 
 ## M4 and frontend integration
 

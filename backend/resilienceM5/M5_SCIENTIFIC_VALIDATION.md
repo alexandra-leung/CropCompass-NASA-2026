@@ -25,10 +25,11 @@
 | Missing data | Reject -999 and incomplete series, no interpolation disguised as data | Test or actual error response |
 | Analog math | Identical climate vector should rank with zero distance | `test_climate_twin_identical_candidate_wins` |
 | Limited search | Do not claim global best-climate analog | Candidate pool and excluded locations list |
-| M2 invariance | Current + alternatives retain IDs across scenarios | Four comparison outputs |
-| M2 sensitivity | Real change in climate inputs affects a relevant calculation, or no change is truthfully reported | Trace M2 intermediate water/suitability values |
-| What-if | Farmer budget reduction affects M2 only through its legitimate rules | Restricted-water comparison and failed constraints |
-| Rescue | Show robust *tested* alternatives, not percent survival chance | Actual stress-test JSON used by rescue output |
+| M2 invariance | Current + alternatives retain IDs across scenarios | Engine-backed integration test; four-scenario output |
+| M2 sensitivity | Verify whether actual M2 intermediate calculations change | Current result: **not verified**. `check_crop_suitability` receives changed monthly temperatures, but the catalog reference ranges are blank, so it returns the same insufficient-data result. M2 does not consume monthly precipitation. |
+| What-if | Farmer budget reduction affects M2 only through its legitimate rules | Current result: **not supported**. The M2 scorer has no water-budget input; reduced budget is preserved as a user what-if but does not alter feasibility. |
+| M2 feasibility | Obtain actual pass/fail constraints and water requirements | **Pending M2 agronomic logic.** Current `score_rotations` returns only sequence diagnostics and a null score/ranking; the water utility requires daily ET0 and does not calculate irrigation requirement. |
+| Rescue | Show robust *tested* alternatives, not percent survival chance | Uses stress-test results only; unknown M2 feasibility is not counted as a pass |
 | Scope | No yield/profit/market forecast | Readme, API response and UI review |
 
 ## Assessment cautions
@@ -38,10 +39,15 @@
 - **Water**: a projected precipitation difference and farmer irrigation budget are
   separate variables. Do not convert a 10% rainfall reduction to 10% irrigation
   reduction unless an explicit justified management model is added.
+- **M2 climate sensitivity**: monthly temperature and precipitation are
+  source-validated by M1, but M2 currently lacks crop reference ranges/calendar,
+  rainfall balance, and daily ET0 inputs. Do not describe the current output as
+  climate- or irrigation-sensitive feasibility.
 - **Future**: no climate scenario is guaranteed to be hotter or drier at every
   month/location; display actual direction and size of NASA-derived changes.
-- **Rescue**: an M2 feasible status indicates passed model constraints, not
-  guaranteed crop performance.
+- **Rescue**: null M2 feasibility means unknown and is not a pass. Even a future
+  M2 feasible status will indicate modeled constraints only, not guaranteed crop
+  performance.
 - **Data caching**: cache real NASA source bytes, HTTP URL, retrieval time,
   processing version, licensing note and missingness. Cached does not mean synthetic.
 - **NDVI/Bare Soil** (stretch): low NDVI is not proof of bare soil; cloud masks,

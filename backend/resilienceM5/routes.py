@@ -82,8 +82,8 @@ class ClimateTwinResponse(BaseModel):
 
 class StressRequest(FarmLocation):
     rotation_request: dict
-    baseline_water_budget_m3: float | None = Field(default=None, ge=0)
-    irrigation_reduction_fraction: float | None = Field(default=None, gt=0, lt=1)
+    baseline_water_budget_m3: FiniteFloat = Field(ge=0)
+    irrigation_reduction_fraction: FiniteFloat | None = Field(default=None, gt=0, lt=1)
 
 
 class RescueRequest(BaseModel):
@@ -110,6 +110,7 @@ def health():
     return {"module": "resilienceM5",
             "status": "ready_for_climate_twin" if m1_connected else "m1_provider_unavailable",
             "m2_evaluator_connected": connected,
+            "m2_scenario_feasibility_supported": False,
             "m1_provider_connected": m1_connected,
             "offline_mode": PowerClient().offline}
 
@@ -140,8 +141,6 @@ async def stress_test_endpoint(request: StressRequest):
         evaluator = get_m2_evaluator()   # Fail before downloading if the dependency is not wired.
     except M2NotConnected as exc:
         raise HTTPException(503, detail=str(exc)) from exc
-    if request.irrigation_reduction_fraction is not None and request.baseline_water_budget_m3 is None:
-        raise HTTPException(422, detail="Farmer water budget (m3) is required for reduced irrigation")
     try:
         historical, future = await get_farm_climate(
             request.latitude,
@@ -154,6 +153,8 @@ async def stress_test_endpoint(request: StressRequest):
                                   request.baseline_water_budget_m3,
                                   request.irrigation_reduction_fraction, evaluator)
     except DataUnavailable as exc:
+        raise HTTPException(503, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
         raise HTTPException(503, detail=str(exc)) from exc
     except (ValueError, TypeError) as exc:
         raise HTTPException(422, detail=str(exc)) from exc

@@ -82,43 +82,92 @@ models or candidates are available, or upstream NASA data cannot be retrieved.
   "end_year": 2060,
   "baseline_water_budget_m3": 100,
   "irrigation_reduction_fraction": 0.3,
-  "rotation_request": { "PLACEHOLDER": "Replace with the validated M2 request object" }
+  "rotation_request": {
+    "soil_ph": null,
+    "rotations": [
+      {"id": "current", "crops": ["maize", "maize", "maize"]},
+      {"id": "alternative_a", "crops": ["maize", "cowpea", "sweet_potato"]},
+      {"id": "alternative_b", "crops": ["cowpea", "sweet_potato", "groundnut"]}
+    ]
+  }
 }
 ```
 
 The 100 m3 and 30% values in this **request example** are explicitly hypothetical
-farmer inputs, not claims about real farms or NASA data. The `rotation_request`
-object is opaque to M5, because M2 owns that schema. An M2 adapter must be
-registered before the endpoint works; without it, the endpoint returns 503.
+farmer inputs, not claims about real farms or NASA data. `baseline_water_budget_m3`
+is required and must be finite/nonnegative. `irrigation_reduction_fraction`, if
+provided, must be strictly between 0 and 1. `rotation_request.rotations` must
+contain at least three `{id, crops}` candidates; each crop sequence must contain
+at least two M2 catalog IDs. IDs are caller supplied and are retained across all
+scenarios. Optional `soil_ph` is passed to M2's suitability screening callable.
 
-Normalized result returned by the adapter **for each scenario**:
+The adapter passes candidate sequences to the existing
+`agricultureM2.scoring.score_rotations(list[list[str]])` callable. That callable
+uses M2's `compare_rotations` and emits positional `rotation_1`… IDs, which M5
+maps back to the supplied IDs. The adapter also invokes M2's
+`check_crop_suitability` for each candidate crop and each month, using actual
+M1 monthly temperature and optional soil pH. These month-by-month screens are
+diagnostic only; M2 has no planting calendar to associate crops with months.
+
+Current normalized result for each scenario has this shape:
 
 ```json
 {
   "rotations": [
-    {"id": "current", "feasible": true, "score": null, "failed_constraints": []},
-    {"id": "alternative_a", "feasible": true, "score": null, "failed_constraints": []},
-    {"id": "alternative_b", "feasible": false, "score": null,
-     "failed_constraints": ["example_machine_readable_constraint"]}
+    {
+      "id": "current",
+      "feasible": null,
+      "score": null,
+      "rank": null,
+      "water_requirement_m3": null,
+      "failed_constraints": [],
+      "details": {
+        "feasibility_status": "not_calculated_by_m2",
+        "water_budget_applied": false,
+        "precipitation_applied": false
+      }
+    }
   ]
 }
 ```
 
-This is a schema illustration only, NOT a computed response. M2 must determine
-actual feasibility, score and failure reasons. `score` is nullable; do not fill
-it with guessed percentages. Return all three IDs in every run. The M2 wrapper
-maps `climate.temperature_c` and `climate.precipitation_mm` to its verified
-climate fields, with units degC and mm/month. Water is always m3.
+The nullable fields are intentional. The current M2 scorer returns no
+per-rotation score/rank or feasibility. Its catalog has no temperature, rainfall,
+or pH reference ranges, and its water-demand utility requires daily ET0 that M1
+does not provide. Empty `failed_constraints` means M2 supplied no such
+constraints; it does not mean the rotation passed agronomic constraints.
 
-Response fields include `scenarios`, `differences_vs_baseline`, `method`,
-`limitations`, and `verified_m2_climate_sensitivity:false` until this has been
-explicitly checked in the integrated app.
+Every scenario includes its exact 12 monthly M1 temperature (°C) and
+precipitation (mm/month), the full validated climate provenance, the farmer
+water budget in m3, M2 input-capability flags, and actual M2 rotation details.
+The response also includes the per-month climate delta, available score/rank
+deltas only when scales permit, and a climate sensitivity report. Historical
+and projected climate differences are calculated month by month and are not
+assumed to be uniformly warmer or drier. Reduced irrigation is a distinct
+farmer-defined what-if and is never derived from rainfall.
+
+With the current M2 implementation, temperature values reach the suitability
+callable but no crop reference ranges are available for a sensitivity result.
+Precipitation and irrigation budgets do not affect M2 calculations.
+`verified_m2_climate_sensitivity` therefore remains false. Missing M2 evaluator
+or M1 data returns 503; invalid budgets, reductions, or rotations return 422.
 
 ## POST /rescue-mode
 
 Request: `{"stress_output": <the unchanged actual stress-test response>}`.
-Returns candidate IDs ordered by count of passed tested scenarios, with a
-qualified worst feasible modeled score, failures and limitations.
+Returns candidate IDs ordered by known feasibility passes, then unknown/failed
+outcomes. Null feasibility and missing scenario results count as unknown, never
+as a pass. Scores are compared only when all results have non-null scores on the
+same declared scale; no score is manufactured when M2 omits it. Failures include
+the scenario, water budget, and actual M2 constraint reasons where provided.
+The response includes the tested scenario conditions and each candidate's
+per-scenario outcome details so climate and irrigation trade-offs remain visible.
+
+The response may include M2's verified rotation sequence as a season-labeled
+sequence only. Planting dates and interventions remain pending unless supported
+by explicit M2 agronomic logic. A robust-across-scenarios label is emitted only
+when all scenarios in a two- or four-condition set report feasibility as true.
+No survival probability or guaranteed success rate is produced.
 
 ## Data and interpretation
 
@@ -139,8 +188,9 @@ qualified worst feasible modeled score, failures and limitations.
 
 - M1: preserve source identity, coordinates, time bounds, scenario, model,
   variant, units, missingness, uncertainty and spatial scale.
-- M2: inspect actual input function and output schema; connect via a small adapter,
-  not a second crop decision engine.
+- M2: adapter is connected to real M2 callables, but climate/water feasibility
+  remains unverified: crop ranges, crop calendar, ET0, and a supported rainfall
+  water-balance calculation are absent. Do not treat unknown as pass.
 - M3: supply verified farm point and user-defined irrigation budget.
 - M4: present source/assumption metadata and distinguish observation, scenario,
   modeled decision and user what-if.

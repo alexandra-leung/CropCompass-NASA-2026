@@ -51,9 +51,9 @@ Evaluates crop rotation strategies using agricultural reference data and environ
 - Crop-family rotation analysis (Rotation DNA)
 - Identification of nitrogen-fixing crops
 - Generation of alternative crop sequences
-- Crop and soil suitability screening
-- Water Wallet using FAO crop coefficients
-- Feasibility checks and transparent rotation comparisons
+- Preliminary crop and soil suitability screening where reference ranges exist
+- Crop evapotranspiration calculations using FAO-style crop coefficients and daily ET0
+- Rotation sequence comparisons; calibrated scores and full agronomic feasibility remain under development
 
 **Primary sources:** FAO agricultural references, FAO-56, FAO GAEZ, relevant soil datasets, and M1 climate outputs.
 
@@ -85,16 +85,18 @@ Connects the project modules and explains the evidence behind agricultural recom
 
 Explores how crop rotation options may respond to future environmental conditions.
 
-**Implemented:** Climate Twin 2.0 is mounted as a router in the unified FastAPI
-application. It compares an M1 future monthly climate target with a limited
-pool of historical NASA POWER candidate locations. It reports three closest
-matches by default, monthly comparisons, error metrics, distance components,
-source provenance and limitations.
+**Implemented:** Climate Twin 2.0 and the stress-test and Rescue Mode routes are
+mounted in the unified FastAPI application. Climate Twin compares an M1 future
+monthly climate target with a limited pool of historical NASA POWER locations.
+Stress testing calls M2's existing rotation scorer and suitability screen; M5
+does not implement a separate crop recommendation engine.
 
-Farm climate comes from M1 in-process; M5 does not make HTTP requests back to
-the same app. The separate M2-backed stress test is not active yet: without a
-registered M2 climate evaluator, it returns HTTP 503 rather than inventing
-climate sensitivity or crop outcomes.
+The M2 adapter is registered and the live M1-backed four-scenario API path has
+been exercised. However, M2 currently returns no rotation feasibility, per-plan
+score, ranking, or irrigation requirement. Its crop catalog has no temperature,
+rainfall, or pH reference ranges, and its water utility does not consume M1's
+monthly climate or farmer water budget. Those results are consequently reported
+as unknown/null, not inferred. See [M5 scientific validation](backend/resilienceM5/M5_SCIENTIFIC_VALIDATION.md).
 
 ## 3. System Architecture
 
@@ -208,11 +210,32 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-The requirements include the backend test runner. Run the backend suite from
-`backend/` with:
+The requirements include the backend test runner and Starlette's preferred
+`httpx2` test-client transport. Run tests from `backend/` with:
 
 ```bash
+python -m pytest -q tests/test_m5_resilience.py
 python -m pytest -q tests
+```
+
+Use `tests` as the collection root. Unqualified `python -m pytest -q` also
+collects the nested legacy project under `backend/CropCompass-Nasa/backend/`,
+whose duplicate package names conflict with the unified backend.
+
+For Windows PowerShell, use two VS Code terminals. In Terminal 1:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app:app --reload --port 8000
+```
+
+In Terminal 2, from `backend/`:
+
+```powershell
+python -m pytest -q tests/test_m5_resilience.py
+python -m pytest -q tests
+Invoke-RestMethod http://127.0.0.1:8000/api/resilience/health
 ```
 
 ### Start the backend
@@ -294,7 +317,7 @@ Additional FAO suitability endpoints may be registered as their data providers a
 |---|---|---|
 | GET | `/api/resilience/health` | M1/M2 connection and offline-cache status |
 | POST | `/api/resilience/climate-twin` | Compare an M1 future climate with historical NASA POWER candidates |
-| POST | `/api/resilience/stress-test` | Run scenario comparisons through a registered M2 evaluator; currently returns 503 until connected |
+| POST | `/api/resilience/stress-test` | Run historical/projected scenarios through the registered M2 adapter; unsupported feasibility remains null |
 | POST | `/api/resilience/rescue-mode` | Summarize an existing stress-test result |
 
 Check readiness:
@@ -302,6 +325,35 @@ Check readiness:
 ```bash
 curl http://127.0.0.1:8000/api/resilience/health
 ```
+
+The health response's `m2_evaluator_connected` confirms registration, not
+agronomic capability. `m2_scenario_feasibility_supported` is currently false.
+The stress request requires a farmer-entered `baseline_water_budget_m3`; an
+optional reduction fraction adds separate reduced-irrigation scenarios. The
+test rotation request is in
+[`backend/data/fixtures/m5_test_rotation_request.json`](backend/data/fixtures/m5_test_rotation_request.json).
+From `backend/`, load it and submit it with PowerShell:
+
+```powershell
+$rotation = Get-Content ".\data\fixtures\m5_test_rotation_request.json" -Raw | ConvertFrom-Json
+$body = @{
+    latitude = -20.25
+    longitude = 57.50
+    scenario = "ssp245"
+    start_year = 2041
+    end_year = 2060
+    baseline_water_budget_m3 = 100
+    irrigation_reduction_fraction = 0.30
+    rotation_request = $rotation
+} | ConvertTo-Json -Depth 50
+$stress = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/resilience/stress-test" `
+    -Method Post -ContentType "application/json" -Body $body
+$stress | ConvertTo-Json -Depth 60 | Set-Content "m5_stress_result.json"
+```
+
+The sample budget and coordinates are hypothetical test inputs, not farmer
+observations. The example verifies the four scenario/provenance outputs but
+does not establish climate-sensitive M2 feasibility.
 
 Run Climate Twin with a **technical-test point**, not a verified farmer parcel:
 
@@ -362,7 +414,7 @@ The use of a dataset in this list does not imply that every corresponding integr
 | Unified FastAPI backend | Initial integration working |
 | M1 historical climate API | Tested successfully |
 | M1 public climate projections | Annual model/ensemble endpoint; separate M5 monthly in-process service added |
-| M1 → M2 historical climate communication | Tested successfully |
+| M1 climate → M2 decision calculation | Not implemented; the M2 climate provider fetches source responses but the decision callables do not consume them |
 | M2 crop catalog | Initial reference catalog |
 | M2 Rotation DNA | Tested successfully |
 | M2 alternative rotation generation | Implementation available; further testing required |
@@ -374,9 +426,9 @@ The use of a dataset in this list does not imply that every corresponding integr
 | M4 explainable AI | Team development |
 | M5 Climate Twin 2.0 | Integrated; 2040 one-year live NASA pipeline test completed |
 | M5 default 2041–2060 live request | Not yet end-to-end validated on a cold cache |
-| M5 → M2 stress-test adapter | Not connected; stress-test returns HTTP 503 |
+| M5 → M2 adapter | Registered and live API path exercised; feasibility, scores, and climate/water sensitivity remain unavailable in M2 |
 | M3 verified farm-coordinate integration | Not available; demo coordinates are technical-test points |
-| Backend test suite | 26 tests passed in the last recorded run |
+| Backend test suite | 39 tests passed with `python -m pytest -q tests` in the project virtual environment |
 
 The project is currently under active development.
 
@@ -411,7 +463,7 @@ The project focuses on climate resilience, water conservation, crop rotation and
 
 **Farm coordinates:** The endpoint accepts coordinates supplied in the request, but there is no verified M3 farm-profile handoff yet. Technical-test coordinates must not be presented as a real farmer's parcel.
 
-**M2 climate sensitivity:** M2's current rotation engine does not consume monthly temperature or precipitation. Its water-demand function expects daily ET₀ inputs, which the M1 monthly adapter does not provide. Do not treat the M5 stress-test as operational until an evidence-based M2 adapter and required climate inputs are agreed and tested.
+**M2 climate sensitivity:** M5 invokes M2's temperature suitability function with monthly values, but every crop reference range is currently blank, so no temperature check is computed. Precipitation and the irrigation budget are not consumed by M2. Treat M5 outputs as scenario/provenance comparisons only; do not present unknown feasibility as a pass or as an operational agronomic stress test.
 
 **Crop reference coverage:** The initial M2 catalog contains a limited number of sourced crops. Further authoritative agricultural data integration is planned.
 

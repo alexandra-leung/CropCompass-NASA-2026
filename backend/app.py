@@ -3,8 +3,10 @@ from fastapi import FastAPI
 from climateM1.api.climate import router as climate_router
 from agricultureM2.routes import router as agriculture_router
 from resilienceM5.m1_adapter import provide_m1_climate
+from resilienceM5.m2_adapter import evaluate_m2_scenario
 from resilienceM5.routes import router as resilience_router
 from resilienceM5.scenario_engine import register_m1_provider
+from resilienceM5.stress_test import register_m2_evaluator
 
 app = FastAPI(
     title="CropCompass 2.0",
@@ -13,6 +15,7 @@ app = FastAPI(
 )
 
 register_m1_provider(provide_m1_climate)
+register_m2_evaluator(evaluate_m2_scenario)
 
 # M1 - Climate Intelligence
 app.include_router(climate_router)

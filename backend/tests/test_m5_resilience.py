@@ -419,6 +419,8 @@ def test_unified_app_mounts_resilience_once_and_registers_m1():
     response = TestClient(app).get("/api/resilience/health")
     assert response.status_code == 200
     assert response.json()["m1_provider_connected"] is True
+    assert response.json()["m2_evaluator_connected"] is True
+    assert response.json()["m2_scenario_feasibility_supported"] is False
 
 
 def mock_m2(payload, month, water_budget):
@@ -447,9 +449,9 @@ def test_rescue_mode_uses_only_stress_results():
     output = evaluate_scenarios({"sentinel": 1}, climate(), climate(26, 80),
                                 100, 0.5, evaluator=mock_m2)
     rescue = build_rescue_shortlist(output)
-    assert rescue["candidates"][0]["scenarios_feasible"] == 4
+    assert rescue["candidates"][0]["scenarios_passed"] == 4
     current = next(x for x in rescue["candidates"] if x["rotation_id"] == "current")
-    assert current["scenarios_feasible"] == 2
+    assert current["scenarios_passed"] == 2
 
 
 def test_reduction_requires_water_budget():
@@ -458,12 +460,18 @@ def test_reduction_requires_water_budget():
                            irrigation_reduction_fraction=0.3, evaluator=mock_m2)
 
 
-def test_router_and_unconnected_stress_return_503():
+def test_router_and_unconnected_stress_return_503(monkeypatch):
     client = TestClient(FastAPI())
     # TestClient requires a mounted router, not a second production server.
     client.app.include_router(router)
+    def no_m2():
+        from resilienceM5.stress_test import M2NotConnected
+        raise M2NotConnected("M2 adapter not registered")
+
+    monkeypatch.setattr(m5_routes, "get_m2_evaluator", no_m2)
     r = client.post("/api/resilience/stress-test", json={
-        "latitude": -20.2, "longitude": 57.5, "rotation_request": {"sentinel": 1},
+        "latitude": -20.2, "longitude": 57.5, "baseline_water_budget_m3": 100,
+        "rotation_request": {"sentinel": 1},
     })
     assert r.status_code == 503
     assert "M2 adapter not registered" in r.json()["detail"]
