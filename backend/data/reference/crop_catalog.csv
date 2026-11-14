@@ -1,0 +1,9 @@
+
+crop_id,crop_name,family,nitrogen_fixing,growth_days,temp_min_c,temp_max_c,rain_min_mm,rain_max_mm,ph_min,ph_max,source_url
+maize,Maize (grain),Poaceae,false,125,,,,,,,"https://www.fao.org/4/x0490e/x0490e0b.htm"
+tomato,Tomato,Solanaceae,false,135,,,,,,,"https://www.fao.org/4/x0490e/x0490e0b.htm"
+onion,Onion (dry),Amaryllidaceae,false,150,,,,,,,"https://www.fao.org/4/x0490e/x0490e0b.htm"
+cabbage,Cabbage,Brassicaceae,false,165,,,,,,,"https://www.fao.org/4/x0490e/x0490e0b.htm"
+cowpea,Cowpea,Fabaceae,true,100,,,,,,,"https://www.fao.org/4/x0490e/x0490e0b.htm"
+groundnut,Groundnut,Fabaceae,true,130,,,,,,,"https://www.fao.org/4/x0490e/x0490e0b.htm"
+sweet_potato,Sweet Potato,Convolvulaceae,false,125,,,,,,,"https://www.fao.org/4/x0490e/x0490e0b.htm"
