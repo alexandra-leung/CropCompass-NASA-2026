@@ -1,0 +1,85 @@
+{
+  "m1_history__pamplemousses-04.json": {
+    "module": "M1",
+    "called": "climateM1.services.history.fetch_history",
+    "inputs": {
+      "location_id": "pamplemousses-04",
+      "start": "2021-01-01",
+      "end": "2025-12-31"
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T19:19:28.690012+00:00"
+  },
+  "m1_scenarios__pamplemousses-04.json": {
+    "module": "M1",
+    "called": "climateM1.services.projections.fetch_scenarios",
+    "inputs": {
+      "location_id": "pamplemousses-04"
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T19:19:22.857436+00:00"
+  },
+  "m2_generate__maize-maize-maize__max3.json": {
+    "module": "M2",
+    "called": "agricultureM2.rotation_generator.generate_rotation_candidates",
+    "inputs": {
+      "current_rotation": [
+        "maize",
+        "maize",
+        "maize"
+      ],
+      "max_alternatives": 3
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T19:19:28.780573+00:00"
+  },
+  "m2_rotation__maize-cowpea-cabbage.json": {
+    "module": "M2",
+    "called": "agricultureM2.rotation_engine.evaluate_rotation",
+    "inputs": {
+      "crop_ids": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ]
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T19:19:28.719360+00:00"
+  },
+  "m2_rotation__maize-maize-maize.json": {
+    "module": "M2",
+    "called": "agricultureM2.rotation_engine.evaluate_rotation",
+    "inputs": {
+      "crop_ids": [
+        "maize",
+        "maize",
+        "maize"
+      ]
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T19:19:28.728342+00:00"
+  },
+  "m2_suitability__cowpea__no-inputs.json": {
+    "module": "M2",
+    "called": "agricultureM2.suitability.check_crop_suitability",
+    "inputs": {
+      "crop_id": "cowpea",
+      "temperature_c": null,
+      "soil_ph": null
+    },
+    "provider_status": "partial",
+    "generated_at": "2026-11-14T19:19:28.787314+00:00"
+  },
+  "m2_suitability__cowpea__temp25-ph6.5.json": {
+    "module": "M2",
+    "called": "agricultureM2.suitability.check_crop_suitability",
+    "inputs": {
+      "crop_id": "cowpea",
+      "temperature_c": 25.0,
+      "soil_ph": 6.5,
+      "note": "temperature/pH are test inputs, not observed farm values"
+    },
+    "provider_status": "partial",
+    "generated_at": "2026-11-14T19:19:28.793121+00:00"
+  }
+}
