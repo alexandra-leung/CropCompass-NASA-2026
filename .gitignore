@@ -218,3 +218,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+.env.*
+
+# Keep environment templates
+!.env.example
+
+# Generated datasets and cache
+backend/data/raw/nasa_power/*.json
