@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CropCompass 2.0 — Rotation Studio</title>
+<style>
+:root{--bg:#eef5ef;--ink:#172d28;--muted:#657c71;--green:#167f61;--deep:#0d3b31;--border:#d8e7dc;--white:#fff;--red:#ad4543;--amber:#8c5916}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Arial,sans-serif}.top{background:#0c3029;color:#effbf3;padding:18px max(22px,calc((100vw - 1160px)/2));display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-size:24px;font-weight:850;letter-spacing:-.8px}.brand span{color:#77dec0}.mini{font-size:11px;color:#accdc0;margin-top:3px}.chip{border:1px solid #427569;color:#c8f3de;padding:6px 10px;border-radius:20px;font-size:11px;font-weight:700}.wrap{max-width:1160px;margin:28px auto;padding:0 18px 45px}h1{font-size:clamp(25px,3.3vw,39px);letter-spacing:-1.4px;margin:0 0 9px}.lede{color:var(--muted);line-height:1.55;margin:0 0 23px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:17px}.card{background:var(--white);border:1px solid var(--border);border-radius:17px;padding:23px;box-shadow:0 8px 29px #174e3010}.section{font-weight:800;font-size:17px;margin-bottom:15px}.controls{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:750;color:#3f6052}.field input{height:41px;border:1px solid #b9d3c6;border-radius:9px;padding:9px 11px;font-size:14px;color:var(--ink);width:100%;background:white}.field input:focus{outline:2px solid #52b891}.sub{font-size:11px;font-weight:400;color:var(--muted)}.slider{width:100%;accent-color:var(--green);margin:11px 0 5px}button{border:0;background:var(--green);border-radius:10px;color:white;padding:11px 16px;font-weight:750;font-size:13px;cursor:pointer}button:disabled{opacity:.6;cursor:wait}.btn-light{color:var(--deep);background:#e4f3e9;border:1px solid #bcdccc}.act{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px}.value{font-size:27px;font-weight:850;color:var(--deep)}.note{font-size:11px;color:var(--muted);line-height:1.6}.warning{color:#8f5d1c;background:#fff4df;border:1px solid #efd5a8;padding:12px 14px;border-radius:11px;font-size:12px;line-height:1.55}.error{display:none;color:#a43137;background:#fff0f0;border:1px solid #e9babc;padding:13px;border-radius:11px;margin-bottom:20px;white-space:pre-wrap}.hero{background:linear-gradient(120deg,#104a3a,#21836c);color:#fff;padding:24px;border-radius:16px;margin-bottom:22px;display:flex;justify-content:space-between;gap:15px;align-items:center}.hero .l{font-size:12px;color:#b8e9d7}.hero strong{display:block;font-size:20px;margin:6px 0}.small{font-size:12px;color:#54736a}.rotations{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:17px}.rot{border:1px solid var(--border);background:white;border-radius:16px;padding:18px;min-width:0}.rot h3{font-size:15px;margin:0 0 6px}.status{display:inline-block;padding:5px 9px;font-size:11px;font-weight:800;border-radius:20px;margin:8px 0}.pass{color:#176c4d;background:#e0f5e8}.fail{color:#a03936;background:#ffe9e6}.cropseq{font-size:12px;color:var(--muted);min-height:44px;line-height:1.45}.amount{font-weight:850;font-size:25px;letter-spacing:-.5px;margin:10px 0 1px}.bar{background:#e7ece8;height:10px;border-radius:14px;overflow:hidden;margin-top:14px}.fill{background:#299574;height:100%;border-radius:14px}.fill.over{background:#c48240}.detail{border-top:1px solid var(--border);margin-top:13px;padding-top:10px;font-size:11px;line-height:1.55;color:var(--muted)}.footer{font-size:12px;color:#536e60;margin-top:19px;line-height:1.6}.pill{font-size:11px;background:#e2f4e9;color:#156b50;border-radius:9px;padding:5px 8px;font-weight:750}#statusMessage{font-size:12px;color:var(--muted)}details{margin-top:15px;color:#536b5d;font-size:12px}details summary{font-weight:800;cursor:pointer;color:var(--deep)}@media(max-width:790px){.grid,.rotations{grid-template-columns:1fr}.controls{grid-template-columns:1fr}.top{padding:16px 20px}.hero{flex-direction:column;align-items:flex-start}}
+
+.climate-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}.climate-stat{background:#f1f8f3;border:1px solid #d4e8db;border-radius:11px;padding:13px}.climate-stat .number{font-weight:850;font-size:22px;color:#165c48;margin:5px 0}.climate-source{font-size:11px;color:#557368;line-height:1.65;margin-top:10px}.climate-source a{color:#167f61}.climate-table{width:100%;border-collapse:collapse;font-size:12px}.climate-table th,.climate-table td{text-align:left;padding:9px 7px;border-bottom:1px solid #e2ece6}.climate-table th{color:#537268}.climate-state{font-size:12px;color:#63776d}@media(max-width:650px){.climate-grid{grid-template-columns:1fr}}
+
+/* Evidence Passport */
+.passport{margin-top:20px;border:1px solid #b7d9c7;border-radius:17px;background:#fff;padding:22px;box-shadow:0 10px 35px rgba(13,59,49,.06)}
+.passport-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.passport h2{margin:0;font-size:22px;color:#123d33}.passport-sub{font-size:13px;color:#657c71;margin:6px 0 12px}
+.passport-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.passport-item{padding:15px;border:1px solid #dfebe3;border-radius:12px;background:#f8fbf9;min-width:0}
+.passport-item h3{font-size:14px;margin:0 0 9px;color:#173b30}.passport-item p{font-size:12px;line-height:1.55;margin:6px 0;color:#425d52}
+.passport-tag{display:inline-block;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;letter-spacing:.04em;margin-bottom:9px}
+.passport-tag.observed{background:#dceefb;color:#195675}.passport-tag.projected{background:#eee5fa;color:#614094}.passport-tag.reference{background:#e0f2e8;color:#1a6749}.passport-tag.assumed{background:#fff0d8;color:#905b17}.passport-tag.calculated{background:#e2eeeb;color:#205f51}
+.passport details{margin-top:13px;border-top:1px solid #e0ebe5;padding-top:12px}.passport summary{cursor:pointer;font-size:13px;font-weight:750;color:#165f4a}
+.passport a{color:#167f61;text-decoration:underline;overflow-wrap:anywhere}
+.passport-metrics{margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.passport-metric{background:#eaf6ef;border-radius:11px;padding:13px}.passport-metric strong{display:block;font-size:20px;color:#155d46}.passport-metric span{font-size:11px;color:#557365}
+.passport-note{padding:12px;border-radius:10px;background:#fff6e8;color:#775522;font-size:12px;line-height:1.6;margin-top:14px}
+.passport .export{border:0;border-radius:9px;background:#177f60;color:white;padding:10px 13px;font-weight:750;cursor:pointer}
+@media(max-width:680px){.passport-grid,.passport-metrics{grid-template-columns:1fr}}
+
+
+/* Farmer-first Evidence Passport additions */
+.farmer-explain{margin-top:16px;padding:18px;background:#f0f8f2;border:1px solid #cce5d4;border-radius:14px}
+.farmer-explain h3{margin:0 0 8px;font-size:18px;color:#124e3c}
+.farmer-explain p{font-size:14px;line-height:1.65;color:#355b4b;margin:8px 0}
+.farmer-decisions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.farmer-decision{background:#fff;border:1px solid #d5e6db;border-radius:11px;padding:13px;min-width:0}
+.farmer-decision .fd-title{font-size:13px;font-weight:800;color:#193d30}
+.farmer-decision .fd-state{font-size:13px;font-weight:750;margin:8px 0 5px}
+.farmer-decision .fd-state.yes{color:#176c4d}.farmer-decision .fd-state.no{color:#ab4540}
+.farmer-decision .fd-note{font-size:12px;color:#597266;line-height:1.5}
+.farmer-key{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.farmer-key-item{background:#fff;border:1px solid #dfebe3;border-radius:11px;padding:13px}
+.farmer-key-item strong{font-size:13px;display:block;margin-bottom:5px}
+.farmer-key-item p{font-size:12px;line-height:1.55;color:#4e665a;margin:0}
+.farmer-action{background:#fff8ec;border-left:4px solid #cc9540;padding:13px 15px;border-radius:8px;margin-top:15px;font-size:13px;line-height:1.6;color:#694c21}
+.passport-technical{border-top:1px solid #dcebe1;margin-top:18px;padding-top:16px}
+.passport-technical>summary{font-size:14px!important}
+.passport-technical[open]>summary{margin-bottom:14px}
+@media(max-width:750px){.farmer-decisions,.farmer-key{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<header class="top"><div><div class="brand">✦ Crop<span>Compass</span></div><div class="mini">TEAM MARIGOLD · NASA SPACE APPS 2026</div></div><div class="chip">M2 · LIVE BACKEND DEMO</div></header>
+<main class="wrap">
+<h1>Rotation Studio <span style="color:#25876a">/ Water Wallet</span></h1>
+<p class="lede">Compare three sequential crop plans against a farmer-selected irrigation budget. Every result below is calculated by your Python backend — not generated by AI.</p>
+<div id="error" class="error" role="alert"></div>
+<div class="hero"><div><div class="l">DEMONSTRATION FARM · ASSUMED INPUTS</div><strong>Pamplemousses, Mauritius</strong><div class="l">NASA regional climate integration is the next step; current ET₀ and effective rainfall are hypothetical.</div></div><div><div class="l">IRRIGATION BUDGET</div><div id="budgetHero" class="value" style="color:#e5fff3">15,000 m³</div></div></div>
+<section class="card" style="margin-bottom:18px" id="nasaEvidence"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div class="section" style="margin-bottom:0">🛰️ NASA climate evidence · Pamplemousses</div><span class="pill" id="nasaStatus">Loading NASA climate records…</span></div><p class="small" style="margin-top:10px">Observed historical regional climate context (2021–2025). Annual summaries are not field measurements and do not drive the current hypothetical irrigation calculations.</p><div id="climateContent" class="climate-state" aria-live="polite">Contacting Member 1 climate API…</div><div id="climateProvenance" class="climate-source"></div></section>
+<section class="card" id="projectionPanel" style="margin:18px 0"><div class="section">🌍 Future climate explorer · NASA NEX-GDDP-CMIP6</div>
+<p class="small">Select a projected year and emissions pathway. This panel shows regional multi-model climate scenarios, <b>not field-scale forecasts</b>. These values are displayed separately from observed NASA POWER climate history; they are not directly subtracted because the grids and data products differ.</p>
+<div class="controls" style="margin:14px 0"><label class="field">Emissions pathway<select id="ssp" style="height:41px;border:1px solid #b9d3c6;border-radius:9px;padding:8px;background:white"><option value="ssp245">SSP2-4.5 · intermediate</option><option value="ssp370">SSP3-7.0 · high</option></select></label><label class="field">Projection year<select id="projectionYear" style="height:41px;border:1px solid #b9d3c6;border-radius:9px;padding:8px;background:white"><option value="2030">2030</option><option value="2040">2040</option><option value="2050" selected>2050</option></select></label></div>
+<div id="projectionStatus" class="small" aria-live="polite">Loading cached NASA projections…</div><div id="projectionResults" class="climate-grid" style="margin-top:12px"></div><div id="projectionEvidence" class="climate-source" style="margin-top:12px"></div>
+<div style="border-top:1px solid #d8e7dc;margin-top:18px;padding-top:15px"><strong>⚡ Farm survival: irrigation shortage (farmer what-if)</strong><p class="small">Apply a <b>35% reduction in available irrigation</b> to retest all three rotations with the same Python engine. This is an illustrative water shortage selected by the farmer, <b>not</b> a predicted effect of the NASA emissions pathway.</p><div class="act"><button id="applyShortage">Test −35% irrigation availability</button><button id="restoreBaseline" class="btn-light">Restore 15,000 m³ baseline</button></div><p class="small" id="scenarioImpact" style="margin-top:12px">Scenario action has not been applied.</p></div>
+</section>
+<div class="grid">
+<section class="card">
+<div class="section">💧 Water scarcity simulator</div>
+<div class="field"><label for="budget">Available irrigation water for full crop sequence</label><input id="budget" class="slider" type="range" min="0" max="20000" step="250" value="15000"/><div style="display:flex;justify-content:space-between"><span class="sub">0 m³</span><strong id="budgetLabel">15,000 m³</strong><span class="sub">20,000 m³</span></div></div>
+<div class="act"><button id="runBtn">Recalculate rotations</button><button class="btn-light" id="resetBtn">Reset scenario</button></div>
+<div style="margin-top:14px" id="statusMessage" aria-live="polite">Loading backend results…</div>
+</section>
+<section class="card">
+<div class="section">⚙️ Calculation assumptions</div>
+<div class="controls">
+<label class="field">Field area (hectares)<input id="area" type="number" min="0.1" max="10000" step="0.1" value="1"/></label>
+<label class="field">Reference ET₀ (mm/day)<input id="et0" type="number" min="0" max="20" step="0.1" value="4"/></label>
+<label class="field">Effective rainfall (mm/day)<input id="rain" type="number" min="0" step="0.1" value="1"/></label>
+<label class="field">Irrigation efficiency (0–1)<input id="efficiency" type="number" min="0.01" max="1" step="0.05" value="0.8"/></label>
+</div>
+<p class="note">Current calculation: crop ET = Kc × ET₀; irrigation need is estimated after assumed effective rainfall and irrigation efficiency.</p>
+</section>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:24px 0 5px;flex-wrap:wrap"><h2 style="font-size:21px;margin:0">Rotation comparisons</h2><span id="summary" class="pill">Calculating…</span></div>
+<div id="rotations" class="rotations" aria-live="polite"></div>
+<section class="card" style="margin-top:18px"><div class="section">🔎 Evidence and scientific limitations</div><div id="assumptions" class="warning">Loading model assumptions…</div><details><summary>Show technical details and methodology</summary><p>Daily crop reference ET₀ and effective rainfall are hypothetical constants in this stage. The backend retrieves crop coefficients from your local CSV and evaluates each sequence. Budgets represent the complete sequence, which differs in total days between rotations. NASA observations are not yet linked to the calculated irrigation demand; crop suitability and soil nutrient changes are not predicted.</p><p id="modelDetails"></p></details></section>
+
+<section class="passport" id="evidencePassport" aria-label="Evidence Passport">
+  <div class="passport-head"><div><h2>🔎 Your Farm Decision Explained</h2><p class="passport-sub">Understand the water results in plain language. Open the technical details if you want to check the sources and calculations.</p></div><button class="export" id="downloadPassport" type="button">↓ Export evidence JSON</button></div>
+  <div class="farmer-explain" aria-live="polite">
+    <h3>🌱 What does this mean for your farm?</h3>
+    <p id="farmerHeadline">Checking the three crop plans against your water limit…</p>
+    <p id="farmerExplanation">The comparison will show which plans fit the amount of irrigation water you entered.</p>
+    <div class="farmer-decisions" id="farmerDecisions"></div>
+    <div class="farmer-action" id="farmerNext">Before changing crops, compare these estimates with your farm's actual water supply and ask a local agricultural adviser.</div>
+  </div>
+  <h3 style="font-size:16px;margin:21px 0 9px">Where does the information come from?</h3>
+  <p class="passport-sub">Different kinds of information are used in different ways. Here is what you can and cannot rely on.</p>
+  <div class="farmer-key">
+    <div class="farmer-key-item"><strong>🛰️ Weather records from NASA</strong><p>Past rainfall and temperature for your wider area. These are not measurements taken in your field.</p></div>
+    <div class="farmer-key-item"><strong>🌍 Possible future weather</strong><p>NASA climate model scenarios show possible regional conditions, not a certain forecast for your farm.</p></div>
+    <div class="farmer-key-item"><strong>🌿 Crop information from FAO references</strong><p>Reference values help estimate how much water crops may use. Local seasons and growing conditions can differ.</p></div>
+    <div class="farmer-key-item"><strong>✍️ Values chosen for this demonstration</strong><p>Water supply, assumed rainfall, reference water loss (ET₀) and watering efficiency. These are not automatically measured on your farm.</p></div>
+  </div>
+  <details class="passport-technical"><summary>🔬 See exact data, sources, calculations and limitations (technical details)</summary>
+  <div class="passport-metrics" id="passportMetrics"><div class="passport-metric"><strong>—</strong><span>Awaiting backend calculation</span></div></div>
+  <div class="passport-grid">
+   <article class="passport-item"><span class="passport-tag observed">OBSERVED / NASA-DERIVED</span><h3>NASA POWER historical climate</h3><p id="passportHistory">Loading the available regional climate history.</p><p><a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener">NASA POWER source</a></p></article>
+   <article class="passport-item"><span class="passport-tag projected">PROJECTED / NASA MODEL</span><h3>NEX-GDDP-CMIP6 future climate</h3><p id="passportFuture">Loading projected ensemble values.</p><p><a href="https://www.nccs.nasa.gov/services/data-collections/land-based-products/nex-gddp-cmip6" target="_blank" rel="noopener">NASA climate projection source</a></p></article>
+   <article class="passport-item"><span class="passport-tag reference">REFERENCE / FAO-BASED</span><h3>Crop characteristics and coefficients</h3><p>Crop Kc values, growth-stage durations, and crop identifiers are read by the backend from its local crop reference file. These are agronomic reference assumptions, not NASA measurements or Mauritius-calibrated crop observations.</p><p id="passportCropSources">Crop-level reference URLs appear after the calculation loads.</p><p><a href="https://www.fao.org/4/x0490e/x0490e0b.htm" target="_blank" rel="noopener">FAO-56 crop coefficient methodology</a></p></article>
+   <article class="passport-item"><span class="passport-tag assumed">HYPOTHETICAL / FARMER INPUT</span><h3>Water model inputs</h3><p id="passportInputs">Waiting for model inputs.</p><p>Neither effective rainfall nor ET₀ is currently computed from the NASA historical or projection datasets.</p></article>
+  </div>
+  <article class="passport-item" style="margin-top:12px"><span class="passport-tag calculated">CALCULATED / PYTHON ENGINE</span><h3>Irrigation demand & budget eligibility</h3><p id="passportOutputs">Waiting for a successful FastAPI calculation.</p><details><summary>See formulas and model boundaries</summary><p>Crop evapotranspiration: ETc = Kc × ET₀. Per-crop approximate net irrigation: max(0, ETc − assumed effective rainfall). Gross irrigation depth: net irrigation / assumed efficiency. Volume: depth in mm × field area in ha × 10 m³/(mm·ha). Water-feasible means modeled demand ≤ the specified water budget for the entire crop sequence.</p><p>Three plans occupy different total growing durations. No yield, profitability, actual soil nutrient gain, crop-specific climate threshold, or field-level suitability is predicted. Climate projections do not presently drive crop-water calculations.</p></details></article>
+  <div class="passport-note" id="passportQuality">Scientific status: research prototype, not operational farm advice. Data resolution, crop duration, rainfall timing, local soils, and measured farm outcomes require further validation.</div>
+  </details>
+</section>
+<div class="footer">CropCompass is a research hackathon prototype, not validated farm irrigation or planting advice. All feasibility flags currently refer <b>only</b> to the modeled irrigation budget — not to full crop viability.</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const API='/api/agriculture/water-budget';
+const fmt=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:1});
+const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cropNames={maize:'🌽 Maize',cowpea:'🫘 Cowpea',sweet_potato:'🍠 Sweet potato',groundnut:'🥜 Groundnut'};
+let requestId=0, debounce;
+function payload(){return {water_budget_m3:Number($('budget').value),field_area_ha:Number($('area').value),daily_et0_mm:Number($('et0').value),effective_rainfall_mm_per_day:Number($('rain').value),irrigation_efficiency:Number($('efficiency').value)}}
+
+// Evidence Passport: uses only values actually returned by the team's live services.
+let passportLatest={water:null,history:null,projection:null,historyError:null,projectionError:null,updatedAt:null};
+function passportSet(id,value){const n=$(id);if(n)n.textContent=value;}
+function renderFarmerExplanation(w){
+ const plans=w?.rotations||[];
+ if(!plans.length)return;
+ const budget=Number(w.water_budget_m3);
+ const fits=plans.filter(r=>r.water_feasible);
+ const headline=fits.length===0
+   ? 'None of these three plans fits the water amount you selected.'
+   : fits.length===plans.length
+   ? 'All three plans fit the water amount you selected.'
+   : `${fits.length} of the 3 plans fit the water amount you selected.`;
+ passportSet('farmerHeadline',headline);
+ passportSet('farmerExplanation',`Your available water: ${fmt(budget)} m³ for the whole crop sequence. These results compare estimated irrigation need with that limit. “Fits” means only that the water calculation passes; it does not mean the crops will grow well on your land.`);
+ $('farmerDecisions').innerHTML=plans.map(r=>{
+   const need=Number(r.irrigation_required_m3);
+   const diff=Math.abs(budget-need);
+   const ok=Boolean(r.water_feasible);
+   return `<div class="farmer-decision"><div class="fd-title">${safe(r.rotation_name)}</div><div class="fd-state ${ok?'yes':'no'}">${ok?'✓ Fits this water budget':'⚠ Needs more water'}</div><div class="fd-note">Estimated irrigation: <b>${safe(fmt(need))} m³</b><br>${ok?`${safe(fmt(diff))} m³ left in your budget`:`About ${safe(fmt(diff))} m³ above your budget`}<br>${safe(r.total_growth_days)} total growing days</div></div>`;
+ }).join('');
+ const preferred=fits.length?fits.map(x=>x.rotation_name).join(' and '):'none of these plans';
+ passportSet('farmerNext',fits.length
+   ? `What to do next: ${preferred} ${fits.length===1?'is':'are'} within the selected water limit. Before making a planting decision, check actual rainfall, your soil, planting seasons, irrigation performance and local agronomic advice. Different plans cover different numbers of days.`
+   : 'What to do next: Your chosen water supply is below the estimated needs of all three plans. Review the water assumptions or discuss other planting and irrigation options with a local agricultural adviser.');
+}
+function passportRender(){
+ const w=passportLatest.water, h=passportLatest.history, proj=passportLatest.projection;
+ if(w){
+  const rows=w.rotations||[], feasible=rows.filter(r=>r.water_feasible).length;
+  renderFarmerExplanation(w);
+  $('passportMetrics').innerHTML=`<div class="passport-metric"><strong>${safe(fmt(w.water_budget_m3))} m³</strong><span>Specified water budget</span></div><div class="passport-metric"><strong>${feasible} / ${rows.length}</strong><span>Rotations within water budget</span></div><div class="passport-metric"><strong>${safe(w.field_area_ha)} ha</strong><span>Field area (input)</span></div>`;
+  passportSet('passportInputs',`Daily ET₀ = ${w.daily_et0_mm} mm/day (hypothetical); effective rainfall = ${w.effective_rainfall_mm_per_day} mm/day (hypothetical); efficiency = ${Math.round(Number(w.irrigation_efficiency)*100)}% (assumed); area = ${w.field_area_ha} ha; irrigation budget = ${fmt(w.water_budget_m3)} m³ (user-selected, full sequence).`);
+  passportSet('passportOutputs',rows.map(r=>`${r.rotation_name}: ${fmt(r.irrigation_required_m3)} m³ irrigation, ${r.total_growth_days} growing days — ${r.water_feasible?'within':'exceeds'} the selected budget; ${r.reason}.`).join('  |  '));
+  const cropSources=[...new Set(rows.flatMap(r=>(r.crops||[]).map(c=>c.source_url).filter(Boolean)))];
+  const refs=$('passportCropSources');refs.textContent=cropSources.length?'Source URLs returned for these crops: ':'The current water-budget response does not include crop-level reference URLs. Check the source_url fields in the crop coefficient data before claiming individual values are verified.';
+  cropSources.slice(0,8).forEach((url,i)=>{if(!/^https:\/\//.test(url))return;const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';a.textContent=` Reference ${i+1}`;refs.appendChild(a);refs.append(' · ')});
+ }
+ if(h){const p=h.provenance||[], years=(h.timeseries||[]).filter(v=>/^\d{4}$/.test(String(v.period))).map(v=>String(v.period));passportSet('passportHistory',`Regional historical climate service loaded; ${years.length} annual records${years.length?` (${years[0]}–${years[years.length-1]})`:''}. ${p.length?`Provenance: ${p.slice(0,3).map(x=>[x.source,x.product,x.variable,x.gridResolution].filter(Boolean).join(' / ')).join(' ; ')}.`:'Detailed provenance not supplied in response.'} Not a direct farm-field measurement.`)}
+ else passportSet('passportHistory',passportLatest.historyError?`Unavailable: ${passportLatest.historyError}. NASA evidence must not be claimed as loaded.`:'Awaiting NASA historical climate endpoint.');
+ if(proj){const sel=(proj.ensemble||[]).find(x=>x.id===$('ssp').value),v=sel?.values?.find(x=>Number(x.year)===Number($('projectionYear').value)),p=proj.provenance||{};passportSet('passportFuture',v?`${sel.label||sel.id}, ${v.year}: ensemble mean temperature ${fmt(v.temperatureC.mean)} °C; annual precipitation ${fmt(v.rainfallMm.mean)} mm; model count ${v.temperatureC.count||v.rainfallMm.count||'not specified'}. Grid: ${p.gridResolution||'not supplied'}. Regional projection; NOT used in Water Wallet.`:'No cached projection available for current selection.')}else passportSet('passportFuture',passportLatest.projectionError?`Unavailable: ${passportLatest.projectionError}.`:'Awaiting projected climate endpoint.');
+ passportSet('passportQuality',`Scientific limitation: these are water-budget feasibility calculations, NOT predictions of overall crop suitability or crop survival. NASA climate records are displayed for regional context and do NOT feed the current ET₀/rainfall inputs. Three sequences have differing growing periods. ${w?.limitations?.length?'Backend caveats: '+w.limitations.join(' | '):''}`);
+}
+$('downloadPassport').addEventListener('click',()=>{
+ if(!passportLatest.water){alert('Run the Water Wallet calculation first.');return;}
+ const evidence={project:'CropCompass 2.0 / Team Marigold',status:'research_prototype',created_at:new Date().toISOString(),data_classification:{historical_climate:'NASA-derived regional history',future_climate:'NASA modeled projection',crop_coefficients:'FAO-based agronomic reference assumptions',et0_rain_efficiency:'hypothetical inputs',rotation_results:'computed by FastAPI'},selected_projection:{pathway:$('ssp').value,year:Number($('projectionYear').value)},historical_climate:passportLatest.history,climate_projection:passportLatest.projection,model_result:passportLatest.water,limitations:['NASA climate data is displayed but is not used to generate current irrigation demand','Irrigation budget compliance does not imply crop suitability','Crop coefficients need calibration to Mauritian growing conditions']};
+ const blob=new Blob([JSON.stringify(evidence,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='cropcompass_evidence_passport.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+
+function render(data){
+ const rows=data.rotations||[];
+ $('summary').textContent=`${rows.filter(r=>r.water_feasible).length} of ${rows.length} within water budget`;
+ $('rotations').innerHTML=rows.map((r,i)=>{
+   const required=Number(r.irrigation_required_m3),budget=Number(data.water_budget_m3),pass=Boolean(r.water_feasible);
+   const pct=required===0?0:Math.min(100,required/Math.max(budget,1)*100);
+   const crops=(r.crops||[]).map(c=>cropNames[c.crop_id]||safe(c.crop_id)).join(' → ');
+   const name=safe(r.rotation_name||`Rotation ${i+1}`);
+   return `<article class="rot"><h3>${name}</h3><div class="cropseq">${crops}</div><span class="status ${pass?'pass':'fail'}">${pass?'✓ WITHIN BUDGET':'⚠ EXCEEDS BUDGET'}</span><div class="amount">${fmt(required)} <small style="font-size:13px">m³</small></div><div class="small">Estimated irrigation needed</div><div class="bar"><div class="fill ${pass?'':'over'}" style="width:${pct}%"></div></div><div class="detail"><b>${fmt(r.total_growth_days)} days</b> total crop duration<br/>Remaining budget: <b>${fmt(r.water_remaining_m3)} m³</b><br/>${safe(r.reason)}</div></article>`;
+ }).join('');
+ const limitations=(data.limitations||[]).map(x=>safe(x));
+ $('assumptions').innerHTML=`<b>Model mode: ${safe(data.assumption_status||'not specified')}</b><div>${limitations.length?limitations.map(x=>'• '+x).join('<br>'):'Outputs require independent agronomic validation.'}</div>`;
+ passportLatest.water=data;passportLatest.updatedAt=new Date().toISOString();passportRender();
+ $('modelDetails').textContent=`Area: ${data.field_area_ha} ha; budget: ${fmt(data.water_budget_m3)} m³; reference ET₀: ${data.daily_et0_mm} mm/day; assumed effective rainfall: ${data.effective_rainfall_mm_per_day} mm/day; irrigation efficiency: ${data.irrigation_efficiency}.`;
+}
+async function run(){
+ const id=++requestId,p=payload();
+ $('error').style.display='none';$('runBtn').disabled=true;$('statusMessage').textContent='Recalculating from FastAPI…';
+ try{
+  if(p.field_area_ha<=0||p.daily_et0_mm<0||p.daily_et0_mm>20||p.effective_rainfall_mm_per_day<0||p.irrigation_efficiency<=0||p.irrigation_efficiency>1)throw new Error('Check the field area, ET₀, rainfall and efficiency inputs.');
+  const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+  const data=await res.json();
+  if(!res.ok)throw new Error(`API returned HTTP ${res.status}: ${JSON.stringify(data.detail||data)}`);
+  if(id!==requestId)return;
+  render(data);$('statusMessage').textContent='✓ Live results received from your Python backend';
+ }catch(err){if(id!==requestId)return;$('error').style.display='block';$('error').textContent='Could not load calculation: '+err.message+'\nConfirm the FastAPI server is running and the /api/agriculture/water-budget route works.';$('statusMessage').textContent='Backend connection failed';}
+ finally{if(id===requestId)$('runBtn').disabled=false;}
+}
+function updateBudget(){const v=Number($('budget').value);$('budgetLabel').textContent=fmt(v)+' m³';$('budgetHero').textContent=fmt(v)+' m³';clearTimeout(debounce);debounce=setTimeout(run,180)}
+$('budget').addEventListener('input',updateBudget);
+['area','et0','rain','efficiency'].forEach(k=>$(k).addEventListener('change',run));
+$('runBtn').addEventListener('click',run);
+$('resetBtn').addEventListener('click',()=>{$('budget').value=15000;$('area').value=1;$('et0').value=4;$('rain').value=1;$('efficiency').value=.8;updateBudget()});
+async function loadClimateEvidence(){
+ const status=$('nasaStatus'),content=$('climateContent'),meta=$('climateProvenance');
+ try {
+  const response=await fetch('/api/climate/history?location_id=pamplemousses-04&start=2021-01-01&end=2025-12-31');
+  if(!response.ok)throw new Error('Climate API HTTP '+response.status);
+  const data=await response.json();passportLatest.history=data;passportLatest.historyError=null;passportRender();
+  const annual=(data.timeseries||[]).filter(x=>/^\d{4}$/.test(String(x.period)));
+  if(!annual.length)throw new Error('No annual climate records in response');
+  const latest=annual[annual.length-1];
+  const valid=annual.filter(x=>Number.isFinite(Number(x.rainfallMm))&&Number.isFinite(Number(x.temperatureC)));
+  if(!valid.length)throw new Error('No valid annual rainfall/temperature values');
+  const rainAvg=valid.reduce((a,x)=>a+Number(x.rainfallMm),0)/valid.length;
+  const tempAvg=valid.reduce((a,x)=>a+Number(x.temperatureC),0)/valid.length;
+  content.innerHTML=`<div class="climate-grid"><div class="climate-stat"><div class="small">Mean annual rainfall · available years</div><div class="number">${fmt(rainAvg)} mm</div></div><div class="climate-stat"><div class="small">Mean annual air temperature · available years</div><div class="number">${fmt(tempAvg)} °C</div></div><div class="climate-stat"><div class="small">Latest year in response</div><div class="number">${safe(latest.period)}</div></div></div><details><summary>View NASA climate history by year</summary><div style="overflow-x:auto"><table class="climate-table"><thead><tr><th>Year</th><th>Annual rainfall (mm)</th><th>Mean air temp. (°C)</th><th>Longest dry spell (days)</th></tr></thead><tbody>${annual.map(x=>`<tr><td>${safe(x.period)}</td><td>${fmt(x.rainfallMm)}</td><td>${fmt(x.temperatureC)}</td><td>${fmt(x.drySpellDays)}</td></tr>`).join('')}</tbody></table></div></details>`;
+  const prov=(data.provenance||[]);
+  meta.textContent='';
+  if(prov.length){
+   const text=prov.map(p=>`${p.source||'NASA'} / ${p.product||'POWER'} · ${p.variable||'climate variable'} · ${p.dateRange||'date range not provided'} · grid: ${p.gridResolution||'unspecified'}${p.caveat?' · '+p.caveat:''}`).join(' | ');
+   meta.textContent='Data provenance: '+text;
+  }else meta.textContent='NASA data provenance not supplied by the climate endpoint; inspect source before citing field-scale conclusions.';
+  status.textContent='✓ Climate API connected';
+ }catch(error){
+  passportLatest.historyError=error.message;passportLatest.history=null;passportRender();
+  status.textContent='Climate evidence unavailable';
+  content.textContent='Unable to load NASA climate history: '+error.message+'. The Water Wallet remains functional; it continues using hypothetical ET₀ and effective rainfall.';
+  meta.textContent='Check /api/climate/history in Swagger and verify Member 1’s climate service and cache.';
+ }
+}
+let projectionData=null;
+function showProjection(){
+ const panel=$('projectionResults'), status=$('projectionStatus'), evidence=$('projectionEvidence');
+ if(!projectionData)return;
+ const pathway=$('ssp').value,yr=Number($('projectionYear').value);
+ const scenario=(projectionData.ensemble||[]).find(x=>x.id===pathway);
+ const val=scenario?.values?.find(x=>Number(x.year)===yr);
+ if(!val){status.textContent='Projected ensemble data unavailable for this selection';panel.textContent='';return;}
+ const t=val.temperatureC, r=val.rainfallMm;
+ const count=t.count||r.count||0;
+ const cell=(name,value,sub)=>`<div class="climate-stat"><div class="small">${name}</div><div class="number">${value}</div><div class="small">${sub}</div></div>`;
+ panel.innerHTML=cell('Projected regional mean temperature',`${fmt(t.mean)} °C`,`Model range: ${fmt(t.minimum)}–${fmt(t.maximum)} °C`)+cell('Projected annual precipitation',`${fmt(r.mean)} mm`,`Model range: ${fmt(r.minimum)}–${fmt(r.maximum)} mm`)+cell('Ensemble size',count+' models',`Year ${yr} · ${safe(scenario.label||pathway)}`);
+ status.textContent='✓ Cached NASA climate projections loaded';passportRender();
+ const p=projectionData.provenance||{};
+ evidence.textContent=`Source: ${p.source||'NASA NEX-GDDP-CMIP6'}; product: ${p.product||'CMIP6'}; grid: ${p.gridResolution||'not available'}; range: ${p.dateRange||'not available'}; retrieved: ${p.retrievedAt||'not available'}. ${p.caveat||''} These projections do not feed current Water Wallet ET₀ or effective-rainfall values.`;
+}
+async function loadProjections(){
+ try{
+  const res=await fetch('/api/climate/scenarios?location_id=pamplemousses-04');
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  projectionData=await res.json();passportLatest.projection=projectionData;passportLatest.projectionError=null;passportRender();
+  if(!projectionData.ensemble?.length)throw new Error('No multi-model ensemble supplied');
+  showProjection();
+ }catch(e){
+  passportLatest.projectionError=e.message;passportLatest.projection=null;passportRender();
+  $('projectionStatus').textContent='Climate projection data unavailable: '+e.message;
+  $('projectionEvidence').textContent='The Water Wallet and farmer water-scarcity test remain available offline when API data are missing.';
+ }
+}
+$('ssp').addEventListener('change',showProjection);
+$('projectionYear').addEventListener('change',showProjection);
+$('applyShortage').addEventListener('click',()=>{
+ const base=15000, reduced=base*0.65;
+ $('budget').value=String(reduced);updateBudget();
+ $('scenarioImpact').textContent=`Illustrative irrigation restriction applied: ${fmt(base)} m³ → ${fmt(reduced)} m³. Feasibility is recalculated by FastAPI. This reduction is not estimated from the selected climate pathway.`;
+});
+$('restoreBaseline').addEventListener('click',()=>{
+ $('budget').value='15000';updateBudget();
+ $('scenarioImpact').textContent='Restored baseline irrigation budget: 15,000 m³.';
+});
+run();
+loadClimateEvidence();
+loadProjections();
+</script>
+</body>
+</html>
