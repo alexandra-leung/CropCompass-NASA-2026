@@ -2,7 +2,13 @@ import json
 from functools import lru_cache
 from typing import Any
 
-from climateM1.core.config import MODEL_REGISTRY_PATH
+from pathlib import Path
+
+M1_DIR = Path(__file__).resolve().parents[1]
+
+MODEL_REGISTRY_PATH = (
+    M1_DIR / "config" / "model_registry.json"
+)
 
 
 @lru_cache(maxsize=1)
