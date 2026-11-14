@@ -1,0 +1,11 @@
+{
+  "crop_id": "cowpea",
+  "status": "insufficient_data",
+  "checks": [],
+  "missing": [
+    "temperature_c",
+    "soil_ph"
+  ],
+  "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+  "note": "This is a preliminary screening, not a complete agronomic suitability assessment."
+}

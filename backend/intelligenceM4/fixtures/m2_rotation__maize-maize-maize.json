@@ -1,0 +1,45 @@
+{
+  "rotation": [
+    "maize",
+    "maize",
+    "maize"
+  ],
+  "sequence": [
+    {
+      "season": 1,
+      "crop_id": "maize",
+      "crop_name": "Maize (grain)",
+      "family": "Poaceae",
+      "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+    },
+    {
+      "season": 2,
+      "crop_id": "maize",
+      "crop_name": "Maize (grain)",
+      "family": "Poaceae",
+      "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+    },
+    {
+      "season": 3,
+      "crop_id": "maize",
+      "crop_name": "Maize (grain)",
+      "family": "Poaceae",
+      "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+    }
+  ],
+  "crop_count": 3,
+  "repeated_families": [
+    {
+      "season": 2,
+      "crop_family": "Poaceae"
+    },
+    {
+      "season": 3,
+      "crop_family": "Poaceae"
+    }
+  ],
+  "nitrogen_fixing_crops": [],
+  "has_adjacent_family_repetition": true,
+  "soil_health_score": null,
+  "score_status": "not_calibrated"
+}
