@@ -15,13 +15,16 @@ Design rules
   scenarios/years/locations are accepted automatically.
 * Any non-None evidence value attributed to an upstream module (M1/M2/M3/M5)
   MUST carry provenance.field_path pointing at the exact upstream field.
-* Evidence claims never contain digits. Numbers live only in value + unit.
+* Evidence claims contain no digits except exact module ids (M1–M5) and
+  M1-registered scenario ids/labels and projection years. Measured or
+  computed numbers live only in value + unit.
 * There is deliberately no overall "quality score" or percentage anywhere in
   M4 output: completeness is expressed as statuses and blind spots.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Annotated, Any, Generic, Literal, TypeVar
 
 from pydantic import (
@@ -111,6 +114,42 @@ def _check_location(value: str) -> str:
 
 
 ScenarioId = Annotated[str, AfterValidator(_check_scenario)]
+
+
+# ---------------------------------------------------------------------------
+# Claim digit allowlist
+# ---------------------------------------------------------------------------
+# Claims may contain digits only inside these exact identifiers:
+#   * module ids M1–M5
+#   * scenario ids and labels from M1's registry ("ssp370", "SSP3-7.0")
+#   * projection years from M1's registry ("2050")
+# Any other digit (e.g. a measured or projected value) is rejected.
+# If M1's registry is unreadable, only module ids remain allowed.
+
+MODULE_IDS: tuple[str, ...] = ("M1", "M2", "M3", "M4", "M5")
+
+
+def allowed_claim_tokens() -> set[str]:
+    from intelligenceM4.providers import climate_provider
+
+    tokens = set(MODULE_IDS)
+    scenarios = climate_provider.registered_scenarios()
+    if scenarios:
+        tokens |= set(scenarios) | set(scenarios.values())
+    years = climate_provider.registered_projection_years()
+    if years:
+        tokens |= {str(year) for year in years}
+    return tokens
+
+
+def claim_has_disallowed_digits(text: str, tokens: set[str] | None = None) -> bool:
+    remaining = text
+    # Longest first so "SSP3-7.0" is removed before any shorter token inside it.
+    for token in sorted(tokens if tokens is not None else allowed_claim_tokens(),
+                        key=len, reverse=True):
+        pattern = rf"(?<![0-9A-Za-z]){re.escape(token)}(?![0-9A-Za-z])"
+        remaining = re.sub(pattern, " ", remaining)
+    return any(ch.isdigit() for ch in remaining)
 ProjectionYear = Annotated[int, AfterValidator(_check_year)]
 LocationId = Annotated[str, AfterValidator(_check_location)]
 
@@ -284,9 +323,10 @@ class EvidenceRecord(BaseModel):
     @field_validator("claim")
     @classmethod
     def claim_has_no_numbers(cls, claim: str) -> str:
-        if any(ch.isdigit() for ch in claim):
+        if claim_has_disallowed_digits(claim):
             raise ValueError(
-                "Evidence claims must not contain numbers; "
+                "Evidence claims must not contain numbers other than module ids "
+                "and M1-registered scenario ids/labels/years; "
                 "put numbers in `value` and `unit` instead"
             )
         return claim

@@ -36,7 +36,8 @@ def test_every_fixture_is_listed_in_manifest_with_its_source_call():
     manifest = load_manifest()
     assert SCENARIOS in manifest and HISTORY in manifest
     for name, meta in manifest.items():
-        assert meta["called"].startswith(("climateM1.services.", "agricultureM2."))
+        assert meta["called"].startswith(
+            ("climateM1.services.", "agricultureM2.", "POST /api/intelligence/"))
         assert meta["provider_status"] in ("ok", "partial")
         load_fixture(name)  # file exists and is valid JSON
 
@@ -160,13 +161,38 @@ def test_claim_with_digits_from_upstream_values_is_rejected():
 
     for claim in (
         f"Projected rainfall is {mean} mm per year",
-        "Projected rainfall for the year 2050 is available",
-        "SSP3-7.0 projections are available",
-        "Soil health score has not been calibrated by M2",  # module ids go in provenance
+        f"Projected rainfall for 2050 under SSP3-7.0 is {mean} mm",
+        f"Rainfall mean {int(mean)}",                 # integer part of a measured value
+        "Projected rainfall for 2045 is available",   # year not in M1 registry
+        "Results from M12 are available",             # not an exact module id
+        "Projections for the 2050s are available",    # year glued to other text
     ):
         with pytest.raises(ValidationError, match="must not contain numbers"):
             EvidenceRecord(id="ev-rain", claim=claim, value=mean, unit="mm/year",
                            status="supported", provenance=provenance)
+
+
+@pytest.mark.parametrize("claim", [
+    "Projections for 2050 under SSP3-7.0 are available",
+    "Projections for 2030 under ssp245 are available",
+    "Soil health score has not been calibrated by M2",
+    "M1 and M5 results were combined.",
+])
+def test_claim_allowlist_permits_module_and_registry_identifiers(claim):
+    record = EvidenceRecord(id="ev-ok", claim=claim, status="supported",
+                            provenance=Provenance(source_module="M4"))
+    assert record.claim == claim
+
+
+def test_registry_identifiers_blocked_when_registry_unreadable(monkeypatch):
+    monkeypatch.setattr(climate_provider, "registered_scenarios", lambda: None)
+    monkeypatch.setattr(climate_provider, "registered_projection_years", lambda: None)
+    with pytest.raises(ValidationError, match="must not contain numbers"):
+        EvidenceRecord(id="ev-x", claim="Projections for 2050 under SSP3-7.0 are available",
+                       status="supported", provenance=Provenance(source_module="M4"))
+    # Module ids stay allowed.
+    EvidenceRecord(id="ev-y", claim="Calibrated by M2", status="not_evaluated",
+                   provenance=Provenance(source_module="M4"))
 
 
 def test_number_in_value_and_unit_is_accepted():

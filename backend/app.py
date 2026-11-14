@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from climateM1.api.climate import router as climate_router
 from agricultureM2.routes import router as agriculture_router
+from intelligenceM4.routes import router as intelligence_router
 
 app = FastAPI(
     title="CropCompass 2.0",
@@ -18,6 +19,7 @@ app.include_router(
     prefix="/api/agriculture",
     tags=["M2 - Agricultural Intelligence"],
 )
+app.include_router(intelligence_router)
 
 @app.get("/")
 def root():

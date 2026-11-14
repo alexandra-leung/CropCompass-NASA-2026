@@ -2,7 +2,9 @@
 Regenerate M4 test fixtures from REAL M1/M2 outputs.
 
 Run from backend/:
-    python -m intelligenceM4.fixtures.build_fixtures
+    python -m intelligenceM4.fixtures.build_fixtures                 # everything
+    python -m intelligenceM4.fixtures.build_fixtures --example-only  # only the
+        /evidence example, rebuilt from the existing M1/M2 fixtures
 
 Each fixture is fetched through M4's providers and serialised with
 `model_dump(by_alias=True, mode="json")`, i.e. the same JSON the M1/M2 HTTP
@@ -61,12 +63,84 @@ def _write(name: str, result, inputs: dict, manifest: dict) -> None:
     print(f"OK   {name}: {result.module} {result.status}")
 
 
-async def main() -> None:
+EXAMPLE_ROTATION = ["maize", "cowpea", "cabbage"]
+EVIDENCE_ENDPOINT = "POST /api/intelligence/evidence"
+
+
+def _dump(name: str, payload) -> None:
+    with (FIXTURE_DIR / name).open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+
+
+def _write_evidence_example(manifest: dict) -> None:
+    """Example request/response pair for the frontend (M3), via the real endpoint.
+
+    Request = real M1 fixtures + real M2 rotation fixture + live M2
+    suitability calls for every crop (no farmer inputs supplied).
+    """
+    from fastapi.testclient import TestClient
+
+    from app import app
+    from intelligenceM4.fixtures import load_fixture
+
+    suitability = []
+    for crop in EXAMPLE_ROTATION:
+        result = agriculture_provider.check_suitability(crop)
+        if not result.usable:
+            print(f"SKIP evidence example: suitability {crop} {result.status} — {result.error}")
+            return
+        suitability.append(result.data.model_dump(mode="json"))
+
+    request = {
+        "analysis_id": f"example-{LOCATION_ID}",
+        "farm": {"location_id": LOCATION_ID, "current_rotation": EXAMPLE_ROTATION},
+        "selected_scenario": "ssp370",
+        "selected_year": 2050,
+        "climate": {
+            "scenarios": load_fixture(f"m1_scenarios__{LOCATION_ID}.json"),
+            "history": load_fixture(f"m1_history__{LOCATION_ID}.json"),
+        },
+        "agriculture": {
+            "rotation": load_fixture("m2_rotation__maize-cowpea-cabbage.json"),
+            "suitability": suitability,
+        },
+    }
+    response = TestClient(app).post("/api/intelligence/evidence", json=request)
+    if response.status_code != 200:
+        print(f"SKIP evidence example: HTTP {response.status_code} {response.text[:300]}")
+        return
+
+    now = datetime.now(timezone.utc).isoformat()
+    _dump("example_evidence_request.json", request)
+    _dump("example_evidence_response.json", response.json())
+    for name in ("example_evidence_request.json", "example_evidence_response.json"):
+        manifest[name] = {
+            "module": "M4",
+            "called": EVIDENCE_ENDPOINT,
+            "inputs": {"rotation": EXAMPLE_ROTATION, "scenario": "ssp370", "year": 2050,
+                       "location_id": LOCATION_ID,
+                       "note": "built from the real M1/M2 fixtures in this folder"},
+            "provider_status": "ok",
+            "generated_at": now,
+        }
+    print("OK   example_evidence_request.json / example_evidence_response.json: HTTP 200")
+
+
+async def main(example_only: bool = False) -> None:
     manifest_path = FIXTURE_DIR / "manifest.json"
     manifest = (
         json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest_path.exists() else {}
     )
+
+    if example_only:
+        _write_evidence_example(manifest)
+        manifest_path.write_text(
+            json.dumps(dict(sorted(manifest.items())), indent=2) + "\n",
+            encoding="utf-8",
+        )
+        return
 
     _write(
         f"m1_scenarios__{LOCATION_ID}.json",
@@ -84,6 +158,8 @@ async def main() -> None:
     for name, call, inputs in M2_CASES:
         _write(name, call(), inputs, manifest)
 
+    _write_evidence_example(manifest)
+
     manifest_path.write_text(
         json.dumps(dict(sorted(manifest.items())), indent=2) + "\n",
         encoding="utf-8",
@@ -91,4 +167,6 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys
+
+    asyncio.run(main(example_only="--example-only" in sys.argv))

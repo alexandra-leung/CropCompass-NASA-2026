@@ -36,12 +36,18 @@ HISTORY_DEFAULT_END = date(2025, 12, 31)
 # Registry lookups (return None when M1's registry cannot be read)
 # ---------------------------------------------------------------------------
 
-def registered_scenario_ids() -> set[str] | None:
+def registered_scenarios() -> dict[str, str] | None:
+    """Scenario id -> label (e.g. "ssp370" -> "SSP3-7.0") from M1's registry."""
     try:
         from climateM1.services.model_registry import get_scenarios
-        return {str(s["id"]) for s in get_scenarios()}
+        return {str(s["id"]): str(s.get("label", s["id"])) for s in get_scenarios()}
     except Exception:
         return None
+
+
+def registered_scenario_ids() -> set[str] | None:
+    scenarios = registered_scenarios()
+    return None if scenarios is None else set(scenarios)
 
 
 def registered_projection_years() -> set[int] | None:

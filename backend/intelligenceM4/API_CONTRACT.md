@@ -1,6 +1,6 @@
 # M4 — Explainable AI & Integration API Contract
 
-**Project:** CropCompass 2.0 · **Module:** M4 · **Status:** Phase 1 (contracts + providers). No HTTP endpoints are live yet.
+**Project:** CropCompass 2.0 · **Module:** M4 · **Status:** Phase 2. `POST /api/intelligence/evidence` is live.
 
 M4 explains results from M1/M2/M3/M5. It does **not** generate rotations, score crops, compute water use, or run stress tests, and it never fills missing data with default values.
 
@@ -10,7 +10,7 @@ Prefix: `/api/intelligence` (defined in `intelligenceM4/routes.py`).
 
 | Method | Endpoint | Phase | Request | Response |
 |---|---|---|---|---|
-| POST | `/api/intelligence/evidence` | 2 | `AnalysisBundle` | `EvidencePassport` |
+| POST | `/api/intelligence/evidence` | 2 (live) | `AnalysisBundle` | `EvidencePassport` |
 | POST | `/api/intelligence/blind-spots` | 3 | `AnalysisBundle` | `BlindSpotReport` |
 | POST | `/api/intelligence/assistant` | 4 | `AssistantRequest` | `AssistantResponse` |
 | POST | `/api/intelligence/analyze` | 5 | `AnalyzeRequest` | `AnalyzeResponse` |
@@ -24,10 +24,11 @@ All models are defined in `intelligenceM4/schemas.py`, and the running Swagger/O
 | Rule | Where it is enforced |
 |---|---|
 | Any non-null evidence `value` attributed to M1/M2/M3/M5 must carry `provenance.field_path`, the exact bundle field it came from. Values from M4 or the farmer are exempt. | `EvidenceRecord` validator |
-| Evidence `claim` text contains **no digits**. Numbers appear only in `value` + `unit`. Module ids ("M2") and labels like "SSP3-7.0" belong in `provenance` / `subject`. | `EvidenceRecord` validator |
+| Evidence `claim` text contains no digits except exact module ids (`M1`–`M5`) and the scenario ids/labels and projection years in M1's registry (e.g. "for 2050 under SSP3-7.0"). Measured or computed numbers appear only in `value` + `unit`. If the registry is unreadable, only module ids are allowed. | `EvidenceRecord` validator (`claim_has_disallowed_digits`) |
+| After a passport is built, every upstream value is re-read from its `field_path` in the bundle (serialised by alias) and must match exactly, or the request fails with HTTP 500. | `evidence_passport.verify_traceability` |
 | Missing farmer inputs (`soil_ph`, `field_area_ha`, `irrigation_budget_m3`, …) stay `null` and become blind spots. They are never defaulted. | `FarmContext` (no defaults) |
 | No overall quality score or percentage is produced by M4. | By design |
-| Scenario ids, projection years and location ids are validated against M1's registry, so new M1 entries are accepted with no M4 change. If the registry cannot be read, the identifier passes through and the M1 provider reports `unavailable`. | `ScenarioId`, `ProjectionYear`, `LocationId` |
+| Scenario ids, projection years and location ids are validated against M1's registry, so new M1 entries are accepted with no M4 change. If the registry cannot be read, the identifier passes through and an `M1_REGISTRY_UNREADABLE` blind spot (category `module`, severity `warning`) is emitted. | `ScenarioId`, `ProjectionYear`, `LocationId`, `blind_spot_detector.registry_blind_spots` |
 
 ## 3. Module statuses
 
