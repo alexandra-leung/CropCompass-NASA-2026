@@ -50,6 +50,12 @@ RAINFALL_UNIT = "mm/year"
 TEMPERATURE_UNIT = "°C"
 FACTOR_UNITS = {"temperature_c": "°C", "soil_ph": "pH"}
 
+TEMPERATURE_INPUT_LIMITATION = (
+    "The temperature passed to crop suitability screening is M1's ensemble-mean annual "
+    "mean air temperature for the selected scenario and year: an annual regional "
+    "projection, not a growing-season or field measurement."
+)
+
 M4_LIMITATION = (
     "M4 explains results produced by other CropCompass modules. It does not "
     "establish agronomic suitability, predict yields or quantify soil benefits."
@@ -76,6 +82,7 @@ CLAIMS: dict[str, str] = {
     "suit_outside": "Crop is outside at least one checked reference range",
     "suit_insufficient": "Crop suitability could not be fully screened",
     "suit_not_screened": "Crop suitability has not been screened",
+    "suit_input": "Value passed to crop suitability screening",
     "suit_factor_pass": "Supplied value is within the crop reference range",
     "suit_factor_fail": "Supplied value is outside the crop reference range",
     "proj_available": "Future climate projections are available",
@@ -109,6 +116,7 @@ RULES: dict[str, str] = {
     "R-SOIL-SCORE": "Report the M2 soil health score only if M2 has calculated it",
     "R-ALTERNATIVES": "Report M2's feasibility and ranking status for alternatives",
     "R-SUITABILITY": "Report M2's preliminary suitability screening for each crop",
+    "R-SUIT-INPUTS": "Report each value passed into M2 suitability and the field it came from",
     "R-CLIMATE-PROJ": "Report M1 ensemble projections for the selected scenario and year",
     "R-CLIMATE-HIST": "Report M1 historical observations and their completeness",
     "R-FARM-INPUTS": "Report farm inputs that were supplied",
@@ -127,6 +135,10 @@ def verify_traceability(passport: EvidencePassport, bundle_json: dict[str, Any])
         if prov.source_module in UPSTREAM_MODULES and record.value is not None:
             check_value(bundle_json, record.id, record.value, prov.field_path)
     verify_citations(passport.blind_spots, bundle_json)
+    # Every value passed into M2 suitability must equal the field it claims to come from.
+    for item in bundle_json.get("agriculture", {}).get("suitability_inputs", []):
+        check_value(bundle_json, f"suitability input {item['factor']}",
+                    item["value"], item["field_path"])
 
 
 # ---------------------------------------------------------------------------
@@ -359,6 +371,23 @@ class _PassportBuilder:
             self.rule("R-SUITABILITY", ["agriculture.suitability"],
                       "Screening reported per crop where M2 supplied it")
 
+    def suitability_inputs(self) -> None:
+        inputs = self.bundle.agriculture.suitability_inputs
+        for i, item in enumerate(inputs):
+            notes = [item.note] if item.note else []
+            self.add(
+                f"ev-suit-input-{item.factor}", "suit_input", "supported", item.source_module,
+                subject=f"suitability-input:{item.factor}", value=item.value, unit=item.unit,
+                field_path=item.field_path,
+                method="Selected by the M4 orchestrator from an existing value; not computed",
+                qualifications=notes,
+            )
+            if item.factor == "temperature_c":
+                self.limit(TEMPERATURE_INPUT_LIMITATION, "M4")
+        if inputs:
+            self.rule("R-SUIT-INPUTS", ["agriculture.suitability_inputs"],
+                      "Inputs passed: " + ", ".join(i.factor for i in inputs))
+
     # -- M1 projections -------------------------------------------------------
 
     def projections(self) -> None:
@@ -572,6 +601,7 @@ class _PassportBuilder:
         self.rotation()
         self.alternatives()
         self.suitability()
+        self.suitability_inputs()
         self.projections()
         self.history()
         self.farm()

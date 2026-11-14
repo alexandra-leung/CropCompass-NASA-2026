@@ -6,16 +6,19 @@ Endpoints are added phase by phase:
   Phase 2  POST /api/intelligence/evidence      (live)
   Phase 3  POST /api/intelligence/blind-spots   (live)
   Phase 4  POST /api/intelligence/assistant     (live)
-  Phase 5  POST /api/intelligence/analyze
+  Phase 5  POST /api/intelligence/analyze       (live)
 """
 
 from fastapi import APIRouter, HTTPException
 
+from intelligenceM4 import orchestrator
 from intelligenceM4.assistant import answer as assistant_answer
 from intelligenceM4.blind_spot_detector import build_report
 from intelligenceM4.evidence_passport import build_passport
 from intelligenceM4.schemas import (
     AnalysisBundle,
+    AnalyzeRequest,
+    AnalyzeResponse,
     AssistantRequest,
     AssistantResponse,
     BlindSpotReport,
@@ -80,5 +83,24 @@ def blind_spots(bundle: AnalysisBundle) -> BlindSpotReport:
 def assistant(request: AssistantRequest) -> AssistantResponse:
     try:
         return assistant_answer(request)
+    except TraceabilityError as exc:
+        raise HTTPException(status_code=500, detail=f"Evidence traceability check failed: {exc}")
+
+
+@router.post(
+    "/analyze",
+    response_model=AnalyzeResponse,
+    summary="Run the full CropCompass analysis for a farm in one call",
+    description=(
+        "Calls M1 (climate), M2 (rotation, alternatives, suitability for every crop), "
+        "M3 and M5 when implemented, then builds the Evidence Passport and Blind-Spot "
+        "Report. A failing or slow module is reported as unavailable and the analysis "
+        "continues; only invalid input returns 4xx. The returned `bundle` can be sent "
+        "unchanged to /evidence, /blind-spots and /assistant."
+    ),
+)
+async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
+    try:
+        return await orchestrator.analyze(request)
     except TraceabilityError as exc:
         raise HTTPException(status_code=500, detail=f"Evidence traceability check failed: {exc}")

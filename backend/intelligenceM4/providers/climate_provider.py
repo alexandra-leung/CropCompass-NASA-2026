@@ -98,20 +98,21 @@ def history_status(response: HistoryResponse) -> ModuleStatus:
 # Provider calls
 # ---------------------------------------------------------------------------
 
-async def get_scenarios(location_id: str) -> ProviderResult:
+async def get_scenarios(location_id: str, timeout: float | None = None) -> ProviderResult:
     async def _call() -> ScenarioResponse:
         from climateM1.services.projections import fetch_scenarios
 
         payload = await fetch_scenarios(_get_location(location_id))
         return ScenarioResponse.model_validate(payload)
 
-    return await safe_call_async("M1", SCENARIOS_CALL, _call, scenario_status)
+    return await safe_call_async("M1", SCENARIOS_CALL, _call, scenario_status, timeout)
 
 
 async def get_history(
     location_id: str,
     start: date = HISTORY_DEFAULT_START,
     end: date = HISTORY_DEFAULT_END,
+    timeout: float | None = None,
 ) -> ProviderResult:
     async def _call() -> HistoryResponse:
         from climateM1.services.history import fetch_history
@@ -125,4 +126,4 @@ async def get_history(
         )
         return HistoryResponse.model_validate(payload)
 
-    return await safe_call_async("M1", HISTORY_CALL, _call, history_status)
+    return await safe_call_async("M1", HISTORY_CALL, _call, history_status, timeout)

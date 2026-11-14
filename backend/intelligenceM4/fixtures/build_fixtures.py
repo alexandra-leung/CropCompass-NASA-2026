@@ -156,6 +156,51 @@ def _write_evidence_example(manifest: dict) -> None:
     print("OK   evidence / blind-spots / assistant examples: HTTP 200")
 
 
+ANALYZE_ENDPOINT = "POST /api/intelligence/analyze"
+ANALYZE_REQUEST = {
+    "analysis_id": f"example-analyze-{LOCATION_ID}",
+    "farm": {"location_id": LOCATION_ID, "current_rotation": EXAMPLE_ROTATION},
+    "scenario": "ssp370",
+    "year": 2050,
+    "max_alternatives": 3,
+}
+
+
+def _write_analyze_example(manifest: dict) -> None:
+    """Example /analyze request/response for the frontend (M3).
+
+    M1's cached NEX-GDDP-CMIP6 rows are used as they are (M1's TTL is raised for
+    this process only), so the tracked climate_cache.sqlite3 is never rewritten.
+    M1 history is fetched live from NASA POWER by M1's own service function.
+    """
+    from fastapi.testclient import TestClient
+
+    import climateM1.services.cache as m1_cache
+    from app import app
+
+    original_ttl = m1_cache.CACHE_TTL_SECONDS
+    m1_cache.CACHE_TTL_SECONDS = 10**12
+    try:
+        response = TestClient(app).post("/api/intelligence/analyze", json=ANALYZE_REQUEST)
+    finally:
+        m1_cache.CACHE_TTL_SECONDS = original_ttl
+    if response.status_code != 200:
+        print(f"SKIP analyze example: HTTP {response.status_code} {response.text[:300]}")
+        return
+    body = response.json()
+    _dump("example_analyze_request.json", ANALYZE_REQUEST)
+    _dump("example_analyze_response.json", body)
+    now = datetime.now(timezone.utc).isoformat()
+    for name in ("example_analyze_request.json", "example_analyze_response.json"):
+        manifest[name] = {
+            "module": "M4", "called": ANALYZE_ENDPOINT,
+            "inputs": {k: v for k, v in ANALYZE_REQUEST.items() if k != "analysis_id"},
+            "provider_status": "ok", "generated_at": now,
+        }
+    statuses = {m: r["status"] for m, r in body["modules"].items()}
+    print(f"OK   analyze example: HTTP 200, modules {statuses}")
+
+
 async def main(example_only: bool = False) -> None:
     manifest_path = FIXTURE_DIR / "manifest.json"
     manifest = (
@@ -165,6 +210,7 @@ async def main(example_only: bool = False) -> None:
 
     if example_only:
         _write_evidence_example(manifest)
+        _write_analyze_example(manifest)
         manifest_path.write_text(
             json.dumps(dict(sorted(manifest.items())), indent=2) + "\n",
             encoding="utf-8",
@@ -188,6 +234,7 @@ async def main(example_only: bool = False) -> None:
         _write(name, call(), inputs, manifest)
 
     _write_evidence_example(manifest)
+    _write_analyze_example(manifest)
 
     manifest_path.write_text(
         json.dumps(dict(sorted(manifest.items())), indent=2) + "\n",

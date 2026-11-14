@@ -281,10 +281,25 @@ class ClimateInput(BaseModel):
     history: HistoryResponse | None = None      # M1's own model
 
 
+class SuitabilityInput(BaseModel):
+    """A value M4 passed into M2 suitability screening, and exactly where it came from.
+
+    M4 only selects an existing value (e.g. M1's ensemble mean); it never computes one.
+    """
+    factor: str                 # M2 factor name: "temperature_c" or "soil_ph"
+    value: float
+    unit: str
+    source_module: SourceModule
+    field_path: str             # path in this bundle holding the same value
+    note: str | None = None
+
+
 class AgricultureInput(BaseModel):
     rotation: M2RotationResult | None = None
     alternatives: M2GenerationResult | None = None
     suitability: list[M2SuitabilityResult] = Field(default_factory=list)
+    # Inputs the orchestrator passed into every suitability call (empty if none).
+    suitability_inputs: list[SuitabilityInput] = Field(default_factory=list)
     # Held raw: no canonical M2 water function exists yet. M4 only cites
     # values from here with a field_path, and flags hypothetical assumptions.
     water: dict[str, Any] | None = None
@@ -445,12 +460,21 @@ class AnalyzeRequest(BaseModel):
     scenario: ScenarioId = "ssp370"
     year: ProjectionYear = 2050
     max_alternatives: int = Field(default=3, ge=1, le=20)
+    analysis_id: str | None = None   # generated when omitted
+
+
+class CallReport(BaseModel):
+    called: str
+    status: ModuleStatus
+    error: str | None = None
 
 
 class ModuleReport(BaseModel):
+    """Outcome of the provider calls made for one module during /analyze."""
     status: ModuleStatus
-    called: str | None = None
-    error: str | None = None
+    called: str | None = None      # the functions called, "; "-separated
+    error: str | None = None       # errors from those calls, "; "-separated
+    calls: list[CallReport] = Field(default_factory=list)
 
 
 class AnalyzeResponse(BaseModel):

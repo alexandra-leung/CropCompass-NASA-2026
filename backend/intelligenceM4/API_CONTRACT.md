@@ -1,9 +1,10 @@
 # M4 — Explainable AI & Integration API Contract
 
-**Project:** CropCompass 2.0 · **Module:** M4 · **Status:** Phase 4. `/evidence`, `/blind-spots` and `/assistant` are live.
+**Project:** CropCompass 2.0 · **Module:** M4 · **Status:** Phase 5. All four endpoints are live.
 
-Frontend examples (real data, kept in sync by tests) are in `intelligenceM4/fixtures/`:
+Frontend examples (real data, checked by tests) are in `intelligenceM4/fixtures/`:
 
+- `example_analyze_request.json` and `example_analyze_response.json`: **start here**. One call, full analysis.
 - `example_evidence_request.json`: an `AnalysisBundle`, the request body for `/evidence` and `/blind-spots`.
 - `example_evidence_response.json` and `example_blind_spots_response.json`.
 - `example_assistant_request.json`: a **list** of three `AssistantRequest` bodies (one per question).
@@ -20,9 +21,9 @@ Prefix: `/api/intelligence` (defined in `intelligenceM4/routes.py`).
 | POST | `/api/intelligence/evidence` | 2 (live) | `AnalysisBundle` | `EvidencePassport` |
 | POST | `/api/intelligence/blind-spots` | 3 (live) | `AnalysisBundle` | `BlindSpotReport` |
 | POST | `/api/intelligence/assistant` | 4 (live) | `AssistantRequest` | `AssistantResponse` |
-| POST | `/api/intelligence/analyze` | 5 | `AnalyzeRequest` | `AnalyzeResponse` |
+| POST | `/api/intelligence/analyze` | 5 (live) | `AnalyzeRequest` | `AnalyzeResponse` |
 
-`/evidence`, `/blind-spots` and `/assistant` take a complete `AnalysisBundle`, so the frontend can ask for explanations of an analysis it already holds without recomputing it. `/analyze` builds the bundle itself by calling the providers.
+`/analyze` builds the bundle by calling the providers. `/evidence`, `/blind-spots` and `/assistant` take a complete `AnalysisBundle`, so the frontend can send `response.bundle` from `/analyze` straight to them (e.g. "Why this recommendation?") without recomputing anything.
 
 All models are defined in `intelligenceM4/schemas.py`, and the running Swagger/OpenAPI schema is the authoritative field reference.
 
@@ -163,16 +164,66 @@ Both use 4096 max output tokens. Neither package (`anthropic`, `google-genai`) i
 
 If the LLM is not configured, the package is missing, or the call times out, errors, is declined (Anthropic `refusal`, Gemini safety finish), is truncated or fails the guard, the response uses the template answer with `mode: "template"` and `fallback_reason` explaining why. The request never fails because of the LLM, and refused questions never reach it.
 
-## 5. Module statuses (provider calls)
+## 5. Orchestrator (`POST /api/intelligence/analyze`)
 
-Every provider returns a `ProviderResult` and **never raises**.
+**Request:**
+
+```json
+{
+  "farm": {"location_id": "pamplemousses-04", "current_rotation": ["maize", "cowpea", "cabbage"],
+           "soil_ph": null, "irrigation_budget_m3": null, "field_area_ha": null},
+  "scenario": "ssp370",
+  "year": 2050,
+  "max_alternatives": 3,
+  "analysis_id": "optional, generated when omitted"
+}
+```
+
+**Response:** `{analysis_id, modules, bundle, passport, blind_spot_report}`.
+
+### Flow
+
+Every call goes through `intelligenceM4.providers`; nothing is copied from M1 or M2.
+
+1. **Validate** `location_id`, `scenario` and `year` against M1's registry. Unknown values return **422**; this is the only 4xx besides a malformed body.
+2. **M3:** use `get_farm_profile(farm_id)` if M3 implements it, otherwise the request's `farm` (`source: "farmer"`).
+3. **In parallel:** M1 scenarios, M1 history, M2 `evaluate_rotation` and M2 `generate_rotation_candidates`.
+4. **M2 suitability** for **every** crop in the current rotation and in the alternatives. The orchestrator passes:
+   - `temperature_c`: M1's `ensemble[...].values[...].temperatureC.mean` for the selected scenario and year. M4 only selects it.
+   - `soil_ph`: the farmer's value, when supplied.
+
+   Each passed value is recorded in `bundle.agriculture.suitability_inputs` as `{factor, value, unit, source_module, field_path, note}`.
+   - It is cited in the passport as `ev-suit-input-<factor>`.
+   - A limitation says the temperature is an **annual regional projection, not a growing-season or field measurement**.
+   - The traceability check requires each recorded value to equal the bundle field at its `field_path`.
+   - If M1 has no value for that scenario/year, nothing is passed and `SUITABILITY_INPUT_NOT_PASSED` reports it.
+5. **M2 water demand and M5 resilience,** each only if implemented.
+6. **Build the bundle,** then the passport and blind-spot report with the same code as `/evidence` and `/blind-spots`.
+
+Passing the temperature lets M2 consult its catalog. On today's data this turns `SUITABILITY_INPUT_NOT_PASSED` into `CROP_REFERENCE_INCOMPLETE`, because M2's catalog has no temperature ranges.
+
+### Timeouts
+
+Values are in seconds, read from the environment on each request. A timeout makes only that call `unavailable`.
+
+| Variable | Default | Applies to |
+|---|---|---|
+| `M4_SCENARIOS_TIMEOUT_SECONDS` | 90 | M1 `fetch_scenarios` (a cold cache downloads NASA data) |
+| `M4_HISTORY_TIMEOUT_SECONDS` | 30 | M1 `fetch_history` (always a live NASA POWER call) |
+| `M4_MODULE_TIMEOUT_SECONDS` | 30 | each M2 / M3 / M5 call (run in a worker thread) |
+
+### `modules`
+
+`modules` is the outcome of the calls made **during this request**: `{status, called, error, calls: [{called, status, error}]}` per module.
 
 | Status | Meaning |
 |---|---|
-| `ok` | Call succeeded and upstream completeness flags are clean. |
-| `partial` | Call succeeded but upstream flags incompleteness (M1 `missingData`, a model not `success`, M2 suitability `insufficient_data`). |
-| `unavailable` | Exception, timeout (`M4_PROVIDER_TIMEOUT_SECONDS`, default 90), import failure, or payload failed validation. `error` explains why. |
-| `not_implemented` | Upstream has no usable function yet. |
+| `ok` | Every call succeeded with clean upstream flags. |
+| `partial` | Some calls failed or flagged incompleteness (M1 `missingData` or a failed model, M2 `insufficient_data`). |
+| `unavailable` | Every call failed (exception, timeout, import failure, invalid payload). `error` says why. |
+| `not_implemented` | The module has no function yet. `not_implemented` calls (e.g. M2 water today) never lower another call's status. |
+
+`blind_spot_report.module_status` is a different view: what the **bundle** contains (§3). The two can differ. For example, M2's calls all succeed, but the bundle still lacks water data.
 
 ## 6. What M4 calls (in-process, service layer only)
 
@@ -235,14 +286,16 @@ Until these exist, M4 reports `not_implemented` and records the missing evidence
 | M1 | Historical POWER rainfall (about 590–870 mm/yr) and NEX-GDDP projected rainfall (about 1,350–2,450 mm/yr) differ by roughly a factor of two to three at the same site. Please confirm the precipitation conversion. |
 | M1 | History caching lives in the route handler. Could it move into `services/history.py` so in-process consumers benefit? |
 | M1 | `Scenario.id` / `EnsembleScenario.id` are hard-coded `Literal["ssp245","ssp370"]`, so adding a registry scenario would fail M1's own validation. |
-| M1 | No ET₀ or seasonal projections are available, which M2 needs for water demand. |
+| M1 | No ET₀ or seasonal projections are available, which M2 needs for water demand. The only temperature M4 can pass to suitability is an annual regional mean. |
+| M1 | `backend/data/climate_cache.sqlite3` is **tracked in git**, but the M1 contract calls it a runtime artifact. Any M1 refresh after the 6-hour TTL rewrites a tracked file. M4's tests and example builder never write to it. |
 | M3 / M5 | Please confirm or amend the proposed contracts above. |
 
 ## 8. Testing
 
 ```bash
 cd backend
-python -m pytest tests/test_m4_*.py -v            # offline
+python -m pytest tests/test_m4_*.py -v            # offline (network blocked in /analyze tests)
 M4_LIVE=1 python -m pytest tests/test_m4_*.py -v  # also calls M1 for real
-python -m intelligenceM4.fixtures.build_fixtures  # regenerate real fixtures
+python -m intelligenceM4.fixtures.build_fixtures --example-only  # regenerate examples
+python -m intelligenceM4.fixtures.build_fixtures  # regenerate every fixture (rewrites M1/M2 fixtures)
 ```
