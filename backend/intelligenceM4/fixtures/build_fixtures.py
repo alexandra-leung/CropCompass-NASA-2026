@@ -35,6 +35,9 @@ M2_CASES = [
     ("m2_generate__maize-maize-maize__max3.json",
      lambda: agriculture_provider.generate_alternatives(["maize", "maize", "maize"], 3),
      {"current_rotation": ["maize", "maize", "maize"], "max_alternatives": 3}),
+    ("m2_generate__maize-cowpea-cabbage__max3.json",
+     lambda: agriculture_provider.generate_alternatives(["maize", "cowpea", "cabbage"], 3),
+     {"current_rotation": ["maize", "cowpea", "cabbage"], "max_alternatives": 3}),
     ("m2_suitability__cowpea__no-inputs.json",
      lambda: agriculture_provider.check_suitability("cowpea"),
      {"crop_id": "cowpea", "temperature_c": None, "soil_ph": None}),
@@ -66,6 +69,14 @@ def _write(name: str, result, inputs: dict, manifest: dict) -> None:
 EXAMPLE_ROTATION = ["maize", "cowpea", "cabbage"]
 EVIDENCE_ENDPOINT = "POST /api/intelligence/evidence"
 BLIND_SPOTS_ENDPOINT = "POST /api/intelligence/blind-spots"
+ASSISTANT_ENDPOINT = "POST /api/intelligence/assistant"
+# example_assistant_request.json is a LIST of request bodies (one per question);
+# example_assistant_response.json is the matching list of responses.
+ASSISTANT_QUESTIONS = [
+    "Why cowpea?",
+    "Why is Rotation B preferable under 2050?",
+    "How much will my yield increase?",
+]
 
 
 def _dump(name: str, payload) -> None:
@@ -104,13 +115,18 @@ def _write_evidence_example(manifest: dict) -> None:
         },
         "agriculture": {
             "rotation": load_fixture("m2_rotation__maize-cowpea-cabbage.json"),
+            "alternatives": load_fixture("m2_generate__maize-cowpea-cabbage__max3.json"),
             "suitability": suitability,
         },
     }
     client = TestClient(app)
     response = client.post("/api/intelligence/evidence", json=request)
     spots = client.post("/api/intelligence/blind-spots", json=request)
-    for resp in (response, spots):
+    assistant_requests = [{"question": q, "analysis": request, "use_llm": False}
+                          for q in ASSISTANT_QUESTIONS]
+    assistant_responses = [client.post("/api/intelligence/assistant", json=body)
+                           for body in assistant_requests]
+    for resp in (response, spots, *assistant_responses):
         if resp.status_code != 200:
             print(f"SKIP examples: HTTP {resp.status_code} {resp.text[:300]}")
             return
@@ -119,19 +135,25 @@ def _write_evidence_example(manifest: dict) -> None:
     _dump("example_evidence_request.json", request)
     _dump("example_evidence_response.json", response.json())
     _dump("example_blind_spots_response.json", spots.json())
+    _dump("example_assistant_request.json", assistant_requests)
+    _dump("example_assistant_response.json", [r.json() for r in assistant_responses])
     for name, called in (("example_evidence_request.json", EVIDENCE_ENDPOINT),
                          ("example_evidence_response.json", EVIDENCE_ENDPOINT),
-                         ("example_blind_spots_response.json", BLIND_SPOTS_ENDPOINT)):
+                         ("example_blind_spots_response.json", BLIND_SPOTS_ENDPOINT),
+                         ("example_assistant_request.json", ASSISTANT_ENDPOINT),
+                         ("example_assistant_response.json", ASSISTANT_ENDPOINT)):
         manifest[name] = {
             "module": "M4",
             "called": called,
             "inputs": {"rotation": EXAMPLE_ROTATION, "scenario": "ssp370", "year": 2050,
                        "location_id": LOCATION_ID,
+                       **({"questions": ASSISTANT_QUESTIONS}
+                          if called == ASSISTANT_ENDPOINT else {}),
                        "note": "built from the real M1/M2 fixtures in this folder"},
             "provider_status": "ok",
             "generated_at": now,
         }
-    print("OK   example_evidence_request/response + example_blind_spots_response: HTTP 200")
+    print("OK   evidence / blind-spots / assistant examples: HTTP 200")
 
 
 async def main(example_only: bool = False) -> None:

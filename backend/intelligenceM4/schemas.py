@@ -142,14 +142,19 @@ def allowed_claim_tokens() -> set[str]:
     return tokens
 
 
-def claim_has_disallowed_digits(text: str, tokens: set[str] | None = None) -> bool:
+def strip_allowed_tokens(text: str, tokens: set[str] | None = None) -> str:
+    """Remove allowlisted identifiers (exact, standalone) from text."""
     remaining = text
     # Longest first so "SSP3-7.0" is removed before any shorter token inside it.
     for token in sorted(tokens if tokens is not None else allowed_claim_tokens(),
                         key=len, reverse=True):
         pattern = rf"(?<![0-9A-Za-z]){re.escape(token)}(?![0-9A-Za-z])"
         remaining = re.sub(pattern, " ", remaining)
-    return any(ch.isdigit() for ch in remaining)
+    return remaining
+
+
+def claim_has_disallowed_digits(text: str, tokens: set[str] | None = None) -> bool:
+    return any(ch.isdigit() for ch in strip_allowed_tokens(text, tokens))
 ProjectionYear = Annotated[int, AfterValidator(_check_year)]
 LocationId = Annotated[str, AfterValidator(_check_location)]
 
@@ -426,10 +431,13 @@ class AssistantRequest(BaseModel):
 class AssistantResponse(BaseModel):
     answer: str
     mode: Literal["template", "llm", "refused"]
+    intent: str | None = None                                 # classified intent
     cited_evidence: list[str] = Field(default_factory=list)   # EvidenceRecord ids
     blind_spots: list[str] = Field(default_factory=list)      # BlindSpot codes
     limitations: list[str] = Field(default_factory=list)
     refusal_reason: str | None = None
+    # Set when use_llm was requested but the template answer was returned instead.
+    fallback_reason: str | None = None
 
 
 class AnalyzeRequest(BaseModel):

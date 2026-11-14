@@ -1,8 +1,13 @@
 # M4 — Explainable AI & Integration API Contract
 
-**Project:** CropCompass 2.0 · **Module:** M4 · **Status:** Phase 3. `POST /api/intelligence/evidence` and `POST /api/intelligence/blind-spots` are live.
+**Project:** CropCompass 2.0 · **Module:** M4 · **Status:** Phase 4. `/evidence`, `/blind-spots` and `/assistant` are live.
 
-Frontend examples (real data, kept in sync by tests) are in `intelligenceM4/fixtures/`: `example_evidence_request.json` (the body for both endpoints), `example_evidence_response.json` and `example_blind_spots_response.json`.
+Frontend examples (real data, kept in sync by tests) are in `intelligenceM4/fixtures/`:
+
+- `example_evidence_request.json`: an `AnalysisBundle`, the request body for `/evidence` and `/blind-spots`.
+- `example_evidence_response.json` and `example_blind_spots_response.json`.
+- `example_assistant_request.json`: a **list** of three `AssistantRequest` bodies (one per question).
+- `example_assistant_response.json`: the matching list of responses.
 
 M4 explains results from M1/M2/M3/M5. It does **not** generate rotations, score crops, compute water use, or run stress tests, and it never fills missing data with default values.
 
@@ -14,7 +19,7 @@ Prefix: `/api/intelligence` (defined in `intelligenceM4/routes.py`).
 |---|---|---|---|---|
 | POST | `/api/intelligence/evidence` | 2 (live) | `AnalysisBundle` | `EvidencePassport` |
 | POST | `/api/intelligence/blind-spots` | 3 (live) | `AnalysisBundle` | `BlindSpotReport` |
-| POST | `/api/intelligence/assistant` | 4 | `AssistantRequest` | `AssistantResponse` |
+| POST | `/api/intelligence/assistant` | 4 (live) | `AssistantRequest` | `AssistantResponse` |
 | POST | `/api/intelligence/analyze` | 5 | `AnalyzeRequest` | `AnalyzeResponse` |
 
 `/evidence`, `/blind-spots` and `/assistant` take a complete `AnalysisBundle`, so the frontend can ask for explanations of an analysis it already holds without recomputing it. `/analyze` builds the bundle itself by calling the providers.
@@ -81,7 +86,84 @@ All models are defined in `intelligenceM4/schemas.py`, and the running Swagger/O
 | `supported` | every rotation crop `within_checked_ranges`, complete projections for the selected scenario/year, and **no critical or warning** blind spots |
 | `requires_further_validation` | everything else |
 
-## 4. Module statuses (provider calls)
+### Alternative rotations in the passport
+
+When `agriculture.alternatives` is supplied, alternatives are labelled **A, B, C…** in M2's order. Each one gets these evidence records, each with a field_path into `agriculture.alternatives.alternative_rotations[i]`:
+
+- `ev-alt-<L>-rotation`: the crop sequence
+- `ev-alt-<L>-family-<crop>`: each crop's family
+- `ev-alt-<L>-nfix`: its nitrogen-fixing crops
+- `ev-alt-<L>-repeat`: whether it repeats a crop family in consecutive seasons
+
+## 4. Grounded assistant (`POST /api/intelligence/assistant`)
+
+Answers come only from the passport and blind spots built from `request.analysis`, using the same code as `/evidence` and `/blind-spots`.
+
+**Request:** `{question (3–500 chars), analysis: AnalysisBundle, use_llm: false}`.
+
+**Response fields:**
+
+| Field | Meaning |
+|---|---|
+| `answer` | The answer text |
+| `mode` | `template`, `llm` or `refused` |
+| `intent` | The classified intent |
+| `cited_evidence` | Evidence ids the answer uses |
+| `blind_spots` | Blind-spot codes the answer uses |
+| `limitations` | Upstream caveats relevant to the intent |
+| `refusal_reason` | Why a question was refused |
+| `fallback_reason` | Set when `use_llm` was requested but the template answer was returned |
+
+| Intent | Typical question | Built from |
+|---|---|---|
+| `why_crop` | "Why cowpea?" | crop family, nitrogen-fixing flag and its qualifications, family repetition, M2 suitability, uncalibrated soil score, blind spots affecting that crop |
+| `compare_rotations` | "Why is Rotation B preferable under 2050?" | M2 ranking/feasibility status, then the facts M2 reports per rotation. **Never states that one rotation is better**; while ranking is `not_calibrated` it says plainly that CropCompass has not ranked them. |
+| `climate_outlook` | "What is the climate outlook?" | M1 ensemble mean and spread for the selected scenario/year, model count, observed trends, dry spell, completeness, M1 grid resolution |
+| `water` | "Is there enough water?" | M2 water status, farmer irrigation budget, M1 projected rainfall (context only) |
+| `missing_data` | "What data is missing?" | every blind spot, with farmer and team actions |
+| `confidence` | "How sure is this?" | `recommendation_status` and the evidence statuses |
+
+**Refused** (`mode: "refused"`, with a suggestion of answerable questions) when the question asks about:
+
+| `refusal_reason` | Topic |
+|---|---|
+| `yield_prediction` | yields |
+| `financial_outcome` | profit, income, prices |
+| `input_dosage` | fertiliser or pesticide doses |
+| `quantified_soil_improvement` | % soil improvement |
+| `crop_choice` | "what should I plant" |
+| `not_about_this_analysis` | anything else, including crops not in the analysis |
+
+**Answer guard.** Applied to template and LLM answers alike.
+
+- Every number in the text must equal a value of a cited evidence record or of a cited blind spot's citations. Allowlisted identifiers (`M1`–`M5`, registry scenarios and years) are exempt.
+- Outcome promises are rejected: "will increase…", "guarantee", "% improvement", "profit", "higher yields", and similar phrasing.
+- Every cited id and code must exist in the passport.
+- A template answer that failed the guard would be returned as `refused` with reason `ungrounded`.
+
+**Optional LLM (`use_llm: true`).** The LLM only rephrases the template answer, given the template text plus the cited evidence and blind spots as JSON, and nothing else. Settings come from the process environment or `backend/.env`; the environment wins, and the file is only read, never exported. `.env` is gitignored, and only `backend/.env.example` is tracked.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `M4_LLM_PROVIDER` | `anthropic` | `anthropic` or `gemini` |
+| `ANTHROPIC_API_KEY` | none | Required for `anthropic` |
+| `GEMINI_API_KEY` | none | Required for `gemini` |
+| `M4_LLM_MODEL` | `claude-haiku-5-5` (anthropic) / `gemini-3.8-flash` (gemini) | Model id |
+| `M4_LLM_TIMEOUT_SECONDS` | `20` | Request timeout |
+
+Without the key for the selected provider, the template answer is used.
+
+**The calls are minimal:**
+- **Anthropic:** `messages.create(model, max_tokens, system, messages)` with the timeout set on the client.
+- **Gemini:** `models.generate_content(model, contents, config=GenerateContentConfig(system_instruction, max_output_tokens))` with `HttpOptions(timeout=<ms>)` on the client.
+
+Both use 4096 max output tokens. Neither package (`anthropic`, `google-genai`) is in `requirements.txt`; install the one you use.
+
+`gemini-3.8-flash` is the latest model marked "Stable" in the Flash family on Google's model page (read 2026-11-15). That page describes it as previous-generation; the Gemini 4 models use other names.
+
+If the LLM is not configured, the package is missing, or the call times out, errors, is declined (Anthropic `refusal`, Gemini safety finish), is truncated or fails the guard, the response uses the template answer with `mode: "template"` and `fallback_reason` explaining why. The request never fails because of the LLM, and refused questions never reach it.
+
+## 5. Module statuses (provider calls)
 
 Every provider returns a `ProviderResult` and **never raises**.
 
@@ -92,7 +174,7 @@ Every provider returns a `ProviderResult` and **never raises**.
 | `unavailable` | Exception, timeout (`M4_PROVIDER_TIMEOUT_SECONDS`, default 90), import failure, or payload failed validation. `error` explains why. |
 | `not_implemented` | Upstream has no usable function yet. |
 
-## 5. What M4 calls (in-process, service layer only)
+## 6. What M4 calls (in-process, service layer only)
 
 ### M1: Climate (live)
 
@@ -144,7 +226,7 @@ def run_stress_test(location_id: str, scenario: str, year: int, rotation: list[s
 
 Until these exist, M4 reports `not_implemented` and records the missing evidence as a blind spot.
 
-## 6. Open issues for other modules
+## 7. Open issues for other modules
 
 | To | Issue |
 |---|---|
@@ -156,7 +238,7 @@ Until these exist, M4 reports `not_implemented` and records the missing evidence
 | M1 | No ET₀ or seasonal projections are available, which M2 needs for water demand. |
 | M3 / M5 | Please confirm or amend the proposed contracts above. |
 
-## 7. Testing
+## 8. Testing
 
 ```bash
 cd backend

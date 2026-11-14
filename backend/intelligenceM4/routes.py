@@ -5,15 +5,22 @@ this router.
 Endpoints are added phase by phase:
   Phase 2  POST /api/intelligence/evidence      (live)
   Phase 3  POST /api/intelligence/blind-spots   (live)
-  Phase 4  POST /api/intelligence/assistant
+  Phase 4  POST /api/intelligence/assistant     (live)
   Phase 5  POST /api/intelligence/analyze
 """
 
 from fastapi import APIRouter, HTTPException
 
+from intelligenceM4.assistant import answer as assistant_answer
 from intelligenceM4.blind_spot_detector import build_report
 from intelligenceM4.evidence_passport import build_passport
-from intelligenceM4.schemas import AnalysisBundle, BlindSpotReport, EvidencePassport
+from intelligenceM4.schemas import (
+    AnalysisBundle,
+    AssistantRequest,
+    AssistantResponse,
+    BlindSpotReport,
+    EvidencePassport,
+)
 from intelligenceM4.traceability import TraceabilityError
 
 router = APIRouter(
@@ -55,3 +62,23 @@ def blind_spots(bundle: AnalysisBundle) -> BlindSpotReport:
         return build_report(bundle)
     except TraceabilityError as exc:
         raise HTTPException(status_code=500, detail=f"Blind-spot traceability check failed: {exc}")
+
+
+@router.post(
+    "/assistant",
+    response_model=AssistantResponse,
+    summary="Answer a question about a supplied analysis, grounded in its evidence",
+    description=(
+        "Answers only from the Evidence Passport and blind spots built from the "
+        "supplied AnalysisBundle. Template answers by default; use_llm=true lets an "
+        "optional LLM (configured by environment variables) rephrase the template "
+        "answer, falling back to the template on any problem. Every number in an "
+        "answer must come from the cited evidence. Questions about yields, money, "
+        "input doses, quantified soil improvement or crop choice are refused."
+    ),
+)
+def assistant(request: AssistantRequest) -> AssistantResponse:
+    try:
+        return assistant_answer(request)
+    except TraceabilityError as exc:
+        raise HTTPException(status_code=500, detail=f"Evidence traceability check failed: {exc}")

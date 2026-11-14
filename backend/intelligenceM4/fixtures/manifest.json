@@ -1,4 +1,48 @@
 {
+  "example_assistant_request.json": {
+    "module": "M4",
+    "called": "POST /api/intelligence/assistant",
+    "inputs": {
+      "rotation": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ],
+      "scenario": "ssp370",
+      "year": 2050,
+      "location_id": "pamplemousses-04",
+      "questions": [
+        "Why cowpea?",
+        "Why is Rotation B preferable under 2050?",
+        "How much will my yield increase?"
+      ],
+      "note": "built from the real M1/M2 fixtures in this folder"
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T20:20:52.310256+00:00"
+  },
+  "example_assistant_response.json": {
+    "module": "M4",
+    "called": "POST /api/intelligence/assistant",
+    "inputs": {
+      "rotation": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ],
+      "scenario": "ssp370",
+      "year": 2050,
+      "location_id": "pamplemousses-04",
+      "questions": [
+        "Why cowpea?",
+        "Why is Rotation B preferable under 2050?",
+        "How much will my yield increase?"
+      ],
+      "note": "built from the real M1/M2 fixtures in this folder"
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T20:20:52.310256+00:00"
+  },
   "example_blind_spots_response.json": {
     "module": "M4",
     "called": "POST /api/intelligence/blind-spots",
@@ -14,7 +58,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T19:56:26.163299+00:00"
+    "generated_at": "2026-11-14T20:20:52.310256+00:00"
   },
   "example_evidence_request.json": {
     "module": "M4",
@@ -31,7 +75,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T19:56:26.163299+00:00"
+    "generated_at": "2026-11-14T20:20:52.310256+00:00"
   },
   "example_evidence_response.json": {
     "module": "M4",
@@ -48,7 +92,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T19:56:26.163299+00:00"
+    "generated_at": "2026-11-14T20:20:52.310256+00:00"
   },
   "m1_history__pamplemousses-04.json": {
     "module": "M1",
@@ -69,6 +113,20 @@
     },
     "provider_status": "ok",
     "generated_at": "2026-11-14T19:19:22.857436+00:00"
+  },
+  "m2_generate__maize-cowpea-cabbage__max3.json": {
+    "module": "M2",
+    "called": "agricultureM2.rotation_generator.generate_rotation_candidates",
+    "inputs": {
+      "current_rotation": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ],
+      "max_alternatives": 3
+    },
+    "provider_status": "ok",
+    "generated_at": "2026-11-14T20:09:02.965637+00:00"
   },
   "m2_generate__maize-maize-maize__max3.json": {
     "module": "M2",

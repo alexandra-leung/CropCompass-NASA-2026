@@ -1,0 +1,68 @@
+[
+  {
+    "answer": "Cowpea is in your current rotation. In M2's crop catalog it belongs to the Fabaceae family (the legume family). M2's crop catalog identifies it as a nitrogen-fixing crop. This identifies a nitrogen-fixing opportunity; it does not quantify a nitrogen benefit. Across the rotation, M2 reports no crop family repeated in consecutive seasons. M2 has not established that cowpea is suitable for your field: its suitability screening returned insufficient data. M2 has not calibrated a soil health score, so no soil benefit is quantified. Still open for this crop: suitability inputs not passed, soil pH missing, and water demand not calculated.",
+    "mode": "template",
+    "intent": "why_crop",
+    "cited_evidence": [
+      "ev-family-cowpea",
+      "ev-nfix-cowpea",
+      "ev-family-repeat",
+      "ev-suit-cowpea",
+      "ev-soil-score"
+    ],
+    "blind_spots": [
+      "SUITABILITY_INPUT_NOT_PASSED",
+      "SOIL_PH_MISSING",
+      "WATER_DEMAND_NOT_IMPLEMENTED"
+    ],
+    "limitations": [
+      "Candidates are exploratory sequences. Planting season, soil suitability, water and climate constraints must be checked before recommendation.",
+      "This is a preliminary screening, not a complete agronomic suitability assessment.",
+      "M4 explains results produced by other CropCompass modules. It does not establish agronomic suitability, predict yields or quantify soil benefits."
+    ],
+    "refusal_reason": null,
+    "fallback_reason": null
+  },
+  {
+    "answer": "CropCompass has not ranked these rotations, so it cannot say that Rotation B is preferable for 2050 under SSP3-7.0.\nM2 reports the ranking status as \"not_calibrated\" and agronomic feasibility as \"not_evaluated\": the alternatives are exploratory sequences, not recommendations.\nWhat M2 does report:\n- Your current rotation (maize → cowpea → cabbage): families Poaceae, Fabaceae, Brassicaceae; nitrogen-fixing crops: cowpea; no crop family repeated in consecutive seasons.\n- Rotation B (maize → tomato → onion): families Poaceae, Solanaceae, Amaryllidaceae; nitrogen-fixing crops: none; no crop family repeated in consecutive seasons.\nClimate stress tests from M5 are not available, so CropCompass cannot compare how these rotations would cope with the projected climate.",
+    "mode": "template",
+    "intent": "compare_rotations",
+    "cited_evidence": [
+      "ev-alt-ranking",
+      "ev-alt-feasibility",
+      "ev-family-maize",
+      "ev-family-cowpea",
+      "ev-family-cabbage",
+      "ev-nfix-cowpea",
+      "ev-family-repeat",
+      "ev-alt-B-rotation",
+      "ev-alt-B-family-maize",
+      "ev-alt-B-family-tomato",
+      "ev-alt-B-family-onion",
+      "ev-alt-B-nfix",
+      "ev-alt-B-repeat"
+    ],
+    "blind_spots": [
+      "M5_NOT_IMPLEMENTED"
+    ],
+    "limitations": [
+      "Candidates are exploratory sequences. Planting season, soil suitability, water and climate constraints must be checked before recommendation.",
+      "This is a preliminary screening, not a complete agronomic suitability assessment.",
+      "M4 explains results produced by other CropCompass modules. It does not establish agronomic suitability, predict yields or quantify soil benefits."
+    ],
+    "refusal_reason": null,
+    "fallback_reason": null
+  },
+  {
+    "answer": "CropCompass does not predict yields. It can only explain the climate, crop and data evidence in this analysis. You could ask instead: “Why cowpea?”, “What data is missing?”, “How sure is this analysis?”.",
+    "mode": "refused",
+    "intent": "refused",
+    "cited_evidence": [],
+    "blind_spots": [],
+    "limitations": [
+      "M4 explains results produced by other CropCompass modules. It does not establish agronomic suitability, predict yields or quantify soil benefits."
+    ],
+    "refusal_reason": "yield_prediction",
+    "fallback_reason": null
+  }
+]
