@@ -442,3 +442,40 @@ Historical climate datasets and climate projections differ in origin, uncertaint
 Projected values must not be represented as deterministic weather forecasts or guaranteed local outcomes.
 
 The module is not a substitute for official meteorological services or professional agricultural guidance.
+
+## 14. In-process M5 Monthly Climate Adapter
+
+The public `/api/climate/history` and `/api/climate/scenarios` response schemas
+remain unchanged. Their current contract exposes historical annual/seasonal
+summaries and projected annual values, so it is insufficient by itself for
+calendar-month Climate Twin comparisons.
+
+The unified app therefore uses M1 service functions directly, without making
+HTTP calls to its own API:
+
+- `fetch_monthly_history(latitude, longitude, start_year, end_year)` requests the
+  official NASA POWER monthly point API. It validates `T2M` in °C and
+  `PRECTOTCORR` in mm/day, converts precipitation with the actual calendar days,
+  and rejects any missing/invalid month in the requested period. M5 uses
+  2015–2024 as its historical normal.
+- `fetch_monthly_projection(latitude, longitude, scenario, start_year, end_year)`
+  reuses M1's model registry and NASA NEX-GDDP-CMIP6 NetCDF acquisition and
+  parser. It validates `tas` in K and `pr` in kg m⁻² s⁻¹ before conversion,
+  supports the configured `ssp245` and `ssp370` scenarios and future years
+  2027–2100 (up to 30 years per request), selects the nearest paired NEX grid
+  cell by great-circle distance, and converts daily values into twelve
+  calendar-month means/totals and an equally weighted multi-model mean. At least
+  three complete models are required.
+
+NASA identifies NEX-GDDP-CMIP6 as a bias-corrected, downscaled dataset. M1
+performs the daily-to-monthly aggregation but no additional delta adjustment.
+The adapter preserves source URLs, retrieval times, requested coordinates,
+selected model grid cells, model variants, scenario, period, units, model
+uncertainty and excluded-model reasons. NEX source responses are cached with
+their original NetCDF bytes and parsed rows; POWER response bodies and source
+metadata are cached in M1's SQLite cache.
+
+NASA documentation:
+
+- [POWER monthly/annual API](https://power.larc.nasa.gov/docs/services/api/temporal/monthly/)
+- [NASA NEX-GDDP-CMIP6 product and THREDDS access](https://www.nccs.nasa.gov/data-collections/nex-gddp-cmip6/)

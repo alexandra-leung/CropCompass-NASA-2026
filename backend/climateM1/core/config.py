@@ -6,6 +6,7 @@ DATA_DIR = BACKEND_DIR / "data"
 DATABASE_PATH = DATA_DIR / "climate_cache.sqlite3"
 CACHE_TTL_SECONDS = 6 * 60 * 60
 NASA_POWER_BASE_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
+NASA_POWER_MONTHLY_BASE_URL = "https://power.larc.nasa.gov/api/temporal/monthly/point"
 NEX_GDDP_BASE_URL = "https://ds.nccs.nasa.gov/thredds/ncss/grid/AMES/NEX/GDDP-CMIP6"
 CORS_ORIGINS = [
     "http://localhost:5173",
