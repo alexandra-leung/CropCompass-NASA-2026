@@ -21,3 +21,6 @@ pymannkendall
 # Configuration
 python-dotenv
 PyYAML
+
+# Tests
+pytest

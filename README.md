@@ -85,13 +85,16 @@ Connects the project modules and explains the evidence behind agricultural recom
 
 Explores how crop rotation options may respond to future environmental conditions.
 
-**Planned capabilities:**
-- Climate Twin 2.0
-- Climate stress testing
-- Water scarcity scenarios
-- Rotation resilience analysis
-- Future adaptation pathways
-- Comparison of baseline and projected climate conditions
+**Implemented:** Climate Twin 2.0 is mounted as a router in the unified FastAPI
+application. It compares an M1 future monthly climate target with a limited
+pool of historical NASA POWER candidate locations. It reports three closest
+matches by default, monthly comparisons, error metrics, distance components,
+source provenance and limitations.
+
+Farm climate comes from M1 in-process; M5 does not make HTTP requests back to
+the same app. The separate M2-backed stress test is not active yet: without a
+registered M2 climate evaluator, it returns HTTP 503 rather than inventing
+climate sensitivity or crop outcomes.
 
 ## 3. System Architecture
 
@@ -205,11 +208,22 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
+The requirements include the backend test runner. Run the backend suite from
+`backend/` with:
+
+```bash
+python -m pytest -q tests
+```
+
 ### Start the backend
 
 ```bash
 python -m uvicorn app:app --reload --port 8000
 ```
+
+Keep this terminal open while using the API. If port 8000 is already in use,
+stop the existing backend process or choose another port and use that port in
+the requests below.
 
 **Local URLs:**
 
@@ -274,13 +288,57 @@ curl -X POST \
 
 Additional FAO suitability endpoints may be registered as their data providers are implemented.
 
+### M5 — Climate Resilience
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/resilience/health` | M1/M2 connection and offline-cache status |
+| POST | `/api/resilience/climate-twin` | Compare an M1 future climate with historical NASA POWER candidates |
+| POST | `/api/resilience/stress-test` | Run scenario comparisons through a registered M2 evaluator; currently returns 503 until connected |
+| POST | `/api/resilience/rescue-mode` | Summarize an existing stress-test result |
+
+Check readiness:
+
+```bash
+curl http://127.0.0.1:8000/api/resilience/health
+```
+
+Run Climate Twin with a **technical-test point**, not a verified farmer parcel:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/resilience/climate-twin \
+  -H 'Content-Type: application/json' \
+  -d '{"latitude":-20.103,"longitude":57.575,"scenario":"ssp245","start_year":2041,"end_year":2060,"top_k":3}'
+```
+
+The request supports `ssp245` and `ssp370`, periods from 2027–2100 (maximum
+30 years), and `top_k` from 1–10. A successful response contains historical
+and future Jan–Dec climate vectors, source provenance, candidate count,
+excluded candidates, and up to the requested number of analogs. Each analog
+includes its coordinates, 12 monthly comparisons, temperature RMSE,
+precipitation MAE and standardized distance components. The score ranks
+similarity only within a fixed pool of 10 locations; it is not a global search
+or evidence of crop suitability.
+
+On a cold cache, the default 2041–2060 period may require up to 200 NEX
+per-model/year/variable requests (five models × 20 years × two variables), so
+the first request can take time. Incomplete M1 model data or fewer than three
+valid candidates returns HTTP 503; invalid inputs return HTTP 422. Candidate
+NASA POWER JSON responses are cached under
+`backend/data/raw/nasa_power/m5_analogs/`. M1 history and projection source
+records are cached separately in `backend/data/climate_cache.sqlite3`. These
+are runtime caches, not source fixtures; do not commit generated cache data.
+
+`python -m resilienceM5.scenario_engine ...` is **not** a data-fetch command.
+Candidate downloads are triggered by the `/api/resilience/climate-twin` route.
+
 ## 8. Data Sources
 
 CropCompass prioritizes authentic, traceable scientific and agricultural datasets.
 
 | Source | Intended application |
 |---|---|
-| NASA POWER | Historical climate observations |
+| NASA POWER | Historical gridded climate estimates |
 | NASA NEX-GDDP-CMIP6 | Climate projections |
 | FAO GAEZ | Crop suitability and agro-ecological context |
 | FAO-56 | Crop evapotranspiration and crop coefficients |
@@ -303,7 +361,7 @@ The use of a dataset in this list does not imply that every corresponding integr
 |---|---|
 | Unified FastAPI backend | Initial integration working |
 | M1 historical climate API | Tested successfully |
-| M1 climate projections | Registered; response timeout under investigation |
+| M1 public climate projections | Annual model/ensemble endpoint; separate M5 monthly in-process service added |
 | M1 → M2 historical climate communication | Tested successfully |
 | M2 crop catalog | Initial reference catalog |
 | M2 Rotation DNA | Tested successfully |
@@ -314,7 +372,11 @@ The use of a dataset in this list does not imply that every corresponding integr
 | M2 numerical rotation ranking | Not calibrated |
 | M3 mapping and UX | Team development |
 | M4 explainable AI | Team development |
-| M5 climate resilience | Team development |
+| M5 Climate Twin 2.0 | Integrated; 2040 one-year live NASA pipeline test completed |
+| M5 default 2041–2060 live request | Not yet end-to-end validated on a cold cache |
+| M5 → M2 stress-test adapter | Not connected; stress-test returns HTTP 503 |
+| M3 verified farm-coordinate integration | Not available; demo coordinates are technical-test points |
+| Backend test suite | 26 tests passed in the last recorded run |
 
 The project is currently under active development.
 
@@ -345,7 +407,11 @@ The project focuses on climate resilience, water conservation, crop rotation and
 
 **Climate spatial resolution:** Nearby Mauritian fields may share identical gridded NASA POWER observations. Regional climate values should not be interpreted as independent plot-level measurements.
 
-**Climate scenarios:** The M1 scenarios endpoint has previously experienced an extended response time or timeout. The cause and reliable handling remain under investigation.
+**Climate Twin cold-cache latency:** The 2041–2060 M5 request can need up to 200 NEX files, in addition to POWER history for candidate locations. A one-year 2040 live test succeeded; the full default period and its cold-cache latency have not yet been validated end-to-end.
+
+**Farm coordinates:** The endpoint accepts coordinates supplied in the request, but there is no verified M3 farm-profile handoff yet. Technical-test coordinates must not be presented as a real farmer's parcel.
+
+**M2 climate sensitivity:** M2's current rotation engine does not consume monthly temperature or precipitation. Its water-demand function expects daily ET₀ inputs, which the M1 monthly adapter does not provide. Do not treat the M5 stress-test as operational until an evidence-based M2 adapter and required climate inputs are agreed and tested.
 
 **Crop reference coverage:** The initial M2 catalog contains a limited number of sourced crops. Further authoritative agricultural data integration is planned.
 
@@ -376,15 +442,12 @@ The `main` branch should represent the team's integrated, tested application.
 
 ## 13. Next Development Milestones
 
-1. Complete M1 climate projection reliability checks.
-2. Validate M1-to-M2 climate data contracts.
-3. Integrate FAO crop-suitability data into M2.
-4. Implement NASA-driven FAO-56 Water Wallet calculations.
-5. Generate and compare feasible crop rotations.
-6. Connect the M3 farmer dashboard.
-7. Integrate M4 explanations and Evidence Passport.
-8. Connect M5 resilience stress tests and Climate Twin.
-9. Complete end-to-end validation and prepare the NASA demonstration.
+1. Validate the full 2041–2060 Climate Twin request on a cold cache and measure response time.
+2. Connect verified M3 farm coordinates and the Climate Twin response to the frontend.
+3. Agree and test an M2 climate-input contract, including an authoritative ET₀ source for water-demand calculations.
+4. Connect M5 stress testing only after M2 demonstrably responds to changed climate inputs.
+5. Integrate M4 explanations and Evidence Passport with source and uncertainty metadata.
+6. Complete cross-module end-to-end validation before presenting recommendations.
 
 ## 14. Team
 
