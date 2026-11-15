@@ -24,7 +24,7 @@ export const I = {
 const SRC: Record<string, [string, string]> = {
   live: ['#0C8A84', 'Live'], cached: ['#C98B00', 'Cached'], none: ['#B5523A', 'Not available'],
   observed: ['#3B7EA1', 'Observed'], projected: ['#795E22', 'Projected'], modelled: ['#0C8A84', 'Modelled'],
-  entered: ['#C98B00', 'You entered'], map: ['#A9BAB5', 'Map estimate'], pending: ['#A9BAB5', 'Not calculated yet'],
+  entered: ['#C98B00', 'You entered'], map: ['#A9BAB5', 'Map estimate'], missing: ['#B5523A', 'Not entered'], pending: ['#A9BAB5', 'Not calculated yet'],
 }
 export const Tag = ({ k, text }: { k: string; text?: string }) => {
   const [c, l] = SRC[k] || ['#A9BAB5', k]
@@ -45,9 +45,10 @@ export const Hero = ({ eyebrow, title, sub, bg = C.hero, children }: { eyebrow: 
   </section>
 )
 
-export const Kpi = ({ v, unit, l, color }: { v: string; unit?: string; l: string; color?: string }) => (
-  <div className="kpi"><div className="v" style={{ color }}>{v}{unit && <small> {unit}</small>}</div><div className="l">{l}</div></div>
-)
+export const Kpi = ({ v, unit, l, color, onClick }: { v: string; unit?: string; l: string; color?: string; onClick?: () => void }) => {
+  const inner = <><div className="v" style={{ color }}>{v}{unit && <small> {unit}</small>}</div><div className="l">{l}</div></>
+  return onClick ? <button className="kpi click" onClick={onClick}>{inner}</button> : <div className="kpi">{inner}</div>
+}
 
 export const Spinner = ({ text }: { text: string }) => <div className="row muted"><span className="spin" />{text}</div>
 

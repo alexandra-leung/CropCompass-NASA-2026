@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as api from './api'
 import type { Source } from './api'
 import { Bars, C, Hero, I, Icon, Kpi, LineChart, SourceTag, Spinner, Tag } from './ui'
+import { CropPic } from './crops'
+import { SatelliteField } from './satellite'
 
 type Tab = 'home' | 'fields' | 'plans' | 'water' | 'future'
 type Sheet = null | { kind: 'field' } | { kind: 'add' } | { kind: 'ask' } | { kind: 'passport' }
@@ -9,11 +11,12 @@ type Sheet = null | { kind: 'field' } | { kind: 'add' } | { kind: 'ask' } | { ki
 const USER = 'Sanjana'
 const CROP_NAMES: Record<string, string> = { maize: 'Maize', tomato: 'Tomato', onion: 'Onion', cabbage: 'Cabbage', cowpea: 'Cowpea', groundnut: 'Groundnut', sweet_potato: 'Sweet potato' }
 const crop = (id: string) => CROP_NAMES[id] ?? id
+const nice = (n?: string) => (n ?? '').replace(/ Field \d+$/, '')
 const rot = (r?: string[] | null) => (r && r.length ? r.map(crop).join(' → ') : 'Not entered')
 const TEXTURES: [string, string][] = [['sandy_loam', 'Sandy loam'], ['loam', 'Loam'], ['clay_loam', 'Clay loam'], ['clay', 'Clay'], ['unknown', "Don't know"]]
 const WATER: [string, string][] = [['rain_only', 'Rain only'], ['tank', 'Tank or pond'], ['borehole', 'Borehole'], ['irrigation_scheme', 'Irrigation scheme']]
 const SCEN: [string, string][] = [['ssp245', 'Middle path · SSP2-4.5'], ['ssp370', 'Higher emissions · SSP3-7.0']]
-const srcKey = (s?: string) => (s === 'farmer' ? 'entered' : s === 'map_estimate' ? 'map' : 'pending')
+const srcKey = (s?: string) => (s === 'farmer' ? 'entered' : s === 'map_estimate' ? 'map' : 'missing')
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('home')
@@ -38,10 +41,12 @@ export default function App() {
   const p = farm.data
   useEffect(() => {
     if (!p) return
+    const ctl = new AbortController(), live = () => !ctl.signal.aborted
     setHistory(api.cached.history(p.location_id)); setScen(api.cached.scenarios(p.location_id))
-    api.getHistory(p.location_id).then(r => setHistory(prev => (r.source === 'live' || !prev ? r : prev)))
-    api.getScenarios(p.location_id).then(r => setScen(prev => (r.source === 'live' || !prev ? r : prev)))
-    if (p.current_rotation?.length) api.generateRotations(p.current_rotation).then(setGen)
+    if (p.current_rotation?.length) api.generateRotations(p.current_rotation).then(r => live() && setGen(r))
+    api.getHistory(p.location_id, ctl.signal).then(r => live() && setHistory(prev => (r.source === 'live' || !prev ? r : prev)))
+    api.getScenarios(p.location_id, ctl.signal).then(r => live() && setScen(prev => (r.source === 'live' || !prev ? r : prev)))
+    return () => ctl.abort()
   }, [p?.farm_id, p?.location_id, (p?.current_rotation || []).join()])
 
   const runAnalysis = async () => {
@@ -66,9 +71,9 @@ export default function App() {
       </div>
 
       <main>
-        {tab === 'home' && <Home p={p} loc={loc} farms={farmList} farmId={farmId} setFarmId={setFarmId} history={history} openField={() => setSheet({ kind: 'field' })} farmsSrc={farms.source} />}
+        {tab === 'home' && <Home p={p} loc={loc} farms={farmList} history={history} openField={() => setSheet({ kind: 'field' })} farmsSrc={farms.source} goFields={() => setTab('fields')} />}
         {tab === 'fields' && <Fields farms={farmList} src={farms.source} open={(id: string) => { setFarmId(id); setSheet({ kind: 'field' }) }} add={() => setSheet({ kind: 'add' })} />}
-        {tab === 'plans' && <Plans p={p} gen={gen} />}
+        {tab === 'plans' && <Plans p={p} gen={gen} goFields={() => setTab('fields')} />}
         {tab === 'water' && <Water p={p} history={history} onSaved={(np: any) => setFarm({ data: np, source: 'live' })} />}
         {tab === 'future' && <Future p={p} loc={loc} scen={scen} scenario={scenario} setScenario={setScenario} gen={gen} />}
       </main>
@@ -96,7 +101,7 @@ export default function App() {
 }
 
 /* ------------------------------------------------------------------ HOME */
-function Home({ p, loc, farms, farmId, setFarmId, history, openField, farmsSrc }: any) {
+function Home({ p, loc, farms, history, openField, farmsSrc, goFields }: any) {
   const h = history?.data
   const ts: any[] = h?.timeseries ?? []
   const m = h?.metrics
@@ -113,17 +118,16 @@ function Home({ p, loc, farms, farmId, setFarmId, history, openField, farmsSrc }
     <div className="between" style={{ alignItems: 'flex-end' }}>
       <div><div className="eb">{date}</div><h1 className="h1" style={{ marginTop: 6 }}>{greet}<br /><span>{USER}.</span></h1></div>
     </div>
-    <div className="chips">{farms.map((f: any) => <button key={f.farm_id} className={'chip' + (f.farm_id === farmId ? ' on' : '')} onClick={() => setFarmId(f.farm_id)}>{f.name.replace(/ Field \d+$/, '')}</button>)}</div>
-    <Hero eyebrow={`Farm status · ${loc?.name ?? ''}`} title={title} sub={sub} />
+    <Hero eyebrow={`Farm status · ${nice(loc?.name)}`} title={title} sub={sub} />
     <div className="kpis">
-      <Kpi v={String(farms.length || '–')} l="Fields" />
-      <Kpi v={p?.irrigation?.budget_mm_per_season != null ? String(Math.round(p.irrigation.budget_mm_per_season)) : '–'} unit="mm" l="Water / season" />
-      <Kpi v={m ? `${m.dataCompleteness}` : '–'} unit="%" l="Data complete" />
+      <Kpi onClick={goFields} v={String(farms.length || '…')} l="Fields" />
+      <Kpi onClick={goFields} v={p?.irrigation?.budget_mm_per_season != null ? String(Math.round(p.irrigation.budget_mm_per_season)) : '…'} unit="mm" l={`Water · ${nice(p?.name)}`} />
+      <Kpi onClick={goFields} v={m ? `${m.dataCompleteness}` : history && !h ? '–' : '…'} unit={m ? '%' : undefined} l="Climate data" />
     </div>
     <section className="card">
       <div className="between"><div><div className="eb">Climate history</div><div className="ct">Rain and heat, by year</div></div>{history && <SourceTag s={history.source} what="NASA POWER" />}</div>
-      {!history && <Spinner text="Reading NASA POWER…" />}
-      {history && !h && <div className="err">No climate history for this location yet{history.error ? ` (${history.error})` : ''}. Start the backend with internet to fetch it.</div>}
+      {!history && <Spinner text={`Fetching NASA POWER for ${nice(loc?.name)} (first time can take a minute)…`} />}
+      {history && !h && <div className="err">NASA POWER did not answer for {nice(loc?.name)} ({history.error}). The first fetch for a new location can take a minute; tap Home again to retry.</div>}
       {ts.length > 0 && <>
         <LineChart labels={ts.map(t => t.label)} unit="mm" series={[{ name: 'Rain', color: C.water, values: ts.map(t => t.rainfallMm) }]} selected={pick ?? undefined} onPick={setSel} />
         {pick != null && <div className="list">
@@ -157,7 +161,7 @@ function Fields({ farms, src, open, add }: any) {
         <button key={f.farm_id} className="fcard" onClick={() => open(f.farm_id)}>
           <span className="bar" style={{ background: col }} />
           <span className="in">
-            <span className="between"><span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}><span className="faint" style={{ fontWeight: 700 }}>{rot(f.current_rotation)} · {f.district}</span><span style={{ fontSize: 17 }}>{f.name}</span></span><span style={{ color: '#A9BAB5', fontSize: 18 }}>›</span></span>
+            <span className="between"><span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}><span className="faint" style={{ fontWeight: 700 }}>{rot(f.current_rotation)} · {f.district}</span><span style={{ fontSize: 17 }}>{nice(f.name)}</span></span><span style={{ color: '#A9BAB5', fontSize: 18 }}>›</span></span>
             <span style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
               <span className="stat"><span>Area</span><b>{f.field_area_ha ?? '–'} ha</b></span>
               <span className="stat"><span>Water</span><b>{f.irrigation_budget_mm ?? '–'} mm</b></span>
@@ -170,22 +174,6 @@ function Fields({ farms, src, open, add }: any) {
   </>)
 }
 
-function Outline({ p }: { p: any }) {
-  const ring: number[][] | undefined = p?.boundary?.geometry?.coordinates?.[0]
-  if (!ring) return <div className="err">No outline yet. Draw your field.</div>
-  const lons = ring.map(c => c[0]), lats = ring.map(c => c[1])
-  const pad = 0.6, w = Math.max(...lons) - Math.min(...lons), h = Math.max(...lats) - Math.min(...lats)
-  const x0 = Math.min(...lons) - w * pad, x1 = Math.max(...lons) + w * pad, y0 = Math.min(...lats) - h * pad, y1 = Math.max(...lats) + h * pad
-  const X = (v: number) => ((v - x0) / (x1 - x0)) * 300, Y = (v: number) => 180 - ((v - y0) / (y1 - y0)) * 180
-  return (
-    <svg viewBox="0 0 300 180" width="100%" style={{ borderRadius: 14, background: 'linear-gradient(135deg,#5B6B45,#3E5A3A 45%,#6E6A4A)' }} aria-label="Field outline">
-      {Array.from({ length: 14 }).map((_, i) => <rect key={i} x={(i * 53) % 300} y={(i * 37) % 180} width={40 + (i % 3) * 18} height={26 + (i % 4) * 10} fill={i % 2 ? '#4C6740' : '#7A7650'} opacity={0.5} />)}
-      <path d={'M' + ring.map(c => `${X(c[0])} ${Y(c[1])}`).join(' L') + ' Z'} fill="rgba(201,226,154,0.25)" stroke="#C9E29A" strokeWidth={2.5} />
-      <text x={8} y={172} fill="#fff" fontSize="10" opacity={0.85}>{p.boundary.method === 'manual' ? 'Drawn by farmer' : 'Placeholder outline · redraw'}</text>
-    </svg>
-  )
-}
-
 function FieldSheet({ p, src, close, onSaved, passport }: any) {
   const [err, setErr] = useState('')
   const [ph, setPh] = useState<string>(p?.soil?.ph != null ? String(p.soil.ph) : '')
@@ -196,10 +184,10 @@ function FieldSheet({ p, src, close, onSaved, passport }: any) {
   if (!p) return <SheetHead eyebrow="Field" title="Loading…" close={close} />
   const v = p.validation
   return (<>
-    <SheetHead eyebrow={`${p.location_id} · ${p.field_area_ha ?? '?'} ha`} title={p.name} close={close} />
+    <SheetHead eyebrow={`${p.field_area_ha ?? '?'} ha · climate location ${nice(p.name)}`} title={nice(p.name)} close={close} />
     <div className="body">
-      <Outline p={p} />
-      <div className="between"><span className="faint">Outline area and climate location from M3 · M1</span><SourceTag s={src} /></div>
+      {p.boundary?.geometry?.coordinates?.[0] ? <SatelliteField ring={p.boundary.geometry.coordinates[0]} label={p.boundary.method === 'manual' ? 'Outline drawn by farmer' : 'Placeholder outline · redraw to match your field'} /> : <div className="err">No outline yet.</div>}
+      <div className="between"><span className="faint">Satellite image works anywhere in the world · outline from M3</span><SourceTag s={src} /></div>
       <section className="card">
         <div className="ct">What we know</div>
         <div className="list">
@@ -267,7 +255,7 @@ function AddField({ close, created }: any) {
         <label className="field">Field name<input value={f.name} placeholder="Behind the house" onChange={e => setF({ ...f, name: e.target.value })} /></label>
         <span className="eb">Nearest climate location</span>
         {locs.map(l => <button key={l.location_id} className="fcard" onClick={() => setF({ ...f, location_id: l.location_id })} style={{ border: f.location_id === l.location_id ? `2px solid ${C.deep}` : undefined }}>
-          <span className="in"><b>{l.name}</b><span className="faint">{l.district} · {l.latitude.toFixed(3)}, {l.longitude.toFixed(3)}</span></span></button>)}
+          <span className="in"><b>{nice(l.name)}</b><span className="faint">{l.district} · {l.latitude.toFixed(3)}, {l.longitude.toFixed(3)}</span></span></button>)}
         <label className="field">Size (hectares)<input inputMode="decimal" value={f.area} onChange={e => setF({ ...f, area: e.target.value })} /></label>
         <span className="faint">Auto outline from satellite is not available yet; a placeholder outline of this size is saved, and you can redraw it later.</span>
       </>}
@@ -292,61 +280,106 @@ function AddField({ close, created }: any) {
 }
 
 /* ------------------------------------------------------------------ PLANS */
-function Plans({ p, gen }: any) {
+const FAM: Record<string, string> = { Poaceae: 'grass family', Fabaceae: 'legume', Solanaceae: 'nightshade', Amaryllidaceae: 'onion family', Brassicaceae: 'cabbage family', Convolvulaceae: 'morning glory' }
+function Plans({ p, gen, goFields }: any) {
   const [i, setI] = useState(0)
+  const [step, setStep] = useState<number | null>(null)
   const [suit, setSuit] = useState<Record<string, any>>({})
   const g = gen?.data
   const plans: any[] = g ? [g.current_rotation, ...(g.alternative_rotations ?? [])] : []
-  const sel = plans[Math.min(i, plans.length - 1)]
-  useEffect(() => { setI(0) }, [p?.farm_id])
+  const sel = plans[Math.min(i, Math.max(plans.length - 1, 0))]
+  useEffect(() => { setI(0); setStep(null) }, [p?.farm_id])
   useEffect(() => {
     const ids = Array.from(new Set(plans.flatMap(x => x.rotation)))
     ids.forEach(id => { if (!suit[id]) api.suitability(id, p?.soil?.ph).then(r => setSuit(s => ({ ...s, [id]: r }))) })
   }, [g])
+  useEffect(() => {
+    if (step == null || !sel) return
+    const t = window.setTimeout(() => setStep(step + 1 < sel.sequence.length ? step + 1 : null), 1400)
+    return () => window.clearTimeout(t)
+  }, [step, sel])
   if (!p) return <Spinner text="Loading farm…" />
-  if (!p.current_rotation?.length) return <div className="err">Add the crops you grow in Fields to compare plans.</div>
-  if (!gen) return <Spinner text="Asking M2 for alternative rotations…" />
-  if (!g) return <div className="err">M2 could not generate plans{gen.error ? `: ${gen.error}` : ''}.</div>
-  const legume = sel.nitrogen_fixing_crops?.length > 0
+  const head = (
+    <>
+      <div><div className="eb">Plans for this field</div><h1 className="h1" style={{ marginTop: 6 }}>{nice(p.name)}<br /><span>season by season.</span></h1></div>
+      <button className="ctx" onClick={goFields}>
+        <span><small>Soil</small><b>{TEXTURES.find(t => t[0] === p.soil.texture)?.[1] ?? 'Unknown'}</b></span>
+        <span><small>pH</small><b>{p.soil.ph ?? '?'}</b></span>
+        <span><small>Water</small><b>{p.irrigation.budget_mm_per_season ?? '?'} mm</b></span>
+        <span className="go">Change field ›</span>
+      </button>
+    </>)
+  if (!p.current_rotation?.length) return <>{head}<div className="err">Add the crops you grow in Fields to compare plans.</div></>
+  if (!gen) return <>{head}<Spinner text="Asking M2 for other rotations…" /></>
+  if (!g) return <>{head}<div className="err">M2 could not suggest plans{gen.error ? `: ${gen.error}` : ''}.</div></>
+  const today = plans[0]
+  const n = sel.sequence.length
+  const legume = (x: any) => (x.nitrogen_fixing_crops?.length ?? 0) > 0
+  const repeatAt = (k: number) => sel.sequence[k].family === sel.sequence[(k - 1 + n) % n].family
+  const advice: string[] = []
+  if (!legume(today)) advice.push(`Your rotation has no legume. Put cowpea or groundnut after ${crop(today.rotation[0]).toLowerCase()}: it adds nitrogen for the next crop.`)
+  const reps = today.sequence.filter((s: any, k: number) => s.family === today.sequence[(k - 1 + today.sequence.length) % today.sequence.length].family)
+  if (reps.length) advice.push(`Avoid ${crop(reps[0].crop_id).toLowerCase()} straight after the same family: changing family breaks pest and disease cycles.`)
+  if (i > 0) {
+    const fixes = [legume(sel) && !legume(today) ? 'adds a legume' : '', !sel.has_adjacent_family_repetition && today.has_adjacent_family_repetition ? 'stops the family repeating' : ''].filter(Boolean)
+    advice.push(fixes.length ? `Plan ${String.fromCharCode(64 + i)} ${fixes.join(' and ')}.` : `Plan ${String.fromCharCode(64 + i)} does not improve on today's rotation rules${!legume(sel) ? ' and has no legume' : ''}.`)
+  }
+  if (p.soil.ph == null) advice.push('Test your soil pH, so each crop can be checked against its needs.')
   return (<>
-    <div><div className="eb">Rotation plans · {p.name}</div><h1 className="h1" style={{ marginTop: 6 }}>Today versus<br /><span>{plans.length - 1} other plans.</span></h1></div>
-    <div className="tabs" role="tablist">{plans.map((_x, k) => <button key={k} role="tab" className={k === i ? 'on' : ''} onClick={() => setI(k)}>{k === 0 ? 'Today' : `Plan ${String.fromCharCode(64 + k)}`}</button>)}</div>
-    <Hero bg={C.deep} eyebrow={i === 0 ? 'Your rotation' : `Plan ${String.fromCharCode(64 + i)}`} title={rot(sel.rotation)}
-      sub={`${legume ? `Has a legume (${sel.nitrogen_fixing_crops.map(crop).join(', ')}) to add nitrogen.` : 'No legume, so no nitrogen fixing.'} ${sel.has_adjacent_family_repetition ? 'Same crop family back to back.' : 'Crop family changes every season.'}`} />
-    <div className="kpis">
-      <Kpi v={String(sel.crop_count)} l="Seasons" />
-      <Kpi v={legume ? 'Yes' : 'No'} l="Legume" color={legume ? C.teal : C.red} />
-      <Kpi v={sel.has_adjacent_family_repetition ? 'Yes' : 'No'} l="Family repeats" color={sel.has_adjacent_family_repetition ? C.red : C.teal} />
-    </div>
+    {head}
+    <div className="tabs" role="tablist">{plans.map((_x, k) => <button key={k} role="tab" className={k === i ? 'on' : ''} onClick={() => { setI(k); setStep(null) }}>{k === 0 ? 'Today' : `Plan ${String.fromCharCode(64 + k)}`}</button>)}</div>
+
     <section className="card">
-      <div className="between"><div><div className="eb">Season by season</div><div className="ct">Rotation DNA</div></div><SourceTag s={gen.source} what="M2" /></div>
-      <div>{sel.sequence.map((s: any, k: number) => {
-        const rep = (sel.repeated_families ?? []).some((r: any) => r.season === s.season)
-        const nf = sel.nitrogen_fixing_crops?.includes(s.crop_id)
-        return <div key={k} style={{ display: 'grid', gridTemplateColumns: '64px 16px 1fr', gap: 8 }}>
-          <b style={{ fontSize: 13, paddingTop: 1 }}>Season {s.season}</b>
-          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}><span style={{ width: 10, height: 10, borderRadius: 5, marginTop: 4, background: rep ? C.red : nf ? C.teal : C.deep }} />{k < sel.sequence.length - 1 && <span style={{ flex: 1, width: 1.5, background: C.line }} />}</span>
-          <span style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 16 }}>
-            <b style={{ fontSize: 14 }}>{s.crop_name}</b><span className="faint">Family: {s.family}</span>
-            {nf && <span style={{ fontSize: 12, fontWeight: 700, color: C.teal }}>Legume: fixes nitrogen</span>}
-            {rep && <span style={{ fontSize: 12, fontWeight: 700, color: C.red }}>Same family as the season before: pests and disease build up</span>}
-          </span></div>
-      })}</div>
+      <div className="between">
+        <div><div className="eb">{i === 0 ? 'Your rotation' : `Plan ${String.fromCharCode(64 + i)}`}</div><div className="ct">{rot(sel.rotation)}</div></div>
+        <button className="play" aria-label={step == null ? 'Play the seasons' : 'Stop'} onClick={() => setStep(step == null ? 0 : null)}>
+          <Icon d={step == null ? 'M8 5l11 7-11 7z' : 'M6 5h4v14H6z M14 5h4v14h-4z'} c="#fff" s={16} /></button>
+      </div>
+      <div className="seasons" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+        {sel.sequence.map((s: any, k: number) => {
+          const on = step === k, nf = sel.nitrogen_fixing_crops?.includes(s.crop_id), rep = repeatAt(k)
+          return <div key={k} className={'season' + (on ? ' on' : '') + (step != null && !on ? ' dim' : '')}>
+            <span className="faint">Season {s.season}</span>
+            <div className="plot"><CropPic id={s.crop_id} size={58} /></div>
+            <b>{crop(s.crop_id)}</b>
+            <span className="faint">{FAM[s.family] ?? s.family}</span>
+            <span className="pill" style={{ background: nf ? '#E8F3EF' : '#F2F6F4', color: nf ? '#276146' : C.mut }}>{nf ? '+ Adds nitrogen' : 'Uses nitrogen'}</span>
+            <span className="pill" style={{ background: rep ? '#F8ECE7' : '#E8F3EF', color: rep ? C.red : '#276146' }}>{rep ? 'Pests build up' : 'Breaks pest cycle'}</span>
+          </div>
+        })}
+      </div>
+      <span className="faint">Illustration from rotation rules (M2): legumes add nitrogen; the same family twice in a row lets pests and disease build up. Not a field measurement.</span>
     </section>
+
+    <section className="advice">
+      <div className="row" style={{ gap: 8 }}><Icon d={I.leaf} c="#8A6A12" s={18} /><b style={{ color: '#6E4E00' }}>Advice for {nice(p.name)}</b></div>
+      {advice.map((a, k) => <div key={k} className="row" style={{ alignItems: 'flex-start' }}><span className="dot" style={{ background: '#C98B00' }} /><span style={{ fontSize: 13.5, lineHeight: '19px' }}>{a}</span></div>)}
+      <span className="faint" style={{ color: '#8A6A12' }}>From rotation rules and your farm inputs. Plans are not ranked yet: M2 scores are not calibrated.</span>
+    </section>
+
+    {i > 0 && <section className="card">
+      <div className="ct">Today versus Plan {String.fromCharCode(64 + i)}</div>
+      <div className="cmp"><span /><b>Today</b><b>Plan {String.fromCharCode(64 + i)}</b>
+        <span>Legume</span><span style={{ color: legume(today) ? '#276146' : C.red }}>{legume(today) ? 'Yes' : 'No'}</span><span style={{ color: legume(sel) ? '#276146' : C.red }}>{legume(sel) ? 'Yes' : 'No'}</span>
+        <span>Family repeats</span><span style={{ color: today.has_adjacent_family_repetition ? C.red : '#276146' }}>{today.has_adjacent_family_repetition ? 'Yes' : 'No'}</span><span style={{ color: sel.has_adjacent_family_repetition ? C.red : '#276146' }}>{sel.has_adjacent_family_repetition ? 'Yes' : 'No'}</span>
+        <span>Crop families</span><span>{new Set(today.sequence.map((s: any) => s.family)).size}</span><span>{new Set(sel.sequence.map((s: any) => s.family)).size}</span>
+      </div>
+    </section>}
+
     <section className="card">
-      <div className="between"><div><div className="eb">Crop suitability</div><div className="ct">Checked against FAO ranges</div></div><Tag k="modelled" text="M2 · FAO" /></div>
+      <div className="between"><div><div className="eb">Crop suitability</div><div className="ct">For this soil and climate</div></div><SourceTag s={gen.source} what="M2 · FAO" /></div>
       <div className="list">{Array.from(new Set(sel.rotation as string[])).map(id => {
-        const s = suit[id]?.data
-        const st = s?.status
+        const s = suit[id]?.data, st = s?.status
         const col = st === 'suitable' ? C.teal : st === 'unsuitable' ? C.red : C.gold
-        return <div key={id}><span className="dot" style={{ background: col }} /><span style={{ flex: 1 }}><b>{crop(id)}</b><br /><span className="faint">{!s ? 'Checking…' : st === 'insufficient_data' ? `Not screened: missing ${(s.missing ?? []).map((x: string) => ({ temperature_c: 'temperature', soil_ph: 'soil pH', rainfall_mm: 'rainfall' } as any)[x] ?? x).join(', ')}` : st}</span></span></div>
+        return <div key={id}><CropPic id={id} size={30} /><span style={{ flex: 1 }}><b>{crop(id)}</b><br /><span className="faint">{!s ? 'Checking…' : st === 'insufficient_data' ? `Not checked yet: missing ${(s.missing ?? []).map((x: string) => ({ temperature_c: 'temperature', soil_ph: 'soil pH', rainfall_mm: 'rainfall' } as any)[x] ?? x).join(', ')}` : st}</span></span><span className="dot" style={{ background: col }} /></div>
       })}</div>
     </section>
+
     <section className="card">
-      <div className="ct">Score and water need</div>
+      <div className="ct">Coming from M2</div>
       <div className="list">
-        <div><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>Soil-health score<br /><span className="faint">{sel.score_status === 'not_calibrated' ? 'Not calibrated yet in M2, so plans are not ranked.' : sel.soil_health_score}</span></span></div>
-        <div><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>Crop water need (FAO-56)<br /><span className="faint">Not calculated yet: M2 water wallet needs daily ET0 from M1.</span></span></div>
+        <div><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>Ranking and soil-health score<br /><span className="faint">Not calibrated yet, so plans are not ranked.</span></span></div>
+        <div><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>Water each plan needs (FAO-56)<br /><span className="faint">Not calculated yet.</span></span></div>
       </div>
     </section>
   </>)
@@ -375,7 +408,7 @@ function Water({ p, history, onSaved }: any) {
   const names: Record<string, string> = { DJF: 'Dec–Feb', MAM: 'Mar–May', JJA: 'Jun–Aug', SON: 'Sep–Nov' }
   return (<>
     <div><div className="eb">Smart irrigation</div><h1 className="h1" style={{ marginTop: 6, fontSize: 34, lineHeight: '36px' }}>Water,<br /><span>well spent.</span></h1></div>
-    <Hero eyebrow={`Water wallet · ${p.name}`} title={mm > 0 ? `You can give\n${Math.round(mm)} mm a season.` : 'Rain only:\nno irrigation.'} sub={m3 != null ? `That is ${m3.toLocaleString()} m³ on ${p.field_area_ha} ha. How much each plan needs is not calculated yet (M2 water wallet).` : 'Add the field size to convert to m³.'} />
+    <Hero eyebrow={`Water wallet · ${nice(p.name)}`} title={mm > 0 ? `You can give\n${Math.round(mm)} mm a season.` : 'Rain only:\nno irrigation.'} sub={m3 != null ? `That is ${m3.toLocaleString()} m³ on ${p.field_area_ha} ha. How much each plan needs is not calculated yet (M2 water wallet).` : 'Add the field size to convert to m³.'} />
     <section className="card">
       <div className="between"><div><div className="eb">Water you can give</div><span className="muted">per season</span></div><Tag k="entered" /></div>
       <div className="row" style={{ alignItems: 'baseline', gap: 6 }}><span style={{ fontSize: 36, fontWeight: 700, color: C.deep }}>{Math.round(mm)}</span><span className="muted">mm</span>
@@ -411,7 +444,7 @@ function Future({ p, loc, scen, scenario, setScenario, gen }: any) {
   const v = vals[Math.min(yi, vals.length - 1)]
   return (<>
     <div><div className="eb">Farm time machine</div><h1 className="h1" style={{ marginTop: 6, fontSize: 34, lineHeight: '36px' }}>Your farm,<br /><span>later.</span></h1></div>
-    <Hero eyebrow={`Projection · ${loc?.name ?? ''}`} title={dT == null ? 'Loading the\nprojections…' : dT > 0 ? `Warmer by\n${vals[vals.length - 1].year}.` : `Little change\nby ${vals[vals.length - 1].year}.`}
+    <Hero eyebrow={`Projection · ${nice(loc?.name)}`} title={dT == null ? 'Loading the\nprojections…' : dT > 0 ? `Warmer by\n${vals[vals.length - 1].year}.` : `Little change\nby ${vals[vals.length - 1].year}.`}
       sub={dT == null ? (scen && !s ? 'Projections are not cached for this location; start the backend with internet.' : undefined) : `${dT > 0 ? '+' : ''}${dT} °C from ${vals[0].year} to ${vals[vals.length - 1].year} (${ens.label}, ${vals[0].contributingModels?.length ?? ''}-model average). Regional, not exact for your field.`} />
     <div className="seg" style={{ gridTemplateColumns: '1fr 1fr' }}>{SCEN.map(([k, l]) => <button key={k} className={scenario === k ? 'on' : ''} onClick={() => setScenario(k)}>{l}</button>)}</div>
     <section className="card">
@@ -468,7 +501,7 @@ function Ask({ close, analysis, analysing, p }: any) {
     <div className="body" style={{ minHeight: 420 }}>
       {analysing && <Spinner text="Preparing your farm's analysis (M1–M5)…" />}
       {analysis?.source === 'cached' && <span className="faint">Backend offline: answering from a cached example analysis (Pamplemousses, maize → cowpea → cabbage).</span>}
-      <div className="bubble" style={{ alignSelf: 'flex-start', background: '#fff', border: `1px solid ${C.line}` }}>Ask about {p?.name ?? 'your field'}. Answers come only from the analysis and its sources; if there's no evidence, I'll say so.</div>
+      <div className="bubble" style={{ alignSelf: 'flex-start', background: '#fff', border: `1px solid ${C.line}` }}>Ask about {nice(p?.name) || 'your field'}. Answers come only from the analysis and its sources; if there's no evidence, I'll say so.</div>
       {msgs.map((m, k) => <div key={k} className="bubble" style={{ whiteSpace: 'pre-line', alignSelf: m.me ? 'flex-end' : 'flex-start', background: m.me ? C.deep : '#fff', color: m.me ? '#fff' : C.ink, border: m.me ? 0 : `1px solid ${C.line}` }}>{m.text}{m.extra && <div className="faint" style={{ marginTop: 6 }}>{m.extra}</div>}</div>)}
       {busy && <Spinner text="Thinking…" />}
       <div className="chips" style={{ marginTop: 'auto' }}>{sugg.map(s => <button key={s} className="chip" disabled={!bundle} onClick={() => send(s)}>{s}</button>)}</div>
@@ -488,7 +521,7 @@ function Passport({ close, analysis, analysing, p, rerun }: any) {
     <SheetHead eyebrow="Evidence passport" title="Where every number comes from" close={close} />
     <div className="body">
       {analysing && <Spinner text="Running the full analysis (M1 → M2 → M3 → M5 → M4)… this can take a minute." />}
-      {analysis?.source === 'cached' && <div className="err">Backend offline: showing a cached example analysis, not {p?.name}. Start the backend and tap Run again.</div>}
+      {analysis?.source === 'cached' && <div className="err">Backend offline: showing a cached example analysis, not {nice(p?.name)}. Start the backend and tap Run again.</div>}
       {a && <>
         <section className="hero" style={{ background: C.deep }}>
           <div className="e"><i /><b>{(pass?.recommendation_status ?? '').replace(/_/g, ' ').toUpperCase()}</b></div>

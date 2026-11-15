@@ -75,3 +75,20 @@ nav.tabbar button.on .p{background:var(--mint)}
 .an{transition:all .45s cubic-bezier(.2,.8,.2,1)}
 .err{background:var(--redbg);color:var(--red);border-radius:12px;padding:10px 12px;font-size:12.5px}
 main>*,.body>*{flex-shrink:0}
+.kpi.click{align-items:center;text-align:center;cursor:pointer;font:inherit;color:inherit}
+.kpi.click:active{transform:scale(.98)}
+.ctx{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;text-align:left}
+.ctx span{display:flex;flex-direction:column;gap:2px}.ctx small{font-size:10.5px;color:var(--mut)}.ctx b{font-size:13.5px}
+.ctx .go{margin-left:auto;font-size:12px;font-weight:700;color:var(--teal)}
+.play{width:38px;height:38px;border-radius:19px;border:0;background:var(--deep);display:flex;align-items:center;justify-content:center;flex:none}
+.seasons{display:grid;gap:8px}
+.season{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;padding:10px 4px;border-radius:14px;border:1.5px solid transparent;transition:all .4s}
+.season.on{border-color:var(--deep);background:#F2F8F5;transform:translateY(-3px)}
+.season.dim{opacity:.45}
+.season b{font-size:13.5px}
+.plot{width:72px;height:72px;border-radius:16px;display:flex;align-items:flex-end;justify-content:center;background:linear-gradient(180deg,#EAF2EC 0 62%,#8C6A43 62% 70%,#A07B50 70%)}
+.pill{font-size:10.5px;font-weight:700;padding:3px 7px;border-radius:7px}
+.advice{background:#FBF5E6;border:1px solid #F0DFB4;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.cmp{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px 10px;font-size:13.5px;align-items:center}
+.cmp b{font-size:12px;color:var(--mut)}
+.list>div svg{flex:none}

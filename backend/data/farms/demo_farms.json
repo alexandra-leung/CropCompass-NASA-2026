@@ -3,7 +3,7 @@
   "farms": [
     {
       "farm_id": "pamplemousses-04",
-      "name": "Pamplemousses Field 04",
+      "name": "Pamplemousses",
       "location_id": "pamplemousses-04",
       "field_area_ha": 0.6,
       "soil": {
@@ -72,7 +72,7 @@
     },
     {
       "farm_id": "flacq-02",
-      "name": "Flacq Field 02",
+      "name": "Flacq",
       "location_id": "flacq-02",
       "field_area_ha": 0.8,
       "soil": {
@@ -141,7 +141,7 @@
     },
     {
       "farm_id": "black-river-01",
-      "name": "Black River Field 01",
+      "name": "Black River",
       "location_id": "black-river-01",
       "field_area_ha": 1.0,
       "soil": {
