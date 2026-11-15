@@ -255,6 +255,13 @@ function FieldSheet({ p, src, close, onSaved, passport }: any) {
   const [draw, setDraw] = useState<number[][] | null>(null)
   const [area, setArea] = useState<number | null>(null)
   const [auto, setAuto] = useState<string>('')
+  const [grid, setGrid] = useState<any>(null), [gridBusy, setGridBusy] = useState(false)
+  useEffect(() => { setGrid(null) }, [p?.farm_id])
+  const doGrid = async () => {
+    setGridBusy(true); setErr('')
+    try { const g = await api.landGrid(p.farm_id); setGrid(g); onSaved(await api.getFarm(p.farm_id).then(r => r.data ?? p)) }
+    catch (e) { setErr(`Could not grid the field: ${(e as Error).message}`) } finally { setGridBusy(false) }
+  }
   const findAuto = async () => {
     const ring: number[][] = p.boundary?.geometry?.coordinates?.[0] ?? []
     if (!ring.length) return
@@ -288,9 +295,14 @@ function FieldSheet({ p, src, close, onSaved, passport }: any) {
   return (<>
     <SheetHead eyebrow={`${p.field_area_ha ?? '?'} ha · climate location ${nice(p.name)}`} title={nice(p.name)} close={close} />
     <div className="body">
-      {p.boundary?.geometry?.coordinates?.[0] ? <SatelliteField ring={p.boundary.geometry.coordinates[0]} draft={draw ?? undefined} onTap={draw ? (lon, lat) => setDraw([...draw, [lon, lat]]) : undefined}
+      {p.boundary?.geometry?.coordinates?.[0] ? <SatelliteField ring={p.boundary.geometry.coordinates[0]} grid={grid && !draw ? { cells: grid.cells, half: grid.half_cell_deg } : undefined} draft={draw ?? undefined} onTap={draw ? (lon, lat) => setDraw([...draw, [lon, lat]]) : undefined}
         label={draw ? 'Tap the corners of your field' : p.boundary.method === 'manual' ? 'Outline drawn by farmer' : 'Placeholder outline · redraw to match your field'} /> : <div className="err">No outline yet.</div>}
-      {!draw ? <div className="row"><button className="btn light" style={{ flex: 1 }} onClick={() => { setAuto(''); setDraw([]) }}>Draw by hand</button><button className="btn" style={{ flex: 1 }} onClick={findAuto}>Find my field automatically</button></div> :
+      {!draw ? <>
+        <div className="row"><button className="btn" style={{ flex: 1 }} onClick={findAuto}>Find my field automatically</button>
+          <button className="btn light" style={{ flex: 1 }} disabled={gridBusy} onClick={doGrid}>{gridBusy ? 'Gridding…' : grid ? 'Grid again' : 'Grid my field'}</button></div>
+        {grid && <div className="gridres"><div><b>{grid.usable_pct}%</b><span>plantable</span></div><div><b>{grid.usable_area_ha} ha</b><span>of {grid.field_area_ha} ha</span></div><div><b>{grid.cells_usable}</b><span>{grid.cell_m} m plots</span></div>
+          <p>Green squares can be planted. Red is the {grid.buffer_m} m edge kept for paths and borders. Profit in Plans now uses the {grid.usable_area_ha} ha you can actually plant.</p></div>}
+      </> :
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {auto && <span className="faint">{auto}</span>}
           <span className="muted">{draw.length < 3 ? `Tap at least 3 corners (${draw.length} so far).` : `${draw.length} corners${area != null ? ` · ${area} ha` : ''}${area != null && p.field_area_ha ? ` (you said ${p.field_area_ha} ha)` : ''}`}</span>
@@ -537,6 +549,24 @@ function TwinCompare({ p, loc, a, name, hist }: any) {
   </>
 }
 
+function SoilCard({ plans, today, name }: any) {
+  const best = [...plans].sort((a: any, b: any) => (b.scores.soil ?? 0) - (a.scores.soil ?? 0))[0]
+  if (!best || best.id === today.id) return null
+  const s0 = Math.round((today.scores.soil ?? 0) * 100), s1 = Math.round((best.scores.soil ?? 0) * 100)
+  const why: string[] = []
+  if (best.dna.legumes.length && !today.dna.legumes.length) why.push(`${crop(best.dna.legumes[0])} is a legume: it puts nitrogen back into the soil, so the next crop needs less fertiliser`)
+  if (!best.dna.repeated_family_seasons.length && today.dna.repeated_family_seasons.length) why.push('the crop family changes every season, which breaks the pest and disease cycle')
+  if (best.dna.families > today.dna.families) why.push(`${best.dna.families} crop families instead of ${today.dna.families}: roots feed on different soil layers`)
+  if (best.dna.bare_months_in_heavy_rain.length < today.dna.bare_months_in_heavy_rain.length) why.push('less bare soil in heavy-rain months, so less erosion')
+  return <section className="card soilcard">
+    <div className="between"><div><div className="eb">Improve your soil</div><div className="ct">Grow {rot(best.rotation)}</div></div><Tag k="modelled" text="Soil index" /></div>
+    <div className="soilbar"><div><small>Today</small><b>{s0}</b></div><span className="arrow">→</span><div className="up"><small>{best.label}</small><b>{s1}</b></div><div className="gain">+{s1 - s0} points<br /><small>soil health out of 100</small></div></div>
+    <div className="row" style={{ gap: 6 }}>{best.rotation.map((c: string, k: number) => <span key={k} className="row" style={{ gap: 3 }}><CropPic id={c} size={30} />{k < best.rotation.length - 1 && <span className="faint">→</span>}</span>)}</div>
+    {why.map((w, k) => <div key={k} className="adv"><span className="ai" style={{ background: '#E8F3EF' }}><Icon d={I.leaf} c="#276146" s={15} /></span><span>{w[0].toUpperCase() + w.slice(1)}.</span></div>)}
+    <span className="faint">Soil index for {name}: legume 40%, no repeated family 30%, crop variety 20%, covered soil in heavy rain 10%. A guide to direction, not a lab soil test.</span>
+  </section>
+}
+
 function StressPick({ data }: any) {
   const passes = (r: any) => r.cells.filter((c: any) => c.ok).length
   const [sel, setSel] = useState(0)
@@ -611,7 +641,7 @@ function SimPop({ plan, step, setStep }: any) {
   const stage = nm === 1 ? 4 : Math.round((mi / (nm - 1)) * 4)
   const [sb, sf, st] = SUIT[cur.suitability] ?? SUIT.unknown
   const curMonth = months[mi]
-  useEffect(() => { if (done) return; let on = true; setPhoto(undefined); api.stagePhoto(cur.crop_id, stage).then(r => on && setPhoto(r)); return () => { on = false } }, [cur.crop_id, stage, done])
+  useEffect(() => { setPhoto(null) }, [cur.crop_id, stage, done])
   return <div className="scrim center" onClick={() => setStep(null)}>
     <div className="simpop" onClick={e => e.stopPropagation()} role="dialog" aria-label="Season simulation">
       <div className="between"><div><div className="eb">{plan.label} · season simulation</div><div className="ct">{rot(plan.rotation)}</div></div>
@@ -777,6 +807,8 @@ function Plans({ p, planRes, refresh }: any) {
       <span className="faint">From the M2 plan engine: NASA POWER climate, FAO-56 water use, FAO ECOCROP ranges. Check big changes with your extension officer.</span>
     </section>
 
+
+    <SoilCard plans={plans} today={today} name={nice(p.name)} />
 
     <details className="card xai">
       <summary><div><div className="eb">How this is calculated</div><div className="ct">Explainable AI · SHAP</div></div><span className="chev">⌄</span></summary>

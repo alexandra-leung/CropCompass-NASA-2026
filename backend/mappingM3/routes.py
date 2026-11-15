@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from climateM1.services.locations import LOCATIONS
 from mappingM3 import farm_profile as fp
 from mappingM3.field_boundaries import (
-    FieldBoundary, centroid, nearest_location, polygon_area_ha, square_boundary, suggest_boundary,
+    FieldBoundary, centroid, land_grid, nearest_location, polygon_area_ha, square_boundary, suggest_boundary,
 )
 from mappingM3.soil_inputs import TEXTURE_LABELS
 
@@ -137,6 +137,7 @@ class PatchRequest(BaseModel):
     constraints: list[str] | None = None
     boundary: dict[str, Any] | None = None
     prices_rs_per_kg: dict[str, float] | None = None
+    usable_land_pct: float | None = None
     costs_rs_per_ha: dict[str, float] | None = None
 
 
@@ -169,3 +170,20 @@ def delete(farm_id: str) -> None:
     if p.demo:
         raise HTTPException(status_code=403, detail="Demo farms cannot be deleted.")
     fp.delete_farm(farm_id)
+
+
+class GridRequest(BaseModel):
+    buffer_distance_m: float = Field(default=2.0, ge=0, le=20)
+    cell_m: float = Field(default=5.0, ge=1, le=50)
+
+
+@router.post("/{farm_id}/land-efficiency", summary="Grid the field and measure how much land can be planted")
+def land_efficiency(farm_id: str, req: GridRequest | None = None) -> dict[str, Any]:
+    p = _get(farm_id)
+    if not p.boundary or not p.boundary.geometry:
+        raise HTTPException(status_code=409, detail="Save a field outline first.")
+    r = req or GridRequest()
+    out = land_grid(p.boundary.geometry, r.buffer_distance_m, r.cell_m)
+    saved = fp.FarmProfileIn.model_validate({**p.model_dump(mode="json"), "usable_land_pct": out["usable_pct"]})
+    fp.save_farm(saved, farm_id=farm_id)
+    return out

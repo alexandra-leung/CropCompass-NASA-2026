@@ -14,8 +14,8 @@ const SOURCES = [
 const x2lon = (x: number) => (x / (2 ** Z * T)) * 360 - 180
 const y2lat = (y: number) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / (2 ** Z * T)))) * 180) / Math.PI
 
-export function SatelliteField({ ring, label, draft, onTap }: { ring: number[][]; label: string; draft?: number[][]; onTap?: (lon: number, lat: number) => void }) {
-  const [src, setSrc] = useState(0)
+export function SatelliteField({ ring, label, draft, onTap, grid }: { ring: number[][]; label: string; draft?: number[][]; onTap?: (lon: number, lat: number) => void; grid?: { cells: number[][]; half: number[] } }) {
+  const [src, setSrc] = useState(1)
   const view = useMemo(() => {
     const xs = ring.map(c => lon2x(c[0])), ys = ring.map(c => lat2y(c[1]))
     const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2
@@ -34,7 +34,9 @@ export function SatelliteField({ ring, label, draft, onTap }: { ring: number[][]
         onClick={onTap ? e => { const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect(); const x = ((e.clientX - r.left) / r.width) * view.W + view.x0, y = ((e.clientY - r.top) / r.height) * view.H + view.y0; onTap(+x2lon(x).toFixed(7), +y2lat(y).toFixed(7)) } : undefined}>
         {view.tiles.map(t => <image key={`${t.x}-${t.y}-${src}`} href={S.url(Z, t.x, t.y)} x={t.left} y={t.top} width={T} height={T}
           onError={() => src < SOURCES.length - 1 && setSrc(src + 1)} />)}
-        {!draft && <polygon points={view.pts} fill="rgba(201,226,154,0.18)" stroke="#E9F7C8" strokeWidth={3} />}
+        {!draft && <polygon points={view.pts} fill={grid ? 'none' : 'rgba(201,226,154,0.18)'} stroke="#E9F7C8" strokeWidth={3} />}
+        {grid && grid.cells.map((c, k) => { const x1 = lon2x(c[0] - grid.half[0]) - view.x0, x2 = lon2x(c[0] + grid.half[0]) - view.x0, y1 = lat2y(c[1] + grid.half[1]) - view.y0, y2 = lat2y(c[1] - grid.half[1]) - view.y0
+          return <rect key={k} x={x1} y={y1} width={Math.max(0.5, x2 - x1)} height={Math.max(0.5, y2 - y1)} fill={c[2] ? 'rgba(201,226,154,0.38)' : 'rgba(181,82,58,0.55)'} stroke="rgba(255,255,255,0.35)" strokeWidth={0.4} /> })}
         {draft && draft.length > 0 && (() => {
           const pp = draft.map(c => `${(lon2x(c[0]) - view.x0).toFixed(1)},${(lat2y(c[1]) - view.y0).toFixed(1)}`)
           return <>{draft.length > 2 ? <polygon points={pp.join(' ')} fill="rgba(251,191,36,0.25)" stroke="#FBBF24" strokeWidth={3} /> : <polyline points={pp.join(' ')} fill="none" stroke="#FBBF24" strokeWidth={3} />}

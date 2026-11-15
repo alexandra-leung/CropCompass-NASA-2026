@@ -99,7 +99,7 @@ def test_get_farm_profile_matches_m4_contract():
     ctx = get_farm_profile("pamplemousses-04")
     assert set(ctx) == {"farm_id", "location_id", "soil_ph", "field_area_ha", "irrigation_budget_m3", "current_rotation", "source"}
     assert ctx["source"] == "M3" and ctx["irrigation_budget_m3"] == 3600.0
-    assert ctx["soil_ph"] is None               # unknown stays unknown
+    assert ctx["soil_ph"] == 6.4               # farmer-entered pH is passed through
     FarmContext.model_validate(ctx)
 
 
@@ -203,3 +203,10 @@ def test_point_in_ring():
     from mappingM3.field_boundaries import _point_in_ring
     ring = [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]
     assert _point_in_ring(0.5, 0.5, ring) and not _point_in_ring(1.5, 0.5, ring)
+
+
+def test_land_grid_counts_plantable_cells():
+    from mappingM3.field_boundaries import land_grid, square_boundary
+    g = land_grid(square_boundary(-20.1, 57.5, 1.0), buffer_m=2.0, cell_m=5.0)
+    assert g["cells_total"] > 300 and 70 < g["usable_pct"] < 100
+    assert abs(g["field_area_ha"] - 1.0) < 0.02

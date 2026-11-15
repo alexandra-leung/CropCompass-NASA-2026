@@ -277,3 +277,13 @@ details.xai[open] .chev{transform:rotate(180deg)}
 .twinhead{display:flex;flex-direction:column;gap:3px;background:var(--hero);color:#fff;border-radius:14px;padding:12px 14px}
 .twinhead b{font-size:16px;line-height:21px}.twinhead span{font-size:12.5px;line-height:17px;color:rgba(255,255,255,.85)}
 .scrim.center{z-index:30}.fab{z-index:3}
+.gridres{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px}
+.gridres>div{display:flex;flex-direction:column;align-items:center}
+.gridres b{font-size:18px;color:var(--deep)}.gridres span{font-size:11px;color:var(--mut)}
+.gridres p{grid-column:1/-1;margin:4px 0 0;font-size:12.5px;line-height:17px;color:var(--ink)}
+.soilbar{display:flex;align-items:center;gap:8px}
+.soilbar>div{border:1px solid var(--line);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column}
+.soilbar small{font-size:10.5px;color:var(--mut);font-weight:700}.soilbar b{font-size:22px;color:var(--ink)}
+.soilbar .up{border-color:#8A6A43;background:#F7F1E8}.soilbar .up b{color:#8A6A43}
+.soilbar .gain{border:0;font-weight:700;color:#276146;font-size:15px;line-height:17px}
+.soilbar .arrow{color:var(--mut);font-weight:700}

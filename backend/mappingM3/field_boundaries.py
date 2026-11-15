@@ -202,3 +202,51 @@ def suggest_boundary(latitude: float, longitude: float) -> dict[str, Any]:
         "source_url": f"https://www.openstreetmap.org/way/{el.get('id')}",
         "note": "Mapped by volunteers; check it matches your field before saving.",
     }
+
+
+def land_grid(geometry: dict[str, Any], buffer_m: float = 2.0, cell_m: float = 5.0, max_cells: int = 4000) -> dict[str, Any]:
+    """Grid the field into square cells; a cell is plantable when its centre is inside the field
+    and at least `buffer_m` from the edge (paths, borders, drainage). No external libraries."""
+    ring = _ring(geometry)
+    lat0 = sum(p[1] for p in ring) / len(ring)
+    lon0 = sum(p[0] for p in ring) / len(ring)
+    kx = math.radians(1) * EARTH_RADIUS_M * math.cos(math.radians(lat0))
+    ky = math.radians(1) * EARTH_RADIUS_M
+    pts = [((p[0] - lon0) * kx, (p[1] - lat0) * ky) for p in ring]
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    w, h = max(xs) - min(xs), max(ys) - min(ys)
+    cell = max(cell_m, math.sqrt(max(w * h, 1) / max_cells))
+
+    def inside(x: float, y: float) -> bool:
+        res = False
+        for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
+            if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+                res = not res
+        return res
+
+    def edge_dist(x: float, y: float) -> float:
+        best = float("inf")
+        for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
+            dx, dy = x2 - x1, y2 - y1
+            t = 0.0 if dx == dy == 0 else max(0.0, min(1.0, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)))
+            best = min(best, math.hypot(x - x1 - t * dx, y - y1 - t * dy))
+        return best
+
+    cells, n_in, n_use = [], 0, 0
+    y = min(ys) + cell / 2
+    while y < max(ys):
+        x = min(xs) + cell / 2
+        while x < max(xs):
+            if inside(x, y):
+                n_in += 1
+                ok = edge_dist(x, y) >= buffer_m + cell / 2
+                n_use += ok
+                cells.append([round(lon0 + x / kx, 7), round(lat0 + y / ky, 7), 1 if ok else 0])
+            x += cell
+        y += cell
+    pct = round(n_use / n_in * 100, 1) if n_in else 0.0
+    area = polygon_area_ha(geometry)
+    return {"cell_m": round(cell, 2), "buffer_m": buffer_m, "cells_total": n_in, "cells_usable": n_use,
+            "usable_pct": pct, "field_area_ha": round(area, 4), "usable_area_ha": round(area * pct / 100, 4),
+            "cells": cells, "half_cell_deg": [round(cell / 2 / kx, 8), round(cell / 2 / ky, 8)],
+            "method": f"{cell:.1f} m grid; a whole cell is plantable when it lies at least {buffer_m} m inside the field edge"}

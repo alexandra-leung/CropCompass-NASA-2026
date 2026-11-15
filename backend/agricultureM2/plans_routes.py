@@ -72,7 +72,7 @@ async def plans(req: PlansRequest) -> dict[str, Any]:
         raise HTTPException(status_code=422, detail="This farm has no current rotation yet.")
     seasonal, err = await _seasonal(farm.location_id)
     budget = req.water_budget_mm if req.water_budget_mm is not None else farm.irrigation.budget_mm_per_season
-    out = build_plans(current=farm.current_rotation, seasonal=seasonal, budget_mm=budget, area_ha=farm.field_area_ha,
+    out = build_plans(current=farm.current_rotation, seasonal=seasonal, budget_mm=budget, area_ha=(farm.field_area_ha * (farm.usable_land_pct or 100) / 100 if farm.field_area_ha else None),
                       soil_ph=farm.soil.ph, priorities=req.priorities or farm.priorities.model_dump(),
                       d_temp=req.temperature_change_c, d_rain_pct=req.rainfall_change_pct, max_alternatives=req.max_alternatives,
                       fixed_rotations=req.rotations,

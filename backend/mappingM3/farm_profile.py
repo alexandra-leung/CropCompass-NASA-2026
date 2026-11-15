@@ -130,6 +130,7 @@ class FarmProfileIn(BaseModel):
     irrigation: Irrigation = Field(default_factory=Irrigation)
     current_rotation: list[str] | None = None
     priorities: Priorities = Field(default_factory=Priorities)
+    usable_land_pct: float | None = Field(default=None, ge=0, le=100, description="Share of the field that can be planted (from the land grid).")
     prices_rs_per_kg: dict[str, float] | None = Field(default=None, description="Farmer's own selling price per kg, by crop_id (used for harvest value).")
     costs_rs_per_ha: dict[str, float] | None = Field(default=None, description="Farmer's growing cost per hectare per crop.")
     constraints: list[Constraint] = Field(default_factory=list)

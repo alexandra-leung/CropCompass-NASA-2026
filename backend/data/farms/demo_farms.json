@@ -9,8 +9,8 @@
       "soil": {
         "texture": "clay_loam",
         "texture_source": "map_estimate",
-        "ph": null,
-        "ph_source": "unknown",
+        "ph": 6.4,
+        "ph_source": "farmer",
         "drainage": "unknown",
         "drainage_source": "unknown"
       },
@@ -153,8 +153,8 @@
       "soil": {
         "texture": "loam",
         "texture_source": "map_estimate",
-        "ph": null,
-        "ph_source": "unknown",
+        "ph": 5.4,
+        "ph_source": "farmer",
         "drainage": "good",
         "drainage_source": "farmer"
       },

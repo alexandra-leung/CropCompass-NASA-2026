@@ -102,6 +102,7 @@ export type PlanOpts = { temperature_change_c?: number; rainfall_change_pct?: nu
 export const plans = (farmId: string, opts: PlanOpts = {}, key = 'base', signal?: AbortSignal) =>
   withFallback<any>('/api/agriculture/plans', (fbPlans as any)[`${farmId}|${key}`] ?? null, post({ farm_id: farmId, priorities: BALANCED, ...opts }), 60000, signal)
 export const putBoundary = (id: string, geometry: any) => call<any>(`/api/farms/${id}/boundary`, { method: 'PUT', body: JSON.stringify({ geometry, method: 'manual' }) })
+export const landGrid = (id: string, buffer = 2) => call<any>(`/api/farms/${id}/land-efficiency`, post({ buffer_distance_m: buffer, cell_m: 5 }), 30000)
 export const measure = (geometry: any) => call<any>('/api/farms/boundary/measure', post({ geometry }))
 export const getThisYear = (loc: string, signal?: AbortSignal) => {
   const t = new Date(), y = t.getFullYear(), end = new Date(t.getTime() - 3 * 864e5).toISOString().slice(0, 10)
