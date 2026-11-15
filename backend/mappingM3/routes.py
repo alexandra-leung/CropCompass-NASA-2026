@@ -16,6 +16,11 @@ from mappingM3.soil_inputs import TEXTURE_LABELS
 
 router = APIRouter(prefix="/api/farms", tags=["M3 - Farm Mapping"])
 
+try:  # register stored farms' own coordinates with M1 at start-up
+    fp.list_farms()
+except Exception:  # pragma: no cover - storage problems surface on the first request instead
+    pass
+
 
 def _summary(p: fp.FarmProfile) -> dict[str, Any]:
     loc = LOCATIONS[p.location_id]
@@ -132,6 +137,7 @@ class PatchRequest(BaseModel):
     constraints: list[str] | None = None
     boundary: dict[str, Any] | None = None
     prices_rs_per_kg: dict[str, float] | None = None
+    costs_rs_per_ha: dict[str, float] | None = None
 
 
 @router.patch("/{farm_id}", summary="Change some fields of a farm (e.g. the water slider)")

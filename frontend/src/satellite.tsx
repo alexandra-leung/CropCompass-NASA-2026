@@ -48,9 +48,10 @@ export function SatelliteField({ ring, label, draft, onTap }: { ring: number[][]
 }
 
 /** Satellite picture of a place today, centred on a point (used for climate twins). */
-export function SatellitePlace({ lat, lon, zoom = 11, label }: { lat: number; lon: number; zoom?: number; label: string }) {
+export function SatellitePlace({ lat, lon, zoom: z0 = 14, label, square, caption, onTap }: { lat: number; lon: number; zoom?: number; label: string; square?: boolean; caption?: string; onTap?: (lat: number, lon: number) => void }) {
   const [src, setSrc] = useState(0)
-  const W = 600, H = 300
+  const [zoom, setZoom] = useState(z0)
+  const W = square ? 320 : 600, H = square ? 320 : 300
   const n = 2 ** zoom
   const cx = ((lon + 180) / 360) * n * T
   const r = (lat * Math.PI) / 180
@@ -63,12 +64,15 @@ export function SatellitePlace({ lat, lon, zoom = 11, label }: { lat: number; lo
   const S = SOURCES[src]
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'hidden', borderRadius: 12, background: '#3E5A3A' }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }} aria-label={`Satellite view of ${label}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', cursor: onTap ? 'crosshair' : undefined }} aria-label={`Satellite view of ${label}`}
+        onClick={onTap ? e => { const b = (e.currentTarget as SVGSVGElement).getBoundingClientRect(); const px = x0 + ((e.clientX - b.left) / b.width) * W, py = y0 + ((e.clientY - b.top) / b.height) * H
+          const lo = (px / (n * T)) * 360 - 180, la = (Math.atan(Math.sinh(Math.PI * (1 - (2 * py) / (n * T)))) * 180) / Math.PI; onTap(+la.toFixed(6), +lo.toFixed(6)) } : undefined}>
         {tiles.map(t => <image key={`${t.x}-${t.y}-${t.left}-${src}`} href={S.url(zoom, t.x, t.y)} x={t.left} y={t.top} width={T} height={T}
           onError={() => src < SOURCES.length - 1 && setSrc(src + 1)} />)}
         <circle cx={W / 2} cy={H / 2} r={7} fill="none" stroke="#fff" strokeWidth={2.5} />
       </svg>
-      <span style={{ position: 'absolute', left: 10, bottom: 8, fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.7)' }}>{label} today</span>
+      <span style={{ position: 'absolute', left: 10, bottom: 8, fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.7)' }}>{caption ?? `${label} today`}</span>
+      <span className="zoomctl"><button aria-label="Zoom in" disabled={zoom >= 17} onClick={() => setZoom(zoom + 1)}>+</button><button aria-label="Zoom out" disabled={zoom <= 9} onClick={() => setZoom(zoom - 1)}>−</button></span>
       <span style={{ position: 'absolute', right: 8, top: 6, fontSize: 9, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.7)', maxWidth: '70%', textAlign: 'right' }}>{S.name}</span>
     </div>
   )

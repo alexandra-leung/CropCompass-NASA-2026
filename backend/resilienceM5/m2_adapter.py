@@ -164,7 +164,7 @@ def evaluate_with_plan_engine(
     rows = climate_from_monthly(list(climate.temperature_c), list(climate.precipitation_mm))
     out = build_plans(current=seqs[0], seasonal=None, budget_mm=budget_mm, area_ha=float(area),
                       soil_ph=rotation_request.get("soil_ph"), priorities=rotation_request.get("priorities"),
-                      fixed_rotations=seqs[1:], prices=rotation_request.get("prices_rs_per_kg"),
+                      fixed_rotations=seqs[1:], prices=rotation_request.get("prices_rs_per_kg"), costs=rotation_request.get("costs_rs_per_ha"),
                       climate_rows=rows)
     plans = out["plans"]
     if len(plans) != len(seqs):

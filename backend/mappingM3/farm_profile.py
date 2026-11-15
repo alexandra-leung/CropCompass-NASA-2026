@@ -89,19 +89,58 @@ class Priorities(BaseModel):
         return self
 
 
+class Site(BaseModel):
+    """Where the field is, for a farm anywhere in the world (NASA data is global)."""
+    latitude: float = Field(ge=-60, le=75)
+    longitude: float = Field(ge=-180, le=180)
+    place: str | None = Field(default=None, max_length=120)
+    country: str | None = Field(default=None, max_length=80)
+
+
+class PlantingWindow(BaseModel):
+    crop_id: str
+    start_month: int = Field(ge=1, le=12)
+    end_month: int = Field(ge=1, le=12)
+
+
+def site_location_id(lat: float, lon: float) -> str:
+    return f"site_{lat:.3f}_{lon:.3f}"
+
+
+def register_site(site: "Site | dict") -> str:
+    """Add a farm's own coordinates to the M1 location registry so every module can use them."""
+    from climateM1.services.locations import ClimateLocation
+    d = site if isinstance(site, dict) else site.model_dump()
+    lat, lon = round(float(d["latitude"]), 3), round(float(d["longitude"]), 3)
+    loc_id = site_location_id(lat, lon)
+    if loc_id not in LOCATIONS:
+        LOCATIONS[loc_id] = ClimateLocation(loc_id, d.get("place") or f"Field at {lat}, {lon}", d.get("country") or "", lat, lon)
+    return loc_id
+
+
 class FarmProfileIn(BaseModel):
     """What the farmer submits (create or full update)."""
     farm_id: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]{1,48}$")
     name: str = Field(min_length=1, max_length=80)
-    location_id: str
+    location_id: str = "site"
+    site: Site | None = None
+    rotation_calendar: list[PlantingWindow] | None = None
     field_area_ha: float | None = Field(default=None, gt=0, le=500)
     soil: SoilInputs = Field(default_factory=SoilInputs)
     irrigation: Irrigation = Field(default_factory=Irrigation)
     current_rotation: list[str] | None = None
     priorities: Priorities = Field(default_factory=Priorities)
     prices_rs_per_kg: dict[str, float] | None = Field(default=None, description="Farmer's own selling price per kg, by crop_id (used for harvest value).")
+    costs_rs_per_ha: dict[str, float] | None = Field(default=None, description="Farmer's growing cost per hectare per crop.")
     constraints: list[Constraint] = Field(default_factory=list)
     boundary: FieldBoundary | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _site_location(cls, data: Any) -> Any:
+        if isinstance(data, dict) and data.get("site") and (data.get("location_id") in (None, "", "site") or data.get("location_id", "").startswith("site_")):
+            data = {**data, "location_id": register_site(data["site"])}
+        return data
 
     @field_validator("location_id")
     @classmethod

@@ -123,3 +123,13 @@ def test_m5_evaluator_uses_plan_engine():
     assert all(isinstance(r["feasible"], bool) for r in out["rotations"])
     small = evaluate_with_plan_engine(req, clim, 10)
     assert not any(r["feasible"] for r in small["rotations"])
+
+
+def test_shap_values_add_up_to_score():
+    from agricultureM2.plan_engine import build_plans, climate_from_monthly
+    out = build_plans(current=["maize", "maize", "maize"], seasonal=None, budget_mm=900, area_ha=1.0, soil_ph=6.5,
+                      priorities={"water": 1, "soil": 2, "climate": 1, "income": 1}, climate_rows=climate_from_monthly([25] * 12, [100] * 12))
+    for p in out["plans"]:
+        total = p["shap"]["base_value"] + sum(p["shap"]["values"].values())
+        assert abs(total - p["score"]) < 0.01
+        assert p["income"]["profit_rs"] == p["income"]["harvest_value_rs"] - p["income"]["cost_rs"]

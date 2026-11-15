@@ -100,5 +100,24 @@ export const plans = (farmId: string, opts: PlanOpts = {}, key = 'base', signal?
   withFallback<any>('/api/agriculture/plans', (fbPlans as any)[`${farmId}|${key}`] ?? null, post({ farm_id: farmId, ...opts }), 60000, signal)
 export const putBoundary = (id: string, geometry: any) => call<any>(`/api/farms/${id}/boundary`, { method: 'PUT', body: JSON.stringify({ geometry, method: 'manual' }) })
 export const measure = (geometry: any) => call<any>('/api/farms/boundary/measure', post({ geometry }))
+export const getThisYear = (loc: string, signal?: AbortSignal) => {
+  const t = new Date(), y = t.getFullYear(), end = new Date(t.getTime() - 3 * 864e5).toISOString().slice(0, 10)
+  return withFallback<any>(`/api/climate/history?location_id=${loc}&start=${y}-01-01&end=${end}`, null, undefined, 120000, signal)
+}
 export const getHistoryLong = (loc: string, signal?: AbortSignal) =>
   withFallback<any>(`/api/climate/history?location_id=${loc}&start=2006-01-01&end=2025-12-31`, null, undefined, 240000, signal)
+
+// ---------------- place search (OpenStreetMap Nominatim, called from the browser)
+const NOM = 'https://nominatim.openstreetmap.org'
+export const reverseGeo = async (lat: number, lon: number): Promise<{ place: string; country: string } | null> => {
+  try {
+    const r = await fetch(`${NOM}/reverse?format=jsonv2&zoom=10&lat=${lat}&lon=${lon}&accept-language=en`, { headers: { Accept: 'application/json' } })
+    const j = await r.json(); const a = j.address ?? {}
+    return { place: a.village || a.town || a.city || a.county || a.state || j.name || '', country: a.country || '' }
+  } catch { return null }
+}
+export const searchPlace = async (q: string): Promise<{ name: string; country: string; lat: number; lon: number }[]> => {
+  const r = await fetch(`${NOM}/search?format=jsonv2&addressdetails=1&limit=6&accept-language=en&q=${encodeURIComponent(q)}`, { headers: { Accept: 'application/json' } })
+  const j = await r.json()
+  return (j as any[]).map(x => ({ name: x.display_name.split(',').slice(0, 2).join(','), country: x.address?.country ?? '', lat: +x.lat, lon: +x.lon }))
+}

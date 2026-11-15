@@ -20,6 +20,7 @@ class PlansRequest(BaseModel):
     water_budget_mm: float | None = Field(default=None, ge=0, le=2000, description="Override the farm's budget (what-if)")
     max_alternatives: int = Field(default=3, ge=1, le=6)
     prices_rs_per_kg: dict[str, float] | None = Field(default=None, description="Farmer's own price per kg, by crop_id.")
+    costs_rs_per_ha: dict[str, float] | None = Field(default=None, description="Farmer's growing cost per hectare per crop.")
     rotations: list[list[str]] | None = Field(default=None, description="Evaluate exactly these rotations (stress tests) instead of generating alternatives.")
 
 
@@ -31,6 +32,21 @@ async def _seasonal(location_id: str) -> tuple[list[dict[str, Any]] | None, str 
         return data.get("seasonal"), None
     except Exception as exc:  # climate unavailable: plans still compared on rotation rules
         return None, f"{type(exc).__name__}: {exc}"
+
+
+def _lat(location_id: str) -> float | None:
+    from climateM1.services.locations import LOCATIONS
+    loc = LOCATIONS.get(location_id)
+    return loc.latitude if loc else None
+
+
+def _months(farm: Any) -> list[list[int]] | None:
+    """The farmer's own planting windows, in the order of the current rotation."""
+    from agricultureM2.plan_engine import month_span
+    cal = getattr(farm, "rotation_calendar", None)
+    if not cal or not farm.current_rotation or len(cal) != len(farm.current_rotation):
+        return None
+    return [month_span(w.start_month, w.end_month) for w in cal]
 
 
 @router.post("/plans", summary="Ranked rotation plans for a farm (water need, suitability, score)")
@@ -48,6 +64,8 @@ async def plans(req: PlansRequest) -> dict[str, Any]:
                       soil_ph=farm.soil.ph, priorities=farm.priorities.model_dump(),
                       d_temp=req.temperature_change_c, d_rain_pct=req.rainfall_change_pct, max_alternatives=req.max_alternatives,
                       fixed_rotations=req.rotations,
-                      prices=req.prices_rs_per_kg or getattr(farm, 'prices_rs_per_kg', None))
+                      prices=req.prices_rs_per_kg or getattr(farm, 'prices_rs_per_kg', None),
+                      costs=req.costs_rs_per_ha or getattr(farm, 'costs_rs_per_ha', None),
+                      latitude=_lat(farm.location_id), current_months=_months(farm))
     out.update({"farm_id": farm.farm_id, "location_id": farm.location_id, "climate_error": err})
     return out

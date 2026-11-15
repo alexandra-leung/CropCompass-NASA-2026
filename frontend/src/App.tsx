@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import * as api from './api'
 import type { Source } from './api'
-import { C, Hero, I, Icon, Kpi, LineChart, SourceTag, Spinner, Tag } from './ui'
+import { C, FarmPickCtx, Hero, I, Icon, Kpi, LineChart, SourceTag, Spinner, Tag } from './ui'
 import { CropPic } from './crops'
 import { SatelliteField, SatellitePlace } from './satellite'
 
@@ -17,6 +17,7 @@ const nice = (n?: string) => (n ?? '').replace(/ Field \d+$/, '')
 const rot = (r?: string[] | null) => (r && r.length ? r.map(crop).join(' → ') : 'Not entered')
 const TEXTURES: [string, string][] = [['sandy_loam', 'Sandy loam'], ['loam', 'Loam'], ['clay_loam', 'Clay loam'], ['clay', 'Clay'], ['unknown', "Don't know"]]
 const WATER: [string, string][] = [['rain_only', 'Rain only'], ['tank', 'Tank or pond'], ['borehole', 'Borehole'], ['irrigation_scheme', 'Irrigation scheme']]
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MONTH_L = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
 const SCEN: [string, string][] = [['ssp245', 'Middle path · SSP2-4.5'], ['ssp370', 'Higher emissions · SSP3-7.0']]
 const srcKey = (s?: string) => (s === 'farmer' ? 'entered' : s === 'map_estimate' ? 'map' : 'missing')
@@ -61,10 +62,10 @@ export default function App() {
     return () => ctl.abort()
   }, [p?.farm_id, p?.location_id, (p?.current_rotation || []).join()])
 
-  const planKey = p ? [p.farm_id, p.irrigation?.budget_mm_per_season, JSON.stringify(p.priorities), JSON.stringify(p.prices_rs_per_kg ?? null), (p.current_rotation || []).join(), p.soil?.ph].join('|') : ''
+  const planKey = p ? [p.farm_id, p.irrigation?.budget_mm_per_season, JSON.stringify(p.priorities), JSON.stringify(p.prices_rs_per_kg ?? null), JSON.stringify(p.costs_rs_per_ha ?? null), (p.current_rotation || []).join(), p.soil?.ph].join('|') : ''
   const loadPlans = () => { if (!p?.current_rotation?.length) return; setPlanRes(null); api.plans(p.farm_id).then(setPlanRes) }
   useEffect(() => { loadPlans() }, [planKey])
-  const savePrices = async (pr: any) => { try { setFarm({ data: await api.patchFarm(p.farm_id, { prices_rs_per_kg: pr }), source: 'live' }); return true } catch { return false } }
+  const savePrices = async (pr: any, co: any) => { try { setFarm({ data: await api.patchFarm(p.farm_id, { prices_rs_per_kg: pr, costs_rs_per_ha: co }), source: 'live' }); return true } catch { return false } }
   const savePriorities = async (w: any) => { try { setFarm({ data: await api.patchFarm(p.farm_id, { priorities: w }), source: 'live' }) } catch { /* offline */ } }
 
   const runAnalysis = async () => {
@@ -80,6 +81,7 @@ export default function App() {
   const loc = farmList.find(f => f.farm_id === farmId)
 
   return (
+    <FarmPickCtx.Provider value={farmList.length ? { farms: farmList, active: farmId, set: setFarmId } : null}>
     <div className="phone">
       <div className="top">
         <span className="logo"><Icon d={I.leaf} c="#fff" s={20} /></span>
@@ -89,7 +91,7 @@ export default function App() {
       </div>
 
       <main>
-        {tab === 'home' && <Home p={p} loc={loc} farms={farmList} history={history} openField={() => setSheet({ kind: 'field' })} farmsSrc={farms.source} goFields={() => setTab('fields')} planRes={planRes} goPlans={() => setTab('plans')} />}
+        {tab === 'home' && <Home p={p} loc={loc} farms={farmList} history={history} openField={() => setSheet({ kind: 'field' })} farmsSrc={farms.source} goFields={() => setTab('fields')} planRes={planRes} />}
         {tab === 'fields' && <Fields farms={farmList} src={farms.source} open={(id: string) => { setFarmId(id); setSheet({ kind: 'field' }) }} add={() => setSheet({ kind: 'add' })} plans={(id: string) => { setFarmId(id); setTab('plans') }} />}
         {tab === 'plans' && <Plans p={p} planRes={planRes} onPriorities={savePriorities} refresh={loadPlans} onPrices={savePrices} />}
         {tab === 'water' && <Water p={p} planRes={planRes} onSaved={(np: any) => setFarm({ data: np, source: 'live' })} />}
@@ -115,13 +117,16 @@ export default function App() {
         </div>
       )}
     </div>
+    </FarmPickCtx.Provider>
   )
 }
 
 /* ------------------------------------------------------------------ HOME */
-function Home({ p, loc, farms, history, openField, farmsSrc, goFields, planRes, goPlans }: any) {
+function Home({ p, loc, farms, history, openField, farmsSrc, goFields, planRes }: any) {
   const [long, setLong] = useState<api.Res<any> | null>(null), [loadingLong, setLoadingLong] = useState(false)
   useEffect(() => { setLong(null) }, [loc?.farm_id])
+  const [yr, setYr] = useState<api.Res<any> | null>(null)
+  useEffect(() => { if (!p?.location_id) return; const c = new AbortController(); setYr(null); api.getThisYear(p.location_id, c.signal).then(r => !c.signal.aborted && setYr(r)); return () => c.abort() }, [p?.location_id])
   const h = long?.data ?? history?.data
   const ts: any[] = h?.timeseries ?? []
   const m = h?.metrics
@@ -144,13 +149,13 @@ function Home({ p, loc, farms, history, openField, farmsSrc, goFields, planRes, 
       <Kpi onClick={goFields} v={p?.irrigation?.budget_mm_per_season != null ? String(Math.round(p.irrigation.budget_mm_per_season)) : '…'} unit="mm" l={`Water · ${nice(p?.name)}`} />
       <Kpi onClick={goFields} v={m ? `${m.dataCompleteness}` : history && !h ? '–' : '…'} unit={m ? '%' : undefined} l="Climate data" />
     </div>
+    <ThisYear yr={yr} hist={history?.data} name={nice(p?.name)} />
     {planRes?.data && (() => {
       const pls: any[] = planRes.data.plans, best = pls.find((x: any) => x.id === planRes.data.best_plan_id), today = pls[0]
       return <section className="card">
         <div className="between"><div><div className="eb">Best plan for {nice(p?.name)}</div><div className="ct">{best.id === 'current' ? 'Keep your rotation' : `${best.label}: ${rot(best.rotation)}`}</div></div><SourceTag s={planRes.source} what="M2" /></div>
         <div className="row" style={{ gap: 6 }}>{best.rotation.map((c: string, k: number) => <span key={k} className="row" style={{ gap: 2 }}><CropPic id={c} size={34} />{k < best.rotation.length - 1 && <span className="faint">→</span>}</span>)}</div>
-        <span className="muted" style={{ fontSize: 13.5 }}>{best.reasons[0]} Score {Math.round((best.score ?? 0) * 100)} vs {Math.round((today.score ?? 0) * 100)} today.{best.income?.harvest_value_rs ? ` Harvest about ${rs(best.income.harvest_value_rs)} a year.` : ''}</span>
-        <button className="btn" onClick={goPlans}>See all plans ›</button>
+        <span className="muted" style={{ fontSize: 13.5 }}>{best.reasons[0]} Score {Math.round((best.score ?? 0) * 100)} vs {Math.round((today.score ?? 0) * 100)} today.{best.income?.profit_rs != null ? ` Profit about ${rs(best.income.profit_rs)} a year.` : ''}</span>
       </section>
     })()}
     <section className="card">
@@ -178,6 +183,33 @@ function Home({ p, loc, farms, history, openField, farmsSrc, goFields, planRes, 
 }
 
 /* ------------------------------------------------------------------ FIELDS */
+const SEASON_NAME: Record<string, string> = { DJF: 'Dec–Feb', MAM: 'Mar–May', JJA: 'Jun–Aug', SON: 'Sep–Nov' }
+function ThisYear({ yr, hist, name }: any) {
+  const year = new Date().getFullYear()
+  const cur: any[] = yr?.data?.seasonal ?? [], base: any[] = hist?.seasonal ?? []
+  if (!yr) return <section className="card"><div className="eb">{year} so far</div><Spinner text={`Fetching ${year} from NASA POWER…`} /></section>
+  if (!cur.length || !base.length) return null
+  const rows = ['DJF', 'MAM', 'JJA', 'SON'].map(code => {
+    const c = cur.find(x => x.period.endsWith(code)), b = base.filter(x => x.period.endsWith(code) && x.completenessStatus !== 'incomplete')
+    if (!c || !b.length) return null
+    const nr = b.reduce((a, x) => a + x.rainfallMm, 0) / b.length, nt = b.reduce((a, x) => a + x.temperatureC, 0) / b.length
+    return { code, rain: c.rainfallMm, nr, dr: nr ? Math.round((c.rainfallMm / nr - 1) * 100) : 0, dt: +(c.temperatureC - nt).toFixed(1), partial: c.completenessStatus === 'incomplete' }
+  }).filter(Boolean) as any[]
+  const full = rows.filter(r => !r.partial), avg = full.length ? Math.round(full.reduce((a, r) => a + r.dr, 0) / full.length) : null
+  const max = Math.max(...rows.flatMap(r => [r.rain, r.nr]), 1)
+  return <section className="card">
+    <div className="between"><div><div className="eb">{year} so far · {name}</div><div className="ct">{avg == null ? 'This year vs normal' : avg < -10 ? `${year} is drier than normal` : avg > 10 ? `${year} is wetter than normal` : `${year} is close to normal`}</div></div><Tag k="observed" text="NASA POWER" /></div>
+    <div className="yrbars">{rows.map(r => <div key={r.code}>
+      <div className="yb"><i style={{ height: `${(r.nr / max) * 90}px`, background: '#CBD5D1' }} title={`Normal ${Math.round(r.nr)} mm`} /><i style={{ height: `${(r.rain / max) * 90}px`, background: r.partial ? '#9DBFD2' : C.water }} title={`${year}: ${Math.round(r.rain)} mm`} /></div>
+      <b style={{ color: r.dr < -10 ? C.red : r.dr > 10 ? C.water : C.ink }}>{r.partial ? 'so far' : `${r.dr > 0 ? '+' : ''}${r.dr}%`}</b>
+      <span className="faint">{SEASON_NAME[r.code]}</span>
+      <span className="faint">{r.dt > 0 ? '+' : ''}{r.dt} °C</span>
+    </div>)}</div>
+    <div className="row" style={{ gap: 14, fontSize: 11.5, color: C.mut }}><span className="row" style={{ gap: 5 }}><span style={{ width: 12, height: 10, background: '#CBD5D1', borderRadius: 2 }} />Normal 2021–2025</span><span className="row" style={{ gap: 5 }}><span style={{ width: 12, height: 10, background: C.water, borderRadius: 2 }} />{year}</span></div>
+    <span className="faint">Plans are built on complete years 2021–2025. NASA POWER updates within days, so {year} is checked live as a test year the model never saw.</span>
+  </section>
+}
+
 function Fields({ farms, src, open, add, plans }: any) {
   return (<>
     <div className="eb">Your land, at a glance</div>
@@ -294,42 +326,100 @@ function SheetHead({ eyebrow, title, close, back }: any) {
 }
 
 /* ------------------------------------------------------------------ ADD FIELD */
+type CropRow = { name: string; from: number; to: number }
 function AddField({ close, created }: any) {
   const [step, setStep] = useState(0)
-  const [locs, setLocs] = useState<any[]>([])
   const [crops, setCrops] = useState<any[]>([])
-  const [f, setF] = useState<any>({ name: '', location_id: 'pamplemousses-04', area: '0.5', rotation: [] as string[], water_source: 'tank', mm: '150', texture: 'unknown' })
+  const [f, setF] = useState<any>({ name: '', area: '0.5', water_source: 'tank', mm: '300', texture: 'unknown' })
+  const [rows, setRows] = useState<CropRow[]>([{ name: '', from: 11, to: 2 }])
+  const [here, setHere] = useState<{ lat: number; lon: number; place: string; country: string } | null>(null)
+  const [geo, setGeo] = useState<'idle' | 'asking' | 'denied'>('idle')
+  const [mode, setMode] = useState<'here' | 'world' | null>(null)
+  const [site, setSite] = useState<{ lat: number; lon: number; place: string; country: string } | null>(null)
+  const [q, setQ] = useState(''), [hits, setHits] = useState<any[]>([]), [searching, setSearching] = useState(false)
   const [err, setErr] = useState(''), [busy, setBusy] = useState(false)
-  useEffect(() => { api.getLocations().then(r => setLocs(r.data?.locations ?? [])); api.getCrops().then(r => setCrops(r.data ?? [])) }, [])
+  useEffect(() => { api.getCrops().then(r => setCrops(r.data ?? [])) }, [])
+  const locate = () => {
+    if (!navigator.geolocation) { setGeo('denied'); return }
+    setGeo('asking')
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const lat = +pos.coords.latitude.toFixed(5), lon = +pos.coords.longitude.toFixed(5)
+      const g = await api.reverseGeo(lat, lon)
+      setHere({ lat, lon, place: g?.place ?? '', country: g?.country ?? 'this area' }); setGeo('idle')
+    }, () => setGeo('denied'), { enableHighAccuracy: true, timeout: 12000 })
+  }
+  useEffect(() => { locate() }, [])
+  const doSearch = async () => {
+    if (!q.trim()) return
+    setSearching(true)
+    try { setHits(await api.searchPlace(mode === 'here' && here?.country ? `${q}, ${here.country}` : q)) } catch { setHits([]) }
+    setSearching(false)
+  }
+  const idOf = (name: string) => { const n = name.trim().toLowerCase().replace(/\s+/g, '_'); return crops.find(c => c.crop_id === n || [String(c.crop_name ?? ''), crop(c.crop_id)].some(x => x.toLowerCase() === name.trim().toLowerCase()))?.crop_id ?? (crops.length ? null : n) }
+  const parsed = rows.map(r => ({ ...r, id: r.name.trim() ? idOf(r.name) : null }))
+  const unknown = parsed.filter(r => r.name.trim() && !r.id)
   const titles = ['Where is it?', 'What grows there?', 'Your water', 'Your soil']
-  const ok = [f.name.trim().length > 0 && +f.area > 0, f.rotation.length > 0, f.water_source === 'rain_only' || +f.mm >= 0, true][step]
+  const ok = [f.name.trim().length > 0 && +f.area > 0 && !!site, parsed.some(r => r.id) && !unknown.length, f.water_source === 'rain_only' || +f.mm >= 0, true][step]
   const submit = async () => {
     setBusy(true); setErr('')
     try {
+      const good = parsed.filter(r => r.id)
       const body = {
-        name: f.name.trim(), location_id: f.location_id, field_area_ha: +f.area, current_rotation: f.rotation,
+        name: f.name.trim(), site: { latitude: site!.lat, longitude: site!.lon, place: site!.place, country: site!.country }, field_area_ha: +f.area,
+        current_rotation: good.map(r => r.id), rotation_calendar: good.map(r => ({ crop_id: r.id, start_month: r.from, end_month: r.to })),
         irrigation: { water_source: f.water_source, budget_mm_per_season: f.water_source === 'rain_only' ? 0 : +f.mm },
         soil: f.texture === 'unknown' ? {} : { texture: f.texture, texture_source: 'farmer' },
       }
       const r = await api.createFarm(body); created(r.farm_id)
     } catch (e) { setErr(`Could not save: ${(e as Error).message}. Is the backend running?`) } finally { setBusy(false) }
   }
+  const setRow = (k: number, v: Partial<CropRow>) => setRows(rows.map((r, i) => (i === k ? { ...r, ...v } : r)))
   return (<>
     <SheetHead eyebrow={`New field · step ${step + 1} of 4`} title={titles[step]} close={close} back={step ? () => setStep(step - 1) : undefined} />
     <div className="body">
       <div style={{ display: 'flex', gap: 4 }}>{[0, 1, 2, 3].map(i => <span key={i} className="an" style={{ flex: 1, height: 5, borderRadius: 3, background: i <= step ? C.teal : '#D5DFDB' }} />)}</div>
       {step === 0 && <>
         <label className="field">Field name<input value={f.name} placeholder="Behind the house" onChange={e => setF({ ...f, name: e.target.value })} /></label>
-        <span className="eb">Nearest climate location</span>
-        {locs.map(l => <button key={l.location_id} className="fcard" onClick={() => setF({ ...f, location_id: l.location_id })} style={{ border: f.location_id === l.location_id ? `2px solid ${C.deep}` : undefined }}>
-          <span className="in"><b>{nice(l.name)}</b><span className="faint">{l.district} · {l.latitude.toFixed(3)}, {l.longitude.toFixed(3)}</span></span></button>)}
+        <section className="card" style={{ gap: 10 }}>
+          <div className="row" style={{ gap: 10 }}><span className="ai" style={{ background: 'var(--mint)' }}><Icon d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z M12 12a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" c={C.deep} s={18} /></span>
+            <span style={{ flex: 1 }}>{geo === 'asking' ? 'Finding where you are…' : here ? <>You are currently in <b>{here.place ? `${here.place}, ` : ''}{here.country}</b>.</> : geo === 'denied' ? 'Location is off. Search for the place instead.' : 'Allow location to start from where you are.'}</span>
+            {geo === 'denied' && <button className="chip" onClick={locate}>Try again</button>}</div>
+          <span className="eb">Where is this field?</span>
+          <div className="seg" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <button className={mode === 'here' ? 'on' : ''} disabled={!here} onClick={() => { setMode('here'); setHits([]); if (here) setSite({ ...here }) }}>In {here?.country || 'my country'}</button>
+            <button className={mode === 'world' ? 'on' : ''} onClick={() => { setMode('world'); setSite(null); setHits([]) }}>Elsewhere in the world</button>
+          </div>
+          {mode && <div className="row"><input className="tin" value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && doSearch()} placeholder={mode === 'here' ? 'Village or area (optional)' : 'Town, region or country'} /><button className="btn" style={{ minHeight: 40 }} onClick={doSearch} disabled={searching}>{searching ? '…' : 'Search'}</button></div>}
+          {hits.length > 0 && <div className="list">{hits.map((h, k) => <button key={k} className="hit" onClick={() => { setSite({ lat: h.lat, lon: h.lon, place: h.name, country: h.country }); setHits([]) }}><b>{h.name}</b><span className="faint">{h.country} · {h.lat.toFixed(3)}, {h.lon.toFixed(3)}</span></button>)}</div>}
+          {site && <>
+            <SatellitePlace square={false} zoom={15} lat={site.lat} lon={site.lon} label={site.place || 'Your field'} caption="Tap the map on your field" onTap={(la, lo) => setSite({ ...site, lat: la, lon: lo })} />
+            <span className="faint">{site.place ? `${site.place}, ` : ''}{site.country} · {site.lat.toFixed(4)}, {site.lon.toFixed(4)}. NASA POWER and NASA climate projections cover every point on Earth.</span>
+          </>}
+        </section>
         <label className="field">Size (hectares)<input inputMode="decimal" value={f.area} onChange={e => setF({ ...f, area: e.target.value })} /></label>
-        <span className="faint">Auto outline from satellite is not available yet; a placeholder outline of this size is saved, and you can redraw it later.</span>
       </>}
       {step === 1 && <>
-        <span className="muted">Tap the crops in the order you grew them (last 3 seasons).</span>
-        <div className="chips">{crops.map(c => <button key={c.crop_id} className={'chip' + (f.rotation.includes(c.crop_id) ? ' on' : '')} onClick={() => setF({ ...f, rotation: f.rotation.length < 3 ? [...f.rotation, c.crop_id] : f.rotation })}>{crop(c.crop_id)}</button>)}</div>
-        <section className="card"><span className="eb">Your rotation</span><b>{rot(f.rotation)}</b>{f.rotation.length > 0 && <button className="chip" onClick={() => setF({ ...f, rotation: [] })}>Clear</button>}</section>
+        <span className="muted">Type each crop you grow and the months it is in the ground. Add one line per crop, in order through the year.</span>
+        <datalist id="cropnames">{crops.map(c => <option key={c.crop_id} value={crop(c.crop_id)} />)}</datalist>
+        {rows.map((r, k) => {
+          const id = parsed[k].id
+          return <section key={k} className="croprow">
+            <div className="row" style={{ gap: 8 }}>
+              <span className="plotsm">{id ? <CropPic id={id} size={30} /> : <span className="faint">{k + 1}</span>}</span>
+              <input className="tin" list="cropnames" value={r.name} placeholder="Crop, e.g. Tomato" onChange={e => setRow(k, { name: e.target.value })} aria-label={`Crop ${k + 1}`} />
+              {rows.length > 1 && <button className="round" aria-label="Remove crop" onClick={() => setRows(rows.filter((_, i) => i !== k))}><Icon d="M6 6l12 12M18 6L6 18" s={16} /></button>}
+            </div>
+            <div className="row" style={{ gap: 8 }}>
+              <label className="mini">From<select value={r.from} onChange={e => setRow(k, { from: +e.target.value })}>{MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></label>
+              <label className="mini">To<select value={r.to} onChange={e => setRow(k, { to: +e.target.value })}>{MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}</select></label>
+            </div>
+            {r.name.trim() && !id && <span className="faint" style={{ color: C.red }}>Not in our crop list yet. We can model: {crops.map(c => crop(c.crop_id)).join(', ')}.</span>}
+          </section>
+        })}
+        {rows.length < 6 && <button className="btn light" onClick={() => { const last = rows[rows.length - 1]; const from = last ? last.to % 12 + 1 : 1; setRows([...rows, { name: '', from, to: (from + 2) % 12 + 1 }]) }}>+ Add another crop</button>}
+        <section className="card"><span className="eb">Your year</span>
+          <div className="simmonths">{MONTHS.map((m, i) => { const r = parsed.find(x => x.id && (api_span(x.from, x.to).includes(i + 1))); return <span key={m} className={r ? 'on' : ''} title={r ? crop(r.id!) : 'bare'}>{m[0]}</span> })}</div>
+          <b>{rot(parsed.filter(r => r.id).map(r => r.id!))}</b></section>
       </>}
       {step === 2 && <>
         <div className="chips">{WATER.map(([k, l]) => <button key={k} className={'chip' + (f.water_source === k ? ' on' : '')} onClick={() => setF({ ...f, water_source: k })}>{l}</button>)}</div>
@@ -345,6 +435,7 @@ function AddField({ close, created }: any) {
     </div>
   </>)
 }
+const api_span = (a: number, b: number) => { const out = [a]; let m = a; while (m !== b && out.length < 12) { m = m % 12 + 1; out.push(m) } return out }
 
 /* ------------------------------------------------------------------ PLANS */
 const FAM: Record<string, string> = { Poaceae: 'grass family', Fabaceae: 'legume', Solanaceae: 'nightshade', Amaryllidaceae: 'onion family', Brassicaceae: 'cabbage family', Convolvulaceae: 'morning glory' }
@@ -370,21 +461,128 @@ function YearStrip({ plan, label }: { plan: any; label: string }) {
   </div>
 }
 
+const advKind = (a: string): [string, string, string] =>
+  /water|irrigation|mm /i.test(a) ? [I.drop, '#E8F1F5', C.water]
+  : /Rs |harvest|worth/i.test(a) ? ['M12 4v16 M16 8c0-1.7-1.8-3-4-3s-4 1.3-4 3 1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3-4-1.3-4-3', '#FBF5E6', '#8A6A12']
+  : /°C|hot|cold|tolerat|range/i.test(a) ? ['M12 7a5 5 0 100 10 5 5 0 000-10z M12 2v2 M12 20v2 M4 12H2 M22 12h-2', '#FBEFEA', C.red]
+  : /pH/i.test(a) ? ['M9 3h6 M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3', '#F2F6F4', C.mut]
+  : [I.leaf, '#E8F3EF', '#276146']
+
+function StressPick({ data }: any) {
+  const passes = (r: any) => r.cells.filter((c: any) => c.ok).length
+  const [sel, setSel] = useState(0)
+  useEffect(() => { setSel(0) }, [data.rows.length])
+  const r = data.rows[Math.min(sel, data.rows.length - 1)]
+  return <>
+    <div className="splans">{data.rows.map((x: any, k: number) => <button key={x.id + k} className={k === sel ? 'on' : ''} onClick={() => setSel(k)}>
+      <b>{x.label.replace(' (heat-ready)', '')}</b>{x.label.includes('heat-ready') && <small>heat-ready</small>}<span>{passes(x)}/{x.cells.length}</span></button>)}</div>
+    <div className="srot">{r.rotation.map((c: string, k: number) => <span key={k} className="row" style={{ gap: 3 }}><CropPic id={c} size={26} />{k < r.rotation.length - 1 && <span className="faint">→</span>}</span>)}<span className="muted" style={{ marginLeft: 6 }}>{rot(r.rotation)}</span></div>
+    <div className="scircles" key={sel}>{r.cells.map((c: any, k: number) => {
+      const why = c.tip.split(': ').slice(1).join(': ')
+      return <div key={k} className={'scirc ' + (c.ok ? 'ok' : 'bad') + (c.best ? ' best' : '')} title={c.tip}>
+        <span className="ring"><Icon d={c.ok ? 'M5 12.5l4.5 4.5L19 7.5' : 'M7 7l10 10M17 7L7 17'} c={c.best ? C.deep : '#fff'} s={22} /></span>
+        <b>{data.cols[k].label}</b>
+        <small>{c.best ? 'Best here' : c.ok ? 'Works' : 'Fails'}</small>
+        {!c.ok && why && <em>{why.replace(/^Needs /, 'Needs ').slice(0, 70)}</em>}
+      </div>
+    })}</div>
+  </>
+}
+
+const FEAT: Record<string, [string, string]> = { water: ['Water use', '#3B7EA1'], soil: ['Soil care', '#8A6A43'], climate: ['Climate fit', '#0C8A84'], income: ['Profit', '#C98B00'] }
+function ShapChart({ plan, weights }: any) {
+  const sh = plan.shap
+  if (!sh) return null
+  const vals: [string, number][] = Object.entries(sh.values as Record<string, number>)
+  const max = Math.max(0.05, ...vals.map(([, v]) => Math.abs(v)))
+  const f = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 100))}`
+  return <div className="shap">
+    <span className="muted">Each bar shows how much a factor pushes <b>{plan.label}</b> above or below the average plan ({Math.round(sh.base_value * 100)}). Together they add up to its score of {Math.round((plan.score ?? 0) * 100)}.</span>
+    <div className="shrow base"><span>Average plan</span><span className="shtrack" /><b>{Math.round(sh.base_value * 100)}</b></div>
+    {vals.map(([k, v]) => <div key={k} className="shrow" title={`index ${Math.round(sh.features[k].index * 100)} vs average ${Math.round(sh.features[k].mean_index * 100)}, weight ${Math.round((weights[k] ?? 0) * 100)}%`}>
+      <span>{FEAT[k]?.[0] ?? k}<small>{Math.round((weights[k] ?? 0) * 100)}% weight</small></span>
+      <span className="shtrack"><i style={{ [v >= 0 ? 'left' : 'right']: '50%', width: `${(Math.abs(v) / max) * 50}%`, background: v >= 0 ? C.teal : C.red } as any} /></span>
+      <b style={{ color: v >= 0 ? '#276146' : C.red }}>{f(v)}</b>
+    </div>)}
+    <div className="shrow total"><span>{plan.label} score</span><span className="shtrack" /><b>{Math.round((plan.score ?? 0) * 100)}</b></div>
+    <span className="faint">{sh.method}. Green pushes the score up, red pulls it down.</span>
+  </div>
+}
+
+function ProfitCard({ d, sel }: any) {
+  const plans: any[] = d.plans
+  if (!plans.some(p => p.income?.profit_rs != null)) return null
+  const today = plans[0], max = Math.max(1, ...plans.map(p => Math.abs(p.income?.profit_rs ?? 0)))
+  return <section className="card">
+    <div className="between"><div><div className="eb">Profit per year</div><div className="ct">Harvest value minus growing costs</div></div><Tag k="modelled" text="Estimate" /></div>
+    <div className="list">{plans.map(p => {
+      const pf = p.income?.profit_rs ?? 0, dlt = pf - (today.income?.profit_rs ?? 0)
+      return <div key={p.id} style={{ alignItems: 'center', background: p.id === sel.id ? 'var(--mint)' : undefined, borderRadius: 10, padding: '6px 6px' }}>
+        <span style={{ width: 54, fontWeight: 700, fontSize: 13 }}>{p.label}</span>
+        <span style={{ flex: 1, height: 10, background: '#EEF2EF', borderRadius: 5, overflow: 'hidden' }}><i style={{ display: 'block', height: 10, width: `${Math.max(0, pf) / max * 100}%`, background: pf >= 0 ? C.gold : C.red }} /></span>
+        <span style={{ width: 120, textAlign: 'right', fontSize: 12.5 }}><b>{rs(pf)}</b><br /><span style={{ color: dlt > 0 ? '#276146' : dlt < 0 ? C.red : C.mut, fontWeight: 700 }}>{p.id === 'current' ? 'today' : `${dlt >= 0 ? '+' : '−'}${rs(Math.abs(dlt))}${today.income?.profit_rs > 0 ? ` (${dlt >= 0 ? '+' : '−'}${Math.abs(Math.round(dlt / today.income.profit_rs * 100))}%)` : ''}`}</span></span>
+      </div>
+    })}</div>
+    <span className="faint">Harvest {rs(sel.income?.harvest_value_rs)} − costs {rs(sel.income?.cost_rs)} for {sel.label} on {sel.income?.area_ha} ha. Change prices and costs below.</span>
+  </section>
+}
+
+function SimPop({ plan, step, setStep }: any) {
+  const n = plan.crops.length, done = step >= n, cur = plan.crops[Math.min(step, n - 1)]
+  const [sb, sf, st] = SUIT[cur.suitability] ?? SUIT.unknown
+  const growing = new Set(cur.months)
+  return <div className="scrim center" onClick={() => setStep(null)}>
+    <div className="simpop" onClick={e => e.stopPropagation()} role="dialog" aria-label="Season simulation">
+      <div className="between"><div><div className="eb">{plan.label} · season simulation</div><div className="ct">{rot(plan.rotation)}</div></div>
+        <button className="round" aria-label="Close" onClick={() => setStep(null)}><Icon d="M6 6l12 12M18 6L6 18" s={18} /></button></div>
+      <div className="simdots">{plan.crops.map((c: any, k: number) => <button key={k} className={k === step ? 'on' : k < step ? 'past' : ''} onClick={() => setStep(k)}><CropPic id={c.crop_id} size={22} /><span>{c.season_label}</span></button>)}</div>
+      {!done ? <>
+        <div className="simplot"><span key={'g' + step} className="grow"><CropPic id={cur.crop_id} size={120} /></span></div>
+        <span className="prog wide"><i key={'p' + step} /></span>
+        <div style={{ textAlign: 'center' }}><div className="ct">{crop(cur.crop_id)} growing</div><span className="muted">{cur.season_label} · {cur.months.length} months</span></div>
+        <div className="simmonths">{MONTHS.map((m, k) => <span key={k} className={growing.has(m) ? 'on' : ''}>{m[0]}</span>)}</div>
+        <div className="row" style={{ gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <span className="pill" style={{ background: sb, color: sf }}>{st}{cur.season_temperature_c != null ? ` · ${cur.season_temperature_c} °C` : ''}</span>
+          {cur.irrigation_need_mm != null && <span className="pill" style={{ background: '#E8F1F5', color: C.water }}>{Math.round(cur.irrigation_need_mm)} mm water</span>}
+          {cur.harvest && <span className="pill" style={{ background: '#F2F6F4', color: C.ink }}>≈ {cur.harvest.tonnes} t harvest</span>}
+        </div>
+        <span className="faint" style={{ textAlign: 'center' }}>{cur.suitability_reason} {step < n - 1 ? 'Next season in 5 s.' : 'Last season of the year.'}</span>
+      </> : <>
+        <div className="simplot" style={{ gap: 6 }}>{plan.crops.map((c: any, k: number) => <CropPic key={k} id={c.crop_id} size={64} />)}</div>
+        <div style={{ textAlign: 'center' }}><div className="ct">One year done</div><span className="muted">{plan.water.total_mm != null ? `${Math.round(plan.water.total_mm)} mm of watering` : ''}{plan.income?.harvest_value_rs ? ` · harvest about ${rs(plan.income.harvest_value_rs)}` : ''}</span></div>
+        <button className="btn" onClick={() => setStep(0)}>Play again</button>
+      </>}
+    </div>
+  </div>
+}
+
 function PriceCard({ p, d, onSave }: any) {
   const ids: string[] = Array.from(new Set<string>((d?.plans ?? []).flatMap((x: any) => x.rotation)))
-  const [vals, setVals] = useState<Record<string, string>>({})
+  const [vals, setVals] = useState<Record<string, [string, string]>>({})
   const [state, setState] = useState('')
-  useEffect(() => { setVals(Object.fromEntries(ids.map(c => [c, String(p.prices_rs_per_kg?.[c] ?? d?.prices_rs_per_kg?.[c] ?? '')]))); setState('') }, [p.farm_id, ids.join()])
+  const cost0 = (c: string) => d?.plans?.flatMap((x: any) => x.crops).find((cr: any) => cr.crop_id === c && cr.harvest)
+  useEffect(() => {
+    setVals(Object.fromEntries(ids.map(c => {
+      const cr = cost0(c), area = d?.plans?.[0]?.income?.area_ha || 1
+      return [c, [String(p.prices_rs_per_kg?.[c] ?? d?.prices_rs_per_kg?.[c] ?? ''), String(p.costs_rs_per_ha?.[c] ?? (cr ? Math.round(cr.harvest.cost_rs / area) : ''))]]
+    }))); setState('')
+  }, [p.farm_id, ids.join()])
   if (!ids.length) return null
   const save = async () => {
-    const out: Record<string, number> = {}
-    for (const [k, v] of Object.entries(vals)) if (v !== '' && isFinite(+v) && +v >= 0) out[k] = +v
-    setState('Saving…'); setState((await onSave(out)) ? 'Saved · plans updated' : 'Not saved: backend offline')
+    const pr: Record<string, number> = {}, co: Record<string, number> = {}
+    for (const [k, [a, b]] of Object.entries(vals)) { if (a !== '' && isFinite(+a) && +a >= 0) pr[k] = +a; if (b !== '' && isFinite(+b) && +b >= 0) co[k] = +b }
+    setState('Saving…'); setState((await onSave(pr, co)) ? 'Saved · plans updated' : 'Not saved: backend offline')
   }
+  const set = (c: string, i: 0 | 1, v: string) => setVals({ ...vals, [c]: (i === 0 ? [v, vals[c]?.[1] ?? ''] : [vals[c]?.[0] ?? '', v]) as [string, string] })
+  const mine = p.prices_rs_per_kg || p.costs_rs_per_ha
   return <section className="card">
-    <div className="between"><div><div className="eb">Your selling prices</div><div className="ct">Rs per kg, for harvest value</div></div><Tag k={p.prices_rs_per_kg ? 'entered' : 'pending'} text={p.prices_rs_per_kg ? 'You entered' : 'Example prices'} /></div>
-    <div className="prices">{ids.map(c => <label key={c}><CropPic id={c} size={26} /><span>{crop(c)}</span><input inputMode="decimal" value={vals[c] ?? ''} onChange={e => setVals({ ...vals, [c]: e.target.value })} /></label>)}</div>
-    <div className="row"><span className="faint" style={{ flex: 1 }}>{state || 'Yields: Mauritius averages, Statistics Mauritius 2023–24.'}</span><button className="btn" style={{ minHeight: 38 }} onClick={save}>Save prices</button></div>
+    <div className="between"><div><div className="eb">Your prices and costs</div><div className="ct">For profit per plan</div></div><Tag k={mine ? 'entered' : 'pending'} text={mine ? 'You entered' : 'Example values'} /></div>
+    <div className="pricegrid"><span /><span className="faint">Sell Rs/kg</span><span className="faint">Cost Rs/ha</span>
+      {ids.map(c => <Fragment key={c}><span className="row" style={{ gap: 6 }}><CropPic id={c} size={26} />{crop(c)}</span>
+        <input inputMode="decimal" aria-label={`${crop(c)} price`} value={vals[c]?.[0] ?? ''} onChange={e => set(c, 0, e.target.value)} />
+        <input inputMode="decimal" aria-label={`${crop(c)} cost`} value={vals[c]?.[1] ?? ''} onChange={e => set(c, 1, e.target.value)} /></Fragment>)}
+    </div>
+    <div className="row"><span className="faint" style={{ flex: 1 }}>{state || 'Yields: Mauritius averages (Statistics Mauritius 2023–24). Costs are per crop per hectare.'}</span><button className="btn" style={{ minHeight: 38 }} onClick={save}>Save</button></div>
   </section>
 }
 
@@ -398,7 +596,7 @@ function Plans({ p, planRes, onPriorities, refresh, onPrices }: any) {
   useEffect(() => { setI(0); setStep(null) }, [p?.farm_id])
   useEffect(() => {
     if (step == null || !sel) return
-    const t = window.setTimeout(() => setStep(step + 1 < sel.crops.length ? step + 1 : null), 10000)
+    const t = step < sel.crops.length ? window.setTimeout(() => setStep(step + 1), 5000) : undefined
     return () => window.clearTimeout(t)
   }, [step, sel])
   if (!p) return <Spinner text="Loading farm…" />
@@ -424,12 +622,11 @@ function Plans({ p, planRes, onPriorities, refresh, onPrices }: any) {
   const today = plans[0]
   const lab = (x: any) => x.label
   const pct = (v: number | null) => (v == null ? '–' : `${Math.round(v * 100)}`)
-  const bd = sel.score_breakdown || {}
   return (<>
     {head}
     <Hero bg={C.deep} eyebrow={`Best for ${nice(p.name)} · ${PRESETS.find(x => x[0] === preset)?.[1]}`}
       title={!plans.some((x: any) => x.feasible) ? 'No plan fits\nyour water yet.' : best.id === 'current' ? 'Your rotation\nis already the best.' : `${lab(best)}: ${rot(best.rotation)}`}
-      sub={!plans.some((x: any) => x.feasible) ? `The thriftiest plan needs ${Math.round(Math.min(...plans.map((x: any) => x.water.peak_season_mm ?? 1e9)))} mm of watering in its driest season; you can give ${p.irrigation.budget_mm_per_season ?? 0} mm. Plans are still ranked below; add a tank or set your water in the Water tab.` : best.id === 'current' ? best.reasons[0] : `Score ${pct(best.score)} vs ${pct(today.score)} today.${best.income?.harvest_value_rs ? ` Harvest about ${rs(best.income.harvest_value_rs)} a year (today ${rs(today.income?.harvest_value_rs)}).` : ''} ${best.reasons[0]}`} />
+      sub={!plans.some((x: any) => x.feasible) ? `The thriftiest plan needs ${Math.round(Math.min(...plans.map((x: any) => x.water.peak_season_mm ?? 1e9)))} mm of watering in its driest season; you can give ${p.irrigation.budget_mm_per_season ?? 0} mm. Plans are still ranked below; add a tank or set your water in the Water tab.` : best.id === 'current' ? best.reasons[0] : `Score ${pct(best.score)} vs ${pct(today.score)} today.${best.income?.harvest_value_rs ? ` Profit ${rs(best.income.profit_rs)} a year, ${(best.income.profit_rs ?? 0) >= (today.income?.profit_rs ?? 0) ? '+' : '−'}${rs(Math.abs((best.income.profit_rs ?? 0) - (today.income?.profit_rs ?? 0)))} vs today.` : ''} ${best.reasons[0]}`} />
     <div className="tabs" role="tablist">{plans.map((x, k) => <button key={x.id} role="tab" className={k === i ? 'on' : ''} onClick={() => { setI(k); setStep(null) }}>{x.label} <span className="rk">#{x.rank}</span></button>)}</div>
 
     <section className="card">
@@ -445,23 +642,20 @@ function Plans({ p, planRes, onPriorities, refresh, onPrices }: any) {
       {sel.failed_constraints.map((f: any, k: number) => <div key={k} className="err">{f.message}</div>)}
       <div className="seasons" style={{ gridTemplateColumns: `repeat(${sel.crops.length}, 1fr)` }}>
         {sel.crops.map((s: any, k: number) => {
-          const on = step === k, rep = sel.dna.repeated_family_seasons.includes(s.season), [sb, sf, st] = SUIT[s.suitability] ?? SUIT.unknown
-          return <div key={k} className={'season' + (on ? ' on' : '') + (step != null && !on ? ' dim' : '')}>
+          const [sb, sf, st] = SUIT[s.suitability] ?? SUIT.unknown
+          return <div key={k} className="season">
             <span className="faint" style={{ fontWeight: 700 }}>{s.season_label}</span>
-            <div className="plot"><span key={on ? 'g' + step : 'n'} className={on ? 'grow' : ''}><CropPic id={s.crop_id} size={58} /></span></div>
-            {on && <span className="prog"><i key={'p' + step} /></span>}
+            <div className="plot"><CropPic id={s.crop_id} size={58} /></div>
             <b>{crop(s.crop_id)}</b>
             <span className="faint">{FAM[s.family] ?? s.family} · {s.months.length} mo</span>
-            <span className="pill" style={{ background: s.legume ? '#E8F3EF' : '#F2F6F4', color: s.legume ? '#276146' : C.mut }}>{s.legume ? '+ Adds nitrogen' : 'Uses nitrogen'}</span>
-            <span className="pill" style={{ background: rep ? '#F8ECE7' : '#E8F3EF', color: rep ? C.red : '#276146' }}>{rep ? 'Pests build up' : 'Breaks pest cycle'}</span>
             <span className="pill" style={{ background: sb, color: sf }}>{st}{s.season_temperature_c != null ? ` · ${s.season_temperature_c} °C` : ''}</span>
             {s.irrigation_need_mm != null && <span className="pill" style={{ background: '#E8F1F5', color: C.water }}>{Math.round(s.irrigation_need_mm)} mm water</span>}
-            {s.harvest && <span className="pill" style={{ background: '#FBF5E6', color: '#6E4E00' }} title={`${s.harvest.tonnes} t at Rs ${s.harvest.price_rs_per_kg}/kg`}>≈ {s.harvest.tonnes} t · {rs(s.harvest.value_rs)}</span>}
+            {s.harvest && <span className="pill" style={{ background: '#F2F6F4', color: C.ink }} title={`${s.harvest.tonnes} t at Rs ${s.harvest.price_rs_per_kg}/kg, cost ${rs(s.harvest.cost_rs)}`}>≈ {s.harvest.tonnes} t · profit {rs(s.harvest.profit_rs)}</span>}
           </div>
         })}
       </div>
-      {step != null && <span className="muted" style={{ textAlign: 'center' }}>{sel.crops[step].season_label}: {crop(sel.crops[step].crop_id)} growing ({sel.crops[step].suitability_reason}) · next season in 10 s</span>}
     </section>
+    {step != null && <SimPop plan={sel} step={step} setStep={setStep} />}
 
     <section className="card">
       <div className="ct">Your year, month by month</div>
@@ -474,30 +668,28 @@ function Plans({ p, planRes, onPriorities, refresh, onPrices }: any) {
       </div>
     </section>
 
-    <section className="card">
-      <div className="ct">Why this score</div>
-      {(['water', 'soil', 'climate', 'income'] as const).map(k => <div key={k} className="sbar">
-        <span>{{ water: 'Water use', soil: 'Soil care', climate: 'Climate fit', income: 'Harvest value' }[k]}</span>
-        <span className="track"><i style={{ width: `${Math.round((sel.scores[k] ?? 0) * 100)}%`, background: k === 'water' ? C.water : k === 'soil' ? '#8A6A43' : k === 'climate' ? C.teal : C.gold }} /></span>
-        <b>{pct(sel.scores[k])}</b>
-      </div>)}
-      <span className="faint">Weights you chose: water {Math.round(d.weights.water * 100)}%, soil {Math.round(d.weights.soil * 100)}%, climate {Math.round(d.weights.climate * 100)}%, income {Math.round((d.weights.income ?? 0) * 100)}%.{sel.income?.harvest_value_rs ? ` Harvest about ${rs(sel.income.harvest_value_rs)} a year on ${sel.income.area_ha} ha.` : ''} Contribution to score: {['water', 'soil', 'climate', 'income'].map(k => `${k} ${pct(bd[k])}`).join(', ')}.</span>
-    </section>
+    <ProfitCard d={d} sel={sel} />
 
-    <section className="advice">
-      <div className="row" style={{ gap: 8 }}><Icon d={I.leaf} c="#8A6A12" s={18} /><b style={{ color: '#6E4E00' }}>Advice for {nice(p.name)}</b></div>
-      {[...(best.id !== 'current' ? [`Switch to ${lab(best)} (${rot(best.rotation)}): ranked first for what you care about.`] : []), ...sel.reasons.slice(0, 5), ...(p.soil.ph == null ? ['Test your soil pH so each crop can be checked against its needs.'] : [])].map((a: string, k: number) =>
-        <div key={k} className="row" style={{ alignItems: 'flex-start' }}><span className="dot" style={{ background: '#C98B00' }} /><span style={{ fontSize: 13.5, lineHeight: '19px' }}>{a}</span></div>)}
-      <span className="faint" style={{ color: '#8A6A12' }}>Modelled by the M2 plan engine from NASA POWER climate, FAO-56 water use and FAO ECOCROP ranges. Check big changes with your extension officer.</span>
+    <section className="advice2">
+      <div className="eb">What to do on {nice(p.name)}</div>
+      {best.id !== 'current' && <div className="adv-main"><span className="ai" style={{ background: C.deep }}><Icon d="M5 12h12 M13 7l5 5-5 5" c="#fff" s={18} /></span>
+        <div><b>Switch to {lab(best)}</b><span>{rot(best.rotation)}, ranked first for what you care about.</span></div></div>}
+      {[...sel.reasons.slice(0, 5), ...(p.soil.ph == null ? ['Test your soil pH so each crop can be checked against its needs.'] : [])].map((a: string, k: number) => {
+        const t = advKind(a)
+        return <div key={k} className="adv"><span className="ai" style={{ background: t[1] }}><Icon d={t[0]} c={t[2]} s={16} /></span><span>{a}</span></div>
+      })}
+      <span className="faint">From the M2 plan engine: NASA POWER climate, FAO-56 water use, FAO ECOCROP ranges. Check big changes with your extension officer.</span>
     </section>
 
     <PriceCard p={p} d={d} onSave={onPrices} />
 
-    <details className="card">
-      <summary className="ct" style={{ cursor: 'pointer' }}>How this is calculated</summary>
-      <div className="list">{d.assumptions.map((a: string, k: number) => <div key={k}><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>{a}</span></div>)}</div>
-      <SourceTag s={planRes.source} what="M2 plan engine" />
-    </details>
+    <section className="card">
+      <div className="between"><div><div className="eb">How this is calculated</div><div className="ct">Explainable AI · SHAP</div></div><SourceTag s={planRes.source} what="M2 engine" /></div>
+      <ShapChart plan={sel} weights={d.weights} />
+      <details><summary className="faint" style={{ cursor: 'pointer', fontWeight: 700 }}>Method and assumptions</summary>
+        <div className="list" style={{ marginTop: 8 }}>{d.assumptions.map((a: string, k: number) => <div key={k}><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>{a}</span></div>)}</div>
+      </details>
+    </section>
   </>)
 }
 
@@ -613,7 +805,7 @@ function Future({ p, loc, scen, scenario, setScenario }: any) {
       // M5: same plans on NASA CMIP6 2041-2060 climate, with full and half water
       if (!loc || !p.field_area_ha) return
       const m5Rots = rows.map((r: any, k: number) => ({ id: `r${k}`, crops: r.rotation }))
-      const st = await api.stressTest(loc.latitude, loc.longitude, scenario, { rotations: m5Rots, soil_ph: p.soil?.ph ?? null, field_area_ha: p.field_area_ha, priorities: p.priorities, prices_rs_per_kg: p.prices_rs_per_kg ?? undefined },
+      const st = await api.stressTest(loc.latitude, loc.longitude, scenario, { rotations: m5Rots, soil_ph: p.soil?.ph ?? null, field_area_ha: p.field_area_ha, priorities: p.priorities, prices_rs_per_kg: p.prices_rs_per_kg ?? undefined, costs_rs_per_ha: p.costs_rs_per_ha ?? undefined },
         Math.round((p.irrigation?.budget_mm_per_season ?? 0) * p.field_area_ha * 10), `${p.farm_id}|${scenario}`, ctl.signal)
       if (ctl.signal.aborted || !st.data?.scenarios) return
       const scn = (id: string) => st.data.scenarios.find((x: any) => x.scenario_id === id)
@@ -674,7 +866,11 @@ function Future({ p, loc, scen, scenario, setScenario }: any) {
               <span style={{ fontSize: 18, color: C.teal }}>{open ? '–' : '+'}</span>
             </button>
             {open && <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 10 }}>
-              <SatellitePlace lat={a.location.latitude} lon={a.location.longitude} label={name} />
+              <div className="twinpics">
+                <SatellitePlace square lat={a.location.latitude} lon={a.location.longitude} label={name} caption={`${name.split(',')[0]} today`} />
+                <SatellitePlace square lat={loc.latitude} lon={loc.longitude} label={nice(loc.name)} caption="Your area today" />
+              </div>
+              <span className="faint">Close-up Sentinel-2 images (about 3 km across). Use + and − to zoom. The twin point is the town; farmland is usually at the edges.</span>
               {mc.length === 12 && <>
                 <div className="row" style={{ gap: 14, fontSize: 12, fontWeight: 700 }}>
                   <span className="row" style={{ gap: 6, color: '#795E22' }}><span style={{ width: 14, height: 3, background: '#795E22' }} />Your field, 2050s</span>
@@ -694,18 +890,7 @@ function Future({ p, loc, scen, scenario, setScenario }: any) {
       <div className="between"><div><div className="eb">Stress test</div><div className="ct">Which plans still work?</div></div>{stressE && <SourceTag s={stressE.source} what="M2 engine" />}</div>
       {!stressE ? <Spinner text="Re-running every plan in 5 situations…" /> : !stressE.data ? <div className="err">Stress test unavailable.</div> : <>
         <span className="muted" style={{ fontSize: 14 }}>{stressE.data.head}</span>
-        <div className="sgrid" style={{ gridTemplateColumns: `1.4fr repeat(${stressE.data.cols.length}, 1fr)` }}>
-          <span />{stressE.data.cols.map((c: any) => <span key={c.key} className="sh">{c.label}</span>)}
-          {stressE.data.rows.map((r: any) => <Fragment key={r.id}>
-            <span className="sn"><b>{r.label}</b><br /><span className="faint">{rot(r.rotation)}</span></span>
-            {r.cells.map((c: any, k: number) => <span key={k} className="sc" title={c.tip} style={{ background: c.best ? C.deep : c.ok ? '#E8F3EF' : '#F8ECE7' }}><i style={{ background: c.best ? '#C9E29A' : c.ok ? C.teal : C.red }} /></span>)}
-          </Fragment>)}
-        </div>
-        <div className="row" style={{ gap: 12, fontSize: 12, color: C.ink, flexWrap: 'wrap' }}>
-          <span className="row" style={{ gap: 5 }}><i className="lg" style={{ background: C.teal }} />Works</span>
-          <span className="row" style={{ gap: 5 }}><i className="lg" style={{ background: C.red }} />Fails (water or heat)</span>
-          <span className="row" style={{ gap: 5 }}><i className="lg" style={{ background: '#C9E29A', outline: `2px solid ${C.deep}` }} />Best in that situation</span>
-        </div>
+        <StressPick data={stressE.data} />
         <span className="faint">{stressE.data.m5 ? `2050s columns: NASA NEX-GDDP-CMIP6 2041–2060 climate for this field, run by M5 through the same plan engine. Today and 2050s use different NASA products, so compare plans within a column.` : 'Fetching the NASA 2050s projection from M5… the 2050s column is an estimate until it arrives.'}</span>
       </>}
     </section>
@@ -737,10 +922,10 @@ function Ask({ close, analysis, analysing, p, planRes }: any) {
   const send = async (text: string) => {
     if (!text.trim()) return
     const pd = planRes?.data
-    if (pd && /\b(plan|best|switch|rotation|harvest|income|money|earn|price|water need|how much water)\b/i.test(text)) {
+    if (pd && /\b(plan|plans|best|switch|rotation|harvest|income|money|earn|price|profit|water need|how much water)\b/i.test(text)) {
       const best = pd.plans.find((x: any) => x.id === pd.best_plan_id), today = pd.plans[0]
-      const money = /harvest|income|money|earn|price/i.test(text), water = /water/i.test(text)
-      const lines = money ? pd.plans.map((x: any) => `${x.label} (${rot(x.rotation)}): about ${rs(x.income?.harvest_value_rs)} a year.`)
+      const money = /harvest|income|money|earn|price|profit/i.test(text), water = /water/i.test(text)
+      const lines = money ? pd.plans.map((x: any) => `${x.label} (${rot(x.rotation)}): profit about ${rs(x.income?.profit_rs)} a year (harvest ${rs(x.income?.harvest_value_rs)} − costs ${rs(x.income?.cost_rs)}).`)
         : water ? pd.plans.map((x: any) => `${x.label}: ${x.water.peak_season_mm != null ? Math.round(x.water.peak_season_mm) : '?'} mm in its driest season, ${x.water.total_mm != null ? Math.round(x.water.total_mm) : '?'} mm a year (you can give ${p.irrigation.budget_mm_per_season ?? 0} mm a season).`)
         : [`Best for you: ${best.label}, ${rot(best.rotation)} (score ${Math.round((best.score ?? 0) * 100)} vs ${Math.round((today.score ?? 0) * 100)} today).`, ...best.reasons.slice(0, 4)]
       setMsgs(m => [...m, { me: true, text }, { me: false, text: lines.join('\n'), extra: `From the M2 plan engine · ${money ? 'example prices unless you entered yours · ' : ''}NASA POWER climate` }]); setQ('')
@@ -753,7 +938,7 @@ function Ask({ close, analysis, analysing, p, planRes }: any) {
     setMsgs(m => [...m, { me: false, text: r.data?.answer ?? `The assistant is not reachable (${r.error}).`, extra: r.data ? [r.data.mode === 'refused' ? 'Refused: no evidence for that' : `${r.data.cited_evidence?.length ?? 0} evidence records cited`, ...(r.data.limitations ?? []).slice(0, 1)].join(' · ') : undefined }])
   }
   const first = p?.current_rotation?.[0]
-  const sugg = ['Which plan is best for me?', 'How much water does each plan need?', 'What is each plan worth?', first ? `Why ${crop(first).toLowerCase()}?` : 'Why this rotation?', 'What data is missing?', 'What will the climate be in 2050?']
+  const sugg = ['Which plan is best for me?', 'How much water does each plan need?', 'How much profit does each plan make?', first ? `Why ${crop(first).toLowerCase()}?` : 'Why this rotation?', 'What data is missing?', 'What will the climate be in 2050?']
   return (<>
     <SheetHead eyebrow="Ask CropCompass" title="Grounded in your data" close={close} />
     <div className="body" style={{ minHeight: 420 }}>

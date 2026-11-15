@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
+import { CropPic } from './crops'
 import type { Source } from './api'
 
 export const C = { deep: '#0C4A44', teal: '#0C8A84', hero: '#1F4D3A', lime: '#C9E29A', red: '#B5523A', gold: '#C98B00', mut: '#6B7C77', faint: '#8A9A95', water: '#3B7EA1', ink: '#10302C', line: '#E5EBE7' }
@@ -33,17 +34,33 @@ export const Tag = ({ k, text }: { k: string; text?: string }) => {
 export const SourceTag = ({ s, what }: { s: Source; what?: string }) =>
   <Tag k={s} text={s === 'live' ? `Live${what ? ' · ' + what : ''}` : s === 'cached' ? `Cached${what ? ' · ' + what : ''}` : 'Not available'} />
 
-export const Hero = ({ eyebrow, title, sub, bg = C.hero, children }: { eyebrow: string; title: string; sub?: string; bg?: string; children?: ReactNode }) => (
-  <section className="hero" style={{ background: bg }}>
-    <svg width="190" height="190" viewBox="0 0 100 100" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1.2" aria-hidden="true" style={{ position: 'absolute', right: -40, bottom: -50 }}>
-      <path d="M50 95V45 M50 45C50 22 66 8 92 8c0 28-16 40-42 40z M50 62C50 44 38 32 14 32c0 22 12 32 36 32z" />
-    </svg>
-    <div className="e"><i /><b>{eyebrow.toUpperCase()}</b></div>
-    <div className="t">{title}</div>
-    {sub && <div className="s">{sub}</div>}
-    {children}
-  </section>
-)
+export type FarmPick = { farms: { farm_id: string; name: string; current_rotation?: string[] }[]; active: string; set: (id: string) => void }
+export const FarmPickCtx = createContext<FarmPick | null>(null)
+const short = (n: string) => (n || '').replace(/\s*Field\s*\d+$/i, '')
+
+export const Hero = ({ eyebrow, title, sub, bg = C.hero, children, note }: { eyebrow: string; title: string; sub?: string; bg?: string; children?: ReactNode; note?: ReactNode }) => {
+  const fp = useContext(FarmPickCtx)
+  return (<>
+    <section className="hero" style={{ background: bg }}>
+      <svg width="190" height="190" viewBox="0 0 100 100" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1.2" aria-hidden="true" style={{ position: 'absolute', right: fp ? 30 : -40, bottom: -50 }}>
+        <path d="M50 95V45 M50 45C50 22 66 8 92 8c0 28-16 40-42 40z M50 62C50 44 38 32 14 32c0 22 12 32 36 32z" />
+      </svg>
+      <div className="herogrid">
+        <div className="herotext">
+          <div className="e"><i /><b>{eyebrow.toUpperCase()}</b></div>
+          <div className="t">{title}</div>
+          {children}
+        </div>
+        {fp && fp.farms.length > 1 && <div className="farmpick" role="tablist" aria-label="Choose a field">
+          {fp.farms.slice(0, 4).map(f => <button key={f.farm_id} role="tab" aria-selected={f.farm_id === fp.active} title={short(f.name)} className={f.farm_id === fp.active ? 'on' : ''} onClick={() => fp.set(f.farm_id)}>
+            <span className="ic"><CropPic id={f.current_rotation?.[0] ?? 'maize'} size={30} /></span><span className="nm">{short(f.name)}</span>
+          </button>)}
+        </div>}
+      </div>
+    </section>
+    {(sub || note) && <section className="heronote">{sub && <div>{sub}</div>}{note}</section>}
+  </>)
+}
 
 export const Kpi = ({ v, unit, l, color, onClick }: { v: string; unit?: string; l: string; color?: string; onClick?: () => void }) => {
   const inner = <><div className="v" style={{ color }}>{v}{unit && <small> {unit}</small>}</div><div className="l">{l}</div></>
