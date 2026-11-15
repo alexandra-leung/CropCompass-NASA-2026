@@ -50,3 +50,30 @@ export function CropPic({ id, size = 56 }: { id: string; size?: number }) {
     default: return <Bare size={size} />
   }
 }
+
+// Growth stages shown month by month in the season simulation.
+const Seed = ({ size }: P) => <S size={size}>
+  <ellipse cx="32" cy="48" rx="7" ry="5" fill="#9A6B3C" /><path d="M27 47c3-2 7-2 10 0" stroke="#7A512A" strokeWidth="1.5" fill="none" />
+</S>
+const Sprout = ({ size }: P) => <S size={size}>
+  <path d="M32 56V40" stroke="#4E8A4A" strokeWidth="3" strokeLinecap="round" />
+  <path d="M32 42c-8 0-12-5-12-10 7 0 12 4 12 10zM32 42c8 0 12-5 12-10-7 0-12 4-12 10z" fill="#7FBF6A" />
+</S>
+const Leafy = ({ size }: P) => <S size={size}>
+  <path d="M32 58V26" stroke="#3E7B4A" strokeWidth="3" strokeLinecap="round" />
+  <path d="M32 50c-12-1-18-8-19-15 9 1 16 7 19 15zM32 50c12-1 18-8 19-15-9 1-16 7-19 15zM32 38c-9-2-13-9-13-15 7 2 12 8 13 15zM32 38c9-2 13-9 13-15-7 2-12 8-13 15z" fill="#5E9C5A" />
+  <path d="M32 28c-3-6-2-12 0-16 2 4 3 10 0 16z" fill="#7FBF6A" />
+</S>
+const Flowering = ({ size }: P) => <S size={size}>
+  <path d="M32 58V22" stroke="#3E7B4A" strokeWidth="3" strokeLinecap="round" />
+  <path d="M32 50c-12-1-18-8-19-15 9 1 16 7 19 15zM32 50c12-1 18-8 19-15-9 1-16 7-19 15zM32 38c-9-2-13-9-13-15 7 2 12 8 13 15zM32 38c9-2 13-9 13-15-7 2-12 8-13 15z" fill="#5E9C5A" />
+  {[[32, 16], [21, 22], [43, 22]].map(([x, y], i) => <g key={i}>{[0, 72, 144, 216, 288].map(a => <circle key={a} cx={x + 3.2 * Math.cos(a * Math.PI / 180)} cy={y + 3.2 * Math.sin(a * Math.PI / 180)} r="2.6" fill="#F4D35E" />)}<circle cx={x} cy={y} r="1.8" fill="#C98B00" /></g>)}
+</S>
+export const STAGES = ['Seed', 'Sprout', 'Leaves', 'Flowering', 'Harvest'] as const
+export function StagePic({ stage, id, size = 56 }: { stage: number; id: string; size?: number }) {
+  if (stage <= 0) return <Seed size={size} />
+  if (stage === 1) return <Sprout size={size} />
+  if (stage === 2) return <Leafy size={size} />
+  if (stage === 3) return <Flowering size={size} />
+  return <CropPic id={id} size={size} />
+}

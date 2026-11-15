@@ -6,6 +6,8 @@ import fbFarms from './fallback/farms.json'
 import fbProfiles from './fallback/farm_profiles.json'
 import fbLocations from './fallback/locations.json'
 import fbHistory from './fallback/history.json'
+import fbHistAll from './fallback/history_all.json'
+import fbThisYear from './fallback/thisyear.json'
 import fbScenarios from './fallback/scenarios.json'
 import fbTwin from './fallback/twin.json'
 import fbStress from './fallback/stress.json'
@@ -56,7 +58,7 @@ export const patchFarm = (id: string, body: any) => call<any>(`/api/farms/${id}`
 export const validateFarm = (body: any) => call<any>('/api/farms/validate', post(body))
 
 // ---------------- M1 climate (cached fallback exists for pamplemousses-04 only)
-export const getHistory = (loc: string, signal?: AbortSignal) => withFallback<any>(`/api/climate/history?location_id=${loc}`, loc === 'pamplemousses-04' ? fbHistory : null, undefined, 180000, signal)
+export const getHistory = (loc: string, signal?: AbortSignal) => withFallback<any>(`/api/climate/history?location_id=${loc}`, (fbHistAll as any)[loc] ?? (loc === 'pamplemousses-04' ? fbHistory : null), undefined, 180000, signal)
 export const getScenarios = (loc: string, signal?: AbortSignal) => withFallback<any>(`/api/climate/scenarios?location_id=${loc}`, loc === 'pamplemousses-04' ? fbScenarios : null, undefined, 240000, signal)
 
 // ---------------- M2 agriculture
@@ -88,7 +90,7 @@ export const ask = (question: string, analysis: any) =>
 
 // Cached copies to show instantly while the live call runs (stale-while-revalidate).
 export const cached = {
-  history: (loc: string): Res<any> | null => (loc === 'pamplemousses-04' ? { data: fbHistory, source: 'cached' } : null),
+  history: (loc: string): Res<any> | null => ((fbHistAll as any)[loc] ? { data: (fbHistAll as any)[loc], source: 'cached' } : loc === 'pamplemousses-04' ? { data: fbHistory, source: 'cached' } : null),
   scenarios: (loc: string): Res<any> | null => (loc === 'pamplemousses-04' ? { data: fbScenarios, source: 'cached' } : null),
   twin: (lat?: number, lon?: number, scenario?: string): Res<any> => ({ data: (fbTwins as any)[`${lat}|${lon}|${scenario}`] ?? fbTwin, source: 'cached' }),
   stress: (): Res<any> => ({ data: fbStress, source: 'cached' }),
@@ -102,7 +104,7 @@ export const putBoundary = (id: string, geometry: any) => call<any>(`/api/farms/
 export const measure = (geometry: any) => call<any>('/api/farms/boundary/measure', post({ geometry }))
 export const getThisYear = (loc: string, signal?: AbortSignal) => {
   const t = new Date(), y = t.getFullYear(), end = new Date(t.getTime() - 3 * 864e5).toISOString().slice(0, 10)
-  return withFallback<any>(`/api/climate/history?location_id=${loc}&start=${y}-01-01&end=${end}`, null, undefined, 120000, signal)
+  return withFallback<any>(`/api/climate/history?location_id=${loc}&start=${y}-01-01&end=${end}`, (fbThisYear as any)[loc] ?? null, undefined, 120000, signal)
 }
 export const getHistoryLong = (loc: string, signal?: AbortSignal) =>
   withFallback<any>(`/api/climate/history?location_id=${loc}&start=2006-01-01&end=2025-12-31`, null, undefined, 240000, signal)

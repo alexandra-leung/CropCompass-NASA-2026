@@ -42,7 +42,7 @@ export const Hero = ({ eyebrow, title, sub, bg = C.hero, children, note }: { eye
   const fp = useContext(FarmPickCtx)
   return (<>
     <section className="hero" style={{ background: bg }}>
-      <svg width="190" height="190" viewBox="0 0 100 100" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1.2" aria-hidden="true" style={{ position: 'absolute', right: fp ? 30 : -40, bottom: -50 }}>
+      <svg width="190" height="190" viewBox="0 0 100 100" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1.2" aria-hidden="true" style={{ position: 'absolute', right: fp ? 60 : -40, bottom: -60 }}>
         <path d="M50 95V45 M50 45C50 22 66 8 92 8c0 28-16 40-42 40z M50 62C50 44 38 32 14 32c0 22 12 32 36 32z" />
       </svg>
       <div className="herogrid">

@@ -61,14 +61,14 @@ export function SatellitePlace({ lat, lon, zoom: z0 = 14, label, square, caption
   for (let tx = Math.floor(x0 / T); tx <= Math.floor((x0 + W) / T); tx++)
     for (let ty = Math.floor(y0 / T); ty <= Math.floor((y0 + H) / T); ty++)
       tiles.push({ x: ((tx % n) + n) % n, y: ty, left: tx * T - x0, top: ty * T - y0 })
-  const S = SOURCES[src]
+  const si = zoom >= 15 ? 1 : src, S = SOURCES[si]
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'hidden', borderRadius: 12, background: '#3E5A3A' }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', cursor: onTap ? 'crosshair' : undefined }} aria-label={`Satellite view of ${label}`}
         onClick={onTap ? e => { const b = (e.currentTarget as SVGSVGElement).getBoundingClientRect(); const px = x0 + ((e.clientX - b.left) / b.width) * W, py = y0 + ((e.clientY - b.top) / b.height) * H
           const lo = (px / (n * T)) * 360 - 180, la = (Math.atan(Math.sinh(Math.PI * (1 - (2 * py) / (n * T)))) * 180) / Math.PI; onTap(+la.toFixed(6), +lo.toFixed(6)) } : undefined}>
-        {tiles.map(t => <image key={`${t.x}-${t.y}-${t.left}-${src}`} href={S.url(zoom, t.x, t.y)} x={t.left} y={t.top} width={T} height={T}
-          onError={() => src < SOURCES.length - 1 && setSrc(src + 1)} />)}
+        {tiles.map(t => <image key={`${t.x}-${t.y}-${t.left}-${si}`} href={S.url(zoom, t.x, t.y)} x={t.left} y={t.top} width={T} height={T}
+          onError={() => si < SOURCES.length - 1 && setSrc(si + 1)} />)}
         <circle cx={W / 2} cy={H / 2} r={7} fill="none" stroke="#fff" strokeWidth={2.5} />
       </svg>
       <span style={{ position: 'absolute', left: 10, bottom: 8, fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.7)' }}>{caption ?? `${label} today`}</span>
