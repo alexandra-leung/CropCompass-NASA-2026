@@ -6,7 +6,7 @@ import { CropPic, STAGES, StagePic } from './crops'
 import { SatelliteField, SatellitePlace } from './satellite'
 
 type Tab = 'home' | 'fields' | 'plans' | 'water' | 'future'
-type Sheet = null | { kind: 'field' } | { kind: 'add' } | { kind: 'ask' } | { kind: 'passport' } | { kind: 'settings' }
+type Sheet = null | { kind: 'field' } | { kind: 'add' } | { kind: 'passport' } | { kind: 'settings' }
 
 const USER = 'Sanjana'
 const CROP_NAMES: Record<string, string> = { maize: 'Maize', tomato: 'Tomato', onion: 'Onion', cabbage: 'Cabbage', cowpea: 'Cowpea', groundnut: 'Groundnut', sweet_potato: 'Sweet potato' }
@@ -20,7 +20,6 @@ const WATER: [string, string][] = [['rain_only', 'Rain only'], ['tank', 'Tank or
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const MONTH_L = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
-const SCEN: [string, string][] = [['ssp245', 'Middle path · SSP2-4.5'], ['ssp370', 'Higher emissions · SSP3-7.0']]
 const srcKey = (s?: string) => (s === 'farmer' ? 'entered' : s === 'map_estimate' ? 'map' : 'missing')
 
 export default function App() {
@@ -34,7 +33,8 @@ export default function App() {
   const [planRes, setPlanRes] = useState<api.Res<any> | null>(null)
   const [analysis, setAnalysis] = useState<api.Res<any> | null>(null)
   const [analysing, setAnalysing] = useState(false)
-  const [scenario, setScenario] = useState('ssp245')
+  const scenario: string = 'ssp370'
+  const [chat, setChat] = useState(false)
 
   const loadFarms = async (select?: string) => { const r = await api.getFarms(); setFarms(r); if (select) setFarmId(select) }
   const loadFarm = async (id = farmId) => setFarm(await api.getFarm(id))
@@ -63,17 +63,16 @@ export default function App() {
     return () => ctl.abort()
   }, [p?.farm_id, p?.location_id, (p?.current_rotation || []).join()])
 
-  const planKey = p ? [p.farm_id, p.irrigation?.budget_mm_per_season, JSON.stringify(p.priorities), JSON.stringify(p.prices_rs_per_kg ?? null), JSON.stringify(p.costs_rs_per_ha ?? null), (p.current_rotation || []).join(), p.soil?.ph].join('|') : ''
+  const planKey = p ? [p.farm_id, p.irrigation?.budget_mm_per_season, JSON.stringify(p.prices_rs_per_kg ?? null), JSON.stringify(p.costs_rs_per_ha ?? null), (p.current_rotation || []).join(), p.soil?.ph].join('|') : ''
   const loadPlans = () => { if (!p?.current_rotation?.length) return; setPlanRes(null); api.plans(p.farm_id).then(setPlanRes) }
   useEffect(() => { loadPlans() }, [planKey])
   const savePrices = async (pr: any, co: any) => { try { setFarm({ data: await api.patchFarm(p.farm_id, { prices_rs_per_kg: pr, costs_rs_per_ha: co }), source: 'live' }); return true } catch { return false } }
-  const savePriorities = async (w: any) => { try { setFarm({ data: await api.patchFarm(p.farm_id, { priorities: w }), source: 'live' }) } catch { /* offline */ } }
 
   const runAnalysis = async () => {
     if (!p || analysing) return
     setAnalysing(true)
     const ctx = { farm_id: p.farm_id, location_id: p.location_id, soil_ph: p.soil?.ph ?? null, field_area_ha: p.field_area_ha, irrigation_budget_m3: p.irrigation_budget_m3, current_rotation: p.current_rotation, source: 'M3' }
-    setAnalysis(await api.analyze(ctx, scenario === 'ssp245' ? 'ssp245' : 'ssp370'))
+    setAnalysis(await api.analyze(ctx, scenario))
     setAnalysing(false)
   }
   const needAnalysis = () => { if (!analysis && !analysing) runAnalysis() }
@@ -87,7 +86,6 @@ export default function App() {
       <div className="top">
         <span className="logo"><Icon d={I.leaf} c="#fff" s={20} /></span>
         <span className="brand"><span style={{ color: C.deep }}>crop</span><span style={{ color: C.teal }}>compass</span></span>
-        <button className="iconbtn" aria-label="Ask CropCompass" onClick={() => { setSheet({ kind: 'ask' }); needAnalysis() }}><Icon d={I.chat} /></button>
         <button className="iconbtn" aria-label="Settings" onClick={() => setSheet({ kind: 'settings' })}><Icon d="M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" /></button>
         <button className="iconbtn" aria-label="Evidence passport" onClick={() => { setSheet({ kind: 'passport' }); needAnalysis() }}><Icon d={I.doc} />{(p?.validation?.missing?.length ?? 0) > 0 && <span className="dotbadge" />}</button>
       </div>
@@ -95,11 +93,13 @@ export default function App() {
       <main>
         {tab === 'home' && <Home p={p} loc={loc} farms={farmList} history={history} openField={() => setSheet({ kind: 'field' })} farmsSrc={farms.source} goFields={() => setTab('fields')} />}
         {tab === 'fields' && <Fields farms={farmList} src={farms.source} open={(id: string) => { setFarmId(id); setSheet({ kind: 'field' }) }} add={() => setSheet({ kind: 'add' })} plans={(id: string) => { setFarmId(id); setTab('plans') }} />}
-        {tab === 'plans' && <Plans p={p} planRes={planRes} onPriorities={savePriorities} refresh={loadPlans} />}
+        {tab === 'plans' && <Plans p={p} planRes={planRes} refresh={loadPlans} />}
         {tab === 'water' && <Water p={p} planRes={planRes} onSaved={(np: any) => setFarm({ data: np, source: 'live' })} />}
-        {tab === 'future' && <Future p={p} loc={loc} scen={scen} scenario={scenario} setScenario={setScenario} />}
+        {tab === 'future' && <Future p={p} loc={loc} scen={scen} scenario={scenario} />}
       </main>
 
+      {!sheet && !chat && <button className="fab" aria-label="Ask CropCompass" onClick={() => { setChat(true); needAnalysis() }}><Icon d={I.chat} c="#fff" s={24} /></button>}
+      {chat && <Ask close={() => setChat(false)} analysis={analysis} analysing={analysing} p={p} planRes={planRes} />}
       <nav className="tabbar" aria-label="Sections">
         {([['home', 'Home', I.home], ['fields', 'Fields', I.map], ['plans', 'Plans', I.plans], ['water', 'Water', I.drop], ['future', 'Future', I.clock]] as const).map(([k, l, d]) => (
           <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => setTab(k)}>
@@ -113,7 +113,6 @@ export default function App() {
           <div className="sheet">
             {sheet.kind === 'field' && <FieldSheet p={p} src={farm.source} close={() => setSheet(null)} onSaved={(np: any) => { setFarm({ data: np, source: 'live' }); loadFarms() }} passport={() => { setSheet({ kind: 'passport' }); needAnalysis() }} />}
             {sheet.kind === 'add' && <AddField close={() => setSheet(null)} created={(id: string) => { setSheet(null); loadFarms(id); setTab('plans') }} />}
-            {sheet.kind === 'ask' && <Ask close={() => setSheet(null)} analysis={analysis} analysing={analysing} p={p} planRes={planRes} />}
             {sheet.kind === 'settings' && <Settings close={() => setSheet(null)} p={p} planRes={planRes} onPrices={savePrices} farms={farmList} farmId={farmId} setFarmId={setFarmId} />}
             {sheet.kind === 'passport' && <Passport close={() => setSheet(null)} analysis={analysis} analysing={analysing} p={p} rerun={runAnalysis} planRes={planRes} />}
           </div>
@@ -146,7 +145,7 @@ function Home({ p, loc, farms, history, openField, farmsSrc, goFields }: any) {
     <div className="between" style={{ alignItems: 'flex-end' }}>
       <div><div className="eb">{date}</div><h1 className="h1" style={{ marginTop: 6 }}>{greet} <span>{USER}.</span></h1></div>
     </div>
-    <Hero eyebrow={`Farm status · ${nice(loc?.name)}`} title={title} sub={sub} />
+    <Hero pick eyebrow={`Farm status · ${nice(loc?.name)}`} title={title} sub={sub} />
     <div className="kpis">
       <Kpi onClick={goFields} v={String(farms.length || '…')} l="Fields" />
       <Kpi onClick={goFields} v={p?.irrigation?.budget_mm_per_season != null ? String(Math.round(p.irrigation.budget_mm_per_season)) : '…'} unit="mm" l={`Water · ${nice(p?.name)}`} />
@@ -181,6 +180,7 @@ function Home({ p, loc, farms, history, openField, farmsSrc, goFields }: any) {
 const SEASON_NAME: Record<string, string> = { DJF: 'Dec–Feb', MAM: 'Mar–May', JJA: 'Jun–Aug', SON: 'Sep–Nov' }
 function ThisYear({ yr, hist, name }: any) {
   const year = new Date().getFullYear()
+  const [mode, setMode] = useState<'rain' | 'temp'>('rain')
   const cur: any[] = yr?.data?.seasonal ?? [], base: any[] = hist?.seasonal ?? []
   if (!yr) return <section className="card"><div className="eb">{year} so far</div><Spinner text={`Fetching ${year} from NASA POWER…`} /></section>
   if (!cur.length || !base.length) return null
@@ -188,20 +188,36 @@ function ThisYear({ yr, hist, name }: any) {
     const c = cur.find(x => x.period.endsWith(code)), b = base.filter(x => x.period.endsWith(code) && x.completenessStatus !== 'incomplete')
     if (!c || !b.length) return null
     const nr = b.reduce((a, x) => a + x.rainfallMm, 0) / b.length, nt = b.reduce((a, x) => a + x.temperatureC, 0) / b.length
-    return { code, rain: c.rainfallMm, nr, dr: nr ? Math.round((c.rainfallMm / nr - 1) * 100) : 0, dt: +(c.temperatureC - nt).toFixed(1), partial: c.completenessStatus === 'incomplete' }
+    return { code, rain: c.rainfallMm, nr, dr: nr ? Math.round((c.rainfallMm / nr - 1) * 100) : 0, t: c.temperatureC, nt, dt: +(c.temperatureC - nt).toFixed(1), partial: c.completenessStatus === 'incomplete' }
   }).filter(Boolean) as any[]
-  const full = rows.filter(r => !r.partial), avg = full.length ? Math.round(full.reduce((a, r) => a + r.dr, 0) / full.length) : null
-  const max = Math.max(...rows.flatMap(r => [r.rain, r.nr]), 1)
+  const full = rows.filter(r => !r.partial)
+  const avgR = full.length ? Math.round(full.reduce((a, r) => a + r.dr, 0) / full.length) : null
+  const avgT = full.length ? +(full.reduce((a, r) => a + r.dt, 0) / full.length).toFixed(1) : null
+  const rain = mode === 'rain'
+  const v = (r: any) => (rain ? r.rain : r.t), nv = (r: any) => (rain ? r.nr : r.nt)
+  const lo = rain ? 0 : Math.min(...rows.flatMap(r => [r.t, r.nt])) - 2, hi = Math.max(...rows.flatMap(r => [v(r), nv(r)]), 1)
+  const h = (x: number) => `${((x - lo) / (hi - lo)) * 90}px`
+  const title = rain
+    ? (avgR == null ? 'Rain this year vs normal' : avgR < -10 ? `${year} is drier than normal` : avgR > 10 ? `${year} is wetter than normal` : `${year} rain is close to normal`)
+    : (avgT == null ? 'Heat this year vs normal' : avgT > 0.3 ? `${year} is warmer than normal` : avgT < -0.3 ? `${year} is cooler than normal` : `${year} heat is close to normal`)
+  const summary = rain
+    ? (avgR == null ? '' : `Rain in the finished seasons is ${Math.abs(avgR)}% ${avgR < 0 ? 'below' : 'above'} the 2021–2025 average.${avgR < -10 ? ' Plan for more watering and keep soil covered.' : ''}`)
+    : (avgT == null ? '' : `The finished seasons were ${avgT > 0 ? '+' : ''}${avgT} °C compared with 2021–2025.${avgT > 0.3 ? ' Crops will need more water than usual.' : ''}`)
+  const col = rain ? C.water : '#C0622E'
   return <section className="card">
-    <div className="between"><div><div className="eb">{year} so far · {name}</div><div className="ct">{avg == null ? 'This year vs normal' : avg < -10 ? `${year} is drier than normal` : avg > 10 ? `${year} is wetter than normal` : `${year} is close to normal`}</div></div><Tag k="observed" text="NASA POWER" /></div>
-    <div className="yrbars">{rows.map(r => <div key={r.code}>
-      <div className="yb"><i style={{ height: `${(r.nr / max) * 90}px`, background: '#CBD5D1' }} title={`Normal ${Math.round(r.nr)} mm`} /><i style={{ height: `${(r.rain / max) * 90}px`, background: r.partial ? '#9DBFD2' : C.water }} title={`${year}: ${Math.round(r.rain)} mm`} /></div>
-      <b style={{ color: r.dr < -10 ? C.red : r.dr > 10 ? C.water : C.ink }}>{r.partial ? 'so far' : `${r.dr > 0 ? '+' : ''}${r.dr}%`}</b>
-      <span className="faint">{SEASON_NAME[r.code]}</span>
-      <span className="faint">{r.dt > 0 ? '+' : ''}{r.dt} °C</span>
-    </div>)}</div>
-    <div className="row" style={{ gap: 14, fontSize: 11.5, color: C.mut }}><span className="row" style={{ gap: 5 }}><span style={{ width: 12, height: 10, background: '#CBD5D1', borderRadius: 2 }} />Normal 2021–2025</span><span className="row" style={{ gap: 5 }}><span style={{ width: 12, height: 10, background: C.water, borderRadius: 2 }} />{year}</span></div>
-    <span className="faint">Plans are built on complete years 2021–2025. NASA POWER updates within days, so {year} is checked live as a test year the model never saw.</span>
+    <div className="between"><div><div className="eb">{year} so far · {name}</div><div className="ct">{title}</div></div>
+      <div className="toggle" role="tablist"><button className={rain ? 'on' : ''} onClick={() => setMode('rain')}>Rain</button><button className={!rain ? 'on' : ''} onClick={() => setMode('temp')}>Heat</button></div></div>
+    {summary && <span className="muted">{summary}</span>}
+    <div className="yrbars">{rows.map(r => {
+      const d = rain ? r.dr : r.dt
+      return <div key={r.code}>
+        <div className="yb"><i style={{ height: h(nv(r)), background: '#CBD5D1' }} title={`Normal ${rain ? Math.round(r.nr) + ' mm' : r.nt.toFixed(1) + ' °C'}`} /><i style={{ height: h(v(r)), background: col, opacity: r.partial ? 0.5 : 1 }} title={`${year}: ${rain ? Math.round(r.rain) + ' mm' : r.t.toFixed(1) + ' °C'}`} /></div>
+        <b style={{ color: rain ? (d < -10 ? C.red : d > 10 ? C.water : C.ink) : d > 0.3 ? C.red : d < -0.3 ? C.water : C.ink }}>{r.partial ? 'so far' : rain ? `${d > 0 ? '+' : ''}${d}%` : `${d > 0 ? '+' : ''}${d} °C`}</b>
+        <span className="faint">{SEASON_NAME[r.code]}</span>
+      </div>
+    })}</div>
+    <div className="row" style={{ gap: 14, fontSize: 11.5, color: C.mut }}><span className="row" style={{ gap: 5 }}><span style={{ width: 12, height: 10, background: '#CBD5D1', borderRadius: 2 }} />Normal 2021–2025</span><span className="row" style={{ gap: 5 }}><span style={{ width: 12, height: 10, background: col, borderRadius: 2 }} />{year}</span></div>
+    <span className="faint">Plans are built on 2021–2025. NASA POWER updates within days, so {year} is checked live as a test year the model never saw.</span>
   </section>
 }
 
@@ -434,14 +450,6 @@ const api_span = (a: number, b: number) => { const out = [a]; let m = a; while (
 
 /* ------------------------------------------------------------------ PLANS */
 const FAM: Record<string, string> = { Poaceae: 'grass family', Fabaceae: 'legume', Solanaceae: 'nightshade', Amaryllidaceae: 'onion family', Brassicaceae: 'cabbage family', Convolvulaceae: 'morning glory' }
-const PRESETS: [string, string, Record<string, number>][] = [
-  ['water', 'Water', { water: 0.55, soil: 0.15, climate: 0.15, income: 0.15 }],
-  ['soil', 'Soil', { water: 0.15, soil: 0.55, climate: 0.15, income: 0.15 }],
-  ['climate', 'Climate', { water: 0.15, soil: 0.15, climate: 0.55, income: 0.15 }],
-  ['income', 'Income', { water: 0.15, soil: 0.15, climate: 0.15, income: 0.55 }],
-  ['balanced', 'Balanced', { water: 0.25, soil: 0.25, climate: 0.25, income: 0.25 }],
-]
-const presetOf = (pr: any) => { if (!pr) return 'balanced'; const top = ['water', 'soil', 'climate', 'income'].sort((a, b) => (pr[b] ?? 0) - (pr[a] ?? 0)); return (pr[top[0]] ?? 0) - (pr[top[1]] ?? 0) < 0.05 ? 'balanced' : top[0] }
 const rs = (v: number | null | undefined) => (v == null ? '–' : `Rs ${Math.round(v).toLocaleString()}`)
 const SUIT: Record<string, [string, string, string]> = { suitable: ['#E8F3EF', '#276146', 'Suits the season'], marginal: ['#FBF5E6', '#8A6A12', 'Marginal'], unsuitable: ['#F8ECE7', '#B5523A', 'Too hot or cold'], unknown: ['#F2F6F4', '#6B7C77', 'Not checked'] }
 
@@ -462,6 +470,72 @@ const advKind = (a: string): [string, string, string] =>
   : /°C|hot|cold|tolerat|range/i.test(a) ? ['M12 7a5 5 0 100 10 5 5 0 000-10z M12 2v2 M12 20v2 M4 12H2 M22 12h-2', '#FBEFEA', C.red]
   : /pH/i.test(a) ? ['M9 3h6 M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3', '#F2F6F4', C.mut]
   : [I.leaf, '#E8F3EF', '#276146']
+
+function planConfidence(p: any, planRes: any, best?: any, plans?: any[]) {
+  const gaps: string[] = []
+  if (p?.soil?.ph == null) gaps.push('soil pH not tested')
+  if (!p?.soil?.texture || p.soil.texture === 'unknown' || p.soil.texture_source === 'map_estimate') gaps.push('soil type estimated')
+  if (!p?.prices_rs_per_kg && !p?.costs_rs_per_ha) gaps.push('example prices')
+  if (planRes?.data?.status && planRes.data.status !== 'modelled') gaps.push('no climate data')
+  if (planRes?.source === 'cached') gaps.push('saved results, not live')
+  if (best && plans && plans.length > 1) {
+    const second = plans.filter(x => x.id !== best.id).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0]
+    if (second && (best.score ?? 0) - (second.score ?? 0) < 0.05) gaps.push(`close call with ${second.label}`)
+  }
+  const level = gaps.length <= 1 ? 'High' : gaps.length <= 3 ? 'Medium' : 'Low'
+  return { level, gaps, why: `Confidence ${level.toLowerCase()}${gaps.length ? `: ${gaps.join(', ')}.` : ': all key inputs known.'}` }
+}
+
+function TwinPlans({ p, a, town }: any) {
+  const [r, setR] = useState<{ base: any; twin: any } | null>(null)
+  const mc: any[] = a.monthly_comparison ?? []
+  useEffect(() => {
+    if (!p?.current_rotation?.length || mc.length !== 12) return
+    let on = true; setR(null)
+    Promise.all([api.plans(p.farm_id, {}, 'base'), api.plans(p.farm_id, { climate_monthly: { temperature_c: mc.map(m => m.candidate_t_c), precipitation_mm: mc.map(m => m.candidate_p_mm) } }, `twin|${a.location.id}`)])
+      .then(([b, t]) => on && setR({ base: b.data, twin: t.data }))
+    return () => { on = false }
+  }, [p?.farm_id, a.location.id])
+  if (!r) return mc.length === 12 ? <div className="twinplan"><Spinner text={`Testing your plans in a ${town}-like climate…`} /></div> : null
+  if (!r.twin || !r.base) return null
+  const tb = r.twin.plans.find((x: any) => x.id === r.twin.best_plan_id), tt = r.twin.plans[0], bt = r.base.plans[0]
+  const dw = tt.water.total_mm != null && bt.water.total_mm ? Math.round((tt.water.total_mm / bt.water.total_mm - 1) * 100) : null
+  return <div className="twinplan">
+    <b>What this means for {nice(p.name)}</b>
+    <div className="adv"><span className="ai" style={{ background: '#F8ECE7' }}><Icon d="M12 3l9 16H3z M12 10v4 M12 17h.01" c={C.red} s={15} /></span><span>Keep {rot(tt.rotation)} and it ranks <b>#{tt.rank} of {r.twin.plans.length}</b> in a {town}-like climate.{dw != null ? ` It would need ${Math.abs(dw)}% ${dw >= 0 ? 'more' : 'less'} watering than today.` : ''}</span></div>
+    {tb.id !== 'current' && <div className="adv"><span className="ai" style={{ background: 'var(--mint)' }}><Icon d="M5 12h12 M13 7l5 5-5 5" c={C.deep} s={15} /></span><span>Best for that climate: <b>{tb.label}, {rot(tb.rotation)}</b>.{tb.income?.profit_rs != null && tt.income?.profit_rs != null ? ` Profit about ${rs(tb.income.profit_rs)} a year vs ${rs(tt.income.profit_rs)} if you keep today's crops.` : ''}</span></div>}
+    <span className="faint">Same plan engine, run on {town}'s climate today. Start the change now, so your farm keeps feeding you and paying when that climate arrives.</span>
+  </div>
+}
+
+function TwinCompare({ p, loc, a, name, hist }: any) {
+  const ring: number[][] = p?.boundary?.geometry?.coordinates?.[0] ?? []
+  const pts = ring.slice(0, -1)
+  const mine = pts.length ? { lat: pts.reduce((x, c) => x + c[1], 0) / pts.length, lon: pts.reduce((x, c) => x + c[0], 0) / pts.length } : { lat: loc.latitude, lon: loc.longitude }
+  const [farm, setFarm] = useState<{ lat: number; lon: number } | null | undefined>(undefined)
+  useEffect(() => { let on = true; setFarm(undefined); api.nearestFarmland(a.location.latitude, a.location.longitude).then(r => on && setFarm(r)); return () => { on = false } }, [a.location.id])
+  const there = farm ?? { lat: a.location.latitude, lon: a.location.longitude }
+  const town = name.split(',')[0]
+  const mc: any[] = a.monthly_comparison ?? []
+  const avg = (xs: number[]) => xs.reduce((x, y) => x + y, 0) / xs.length
+  const now = hist?.temperature_c?.length === 12 ? { t: avg(hist.temperature_c), r: hist.precipitation_mm.reduce((x: number, y: number) => x + y, 0) } : null
+  const fut = mc.length === 12 ? { t: avg(mc.map(m => m.future_t_c)), r: mc.reduce((x, m) => x + m.future_p_mm, 0) } : null
+  const tw = mc.length === 12 ? { t: avg(mc.map(m => m.candidate_t_c)), r: mc.reduce((x, m) => x + m.candidate_p_mm, 0) } : null
+  return <>
+    <div className="twinpics">
+      <SatellitePlace key={`m${mine.lat}`} square zoom={16} lat={+mine.lat.toFixed(6)} lon={+mine.lon.toFixed(6)} label={nice(loc.name)} caption="Your field today" />
+      {farm === undefined ? <div className="twinwait"><Spinner text="Finding farmland…" /></div>
+        : <SatellitePlace key={`t${there.lat}`} square zoom={16} lat={+there.lat.toFixed(6)} lon={+there.lon.toFixed(6)} label={name} caption={farm ? `Farmland near ${town}` : `${town} today`} />}
+    </div>
+    <TwinPlans p={p} a={a} town={town} />
+    {now && fut && tw && <div className="twincmp">
+      <div><small>Your field today</small><b>{now.t.toFixed(1)} °C</b><span>{Math.round(now.r)} mm rain</span></div>
+      <div className="mid"><small>Your field, 2050s</small><b>{fut.t.toFixed(1)} °C</b><span>{Math.round(fut.r)} mm rain</span></div>
+      <div className="tw"><small>{town} today</small><b>{tw.t.toFixed(1)} °C</b><span>{Math.round(tw.r)} mm rain</span></div>
+    </div>}
+    <span className="faint">{farm ? `Left: your field. Right: the nearest mapped farmland to ${town} (OpenStreetMap), so you can see what farms in a climate like your future one look like today.` : `Left: your field. Right: ${town}.`} Zoom with + and −.</span>
+  </>
+}
 
 function StressPick({ data }: any) {
   const passes = (r: any) => r.cells.filter((c: any) => c.ok).length
@@ -526,30 +600,41 @@ function SimPop({ plan, step, setStep }: any) {
   const n = plan.crops.length, done = step >= n, cur = plan.crops[Math.min(step, n - 1)]
   const months: string[] = cur.months, nm = Math.max(1, months.length)
   const [mi, setMi] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const [photo, setPhoto] = useState<api.Photo | null | undefined>(undefined)
   useEffect(() => { setMi(0) }, [step])
   useEffect(() => {
-    if (done) return
+    if (done || paused) return
     const t = window.setTimeout(() => (mi + 1 < nm ? setMi(mi + 1) : setStep(step + 1)), 5000 / nm)
     return () => window.clearTimeout(t)
-  }, [mi, step, done, nm])
+  }, [mi, step, done, nm, paused])
   const stage = nm === 1 ? 4 : Math.round((mi / (nm - 1)) * 4)
   const [sb, sf, st] = SUIT[cur.suitability] ?? SUIT.unknown
   const curMonth = months[mi]
+  useEffect(() => { if (done) return; let on = true; setPhoto(undefined); api.stagePhoto(cur.crop_id, stage).then(r => on && setPhoto(r)); return () => { on = false } }, [cur.crop_id, stage, done])
   return <div className="scrim center" onClick={() => setStep(null)}>
     <div className="simpop" onClick={e => e.stopPropagation()} role="dialog" aria-label="Season simulation">
       <div className="between"><div><div className="eb">{plan.label} · season simulation</div><div className="ct">{rot(plan.rotation)}</div></div>
         <button className="round" aria-label="Close" onClick={() => setStep(null)}><Icon d="M6 6l12 12M18 6L6 18" s={18} /></button></div>
       <div className="simdots">{plan.crops.map((c: any, k: number) => <button key={k} className={k === step ? 'on' : k < step ? 'past' : ''} onClick={() => setStep(k)}><CropPic id={c.crop_id} size={22} /><span>{c.season_label}</span></button>)}</div>
       {!done ? <>
-        <div className="simplot"><span key={`${step}-${stage}`} className="stagein"><StagePic stage={stage} id={cur.crop_id} size={120} /></span>
-          <span className="simtag">{curMonth}</span></div>
+        <div className={'simplot' + (photo ? ' photo' : '')}>
+          {photo ? <img key={photo.url} className="stagephoto" src={photo.url} alt={`${crop(cur.crop_id)}, ${STAGES[stage].toLowerCase()} stage`} onError={() => setPhoto(null)} />
+            : <span key={`${step}-${stage}`} className="stagein"><StagePic stage={stage} id={cur.crop_id} size={120} /></span>}
+          <span className="simtag">{curMonth}</span>
+          {paused && <span className="simtag" style={{ left: 'auto', right: 12, background: C.deep, color: '#fff' }}>Paused</span>}</div>
+        {photo && <a className="faint" href={photo.page} target="_blank" rel="noreferrer" style={{ marginTop: -6, fontSize: 10.5 }}>Photo: {photo.credit}, Wikimedia Commons</a>}
         <div className="stages">{STAGES.map((sname, k) => <span key={sname} className={k === stage ? 'on' : k < stage ? 'past' : ''}>{sname}</span>)}</div>
-        <div style={{ textAlign: 'center' }}><div className="ct">{crop(cur.crop_id)}: {STAGES[stage].toLowerCase()} in {MONTH_FULL[MONTHS.indexOf(curMonth)] ?? curMonth}</div><span className="muted">{cur.season_label} · month {mi + 1} of {nm}</span></div>
+        <div style={{ textAlign: 'center' }}><div className="ct">{crop(cur.crop_id)}: {STAGES[stage].toLowerCase()} in {MONTH_FULL[MONTHS.indexOf(curMonth)] ?? curMonth}</div><span className="muted">{cur.season_label} · month {mi + 1} of {nm}{paused ? ' · stopped' : ''}</span></div>
         <div className="simmonths">{MONTHS.map((m) => { const k = months.indexOf(m); return <span key={m} className={m === curMonth ? 'now' : k >= 0 && k < mi ? 'past' : k >= 0 ? 'on' : ''}>{m[0]}</span> })}</div>
         <div className="row" style={{ gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
           <span className="pill" style={{ background: sb, color: sf }}>{st}{cur.season_temperature_c != null ? ` · ${cur.season_temperature_c} °C` : ''}</span>
           {cur.irrigation_need_mm != null && <span className="pill" style={{ background: '#E8F1F5', color: C.water }}>{Math.round(cur.irrigation_need_mm)} mm water this season</span>}
           {cur.harvest && stage === 4 && <span className="pill" style={{ background: '#F2F6F4', color: C.ink }}>≈ {cur.harvest.tonnes} t harvested</span>}
+        </div>
+        <div className="row" style={{ justifyContent: 'center', gap: 8 }}>
+          <button className="btn light" style={{ minHeight: 40, padding: '0 18px' }} onClick={() => setPaused(!paused)}>{paused ? '▶ Resume' : '■ Stop here'}</button>
+          {paused && <button className="chip" onClick={() => { setPaused(false); setMi(0) }}>Restart this season</button>}
         </div>
       </> : <>
         <div className="simplot" style={{ gap: 6 }}>{plan.crops.map((c: any, k: number) => <CropPic key={k} id={c.crop_id} size={64} />)}</div>
@@ -601,17 +686,15 @@ function PriceCard({ p, d, onSave }: any) {
   </section>
 }
 
-function Plans({ p, planRes, onPriorities, refresh }: any) {
+function Plans({ p, planRes, refresh }: any) {
   const [i, setI] = useState(0)
   const [step, setStep] = useState<number | null>(null)
-  const [busy, setBusy] = useState(false)
+  const busy = false
   const d = planRes?.data
   const plans: any[] = d?.plans ?? []
   const sel = plans[Math.min(i, Math.max(plans.length - 1, 0))]
   useEffect(() => { setI(0); setStep(null) }, [p?.farm_id])
   if (!p) return <Spinner text="Loading farm…" />
-  const preset = presetOf(p.priorities)
-  const setPreset = async (w: Record<string, number>) => { setBusy(true); await onPriorities(w); setBusy(false) }
   const head = (<>
     <div><div className="eb">Plans for this field</div><h1 className="h1" style={{ marginTop: 6 }}>{nice(p.name)} <span>· season by season</span></h1></div>
     <div className="ctx">
@@ -619,10 +702,6 @@ function Plans({ p, planRes, onPriorities, refresh }: any) {
       <span><small>pH</small><b>{p.soil.ph ?? '?'}</b></span>
       <span><small>Water / season</small><b>{p.irrigation.budget_mm_per_season ?? '?'} mm</b></span>
       <span><small>Crops now</small><b>{rot(p.current_rotation)}</b></span>
-    </div>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eb">Rank plans by what matters to you</span>
-      <div className="seg" style={{ gridTemplateColumns: 'repeat(5,1fr)' }}>{PRESETS.map(([k, l, w]) => <button key={k} className={preset === k ? 'on' : ''} disabled={busy} onClick={() => setPreset(w)}>{l}</button>)}</div>
     </div>
   </>)
   if (!p.current_rotation?.length) return <>{head}<div className="err">Add the crops you grow in Fields to compare plans.</div></>
@@ -632,11 +711,12 @@ function Plans({ p, planRes, onPriorities, refresh }: any) {
   const today = plans[0]
   const lab = (x: any) => x.label
   const pct = (v: number | null) => (v == null ? '–' : `${Math.round(v * 100)}`)
+  const conf = planConfidence(p, planRes, best, plans)
   return (<>
     {head}
-    <Hero bg={C.deep} eyebrow={`Best for ${nice(p.name)} · ${PRESETS.find(x => x[0] === preset)?.[1]}`}
+    <Hero bg={C.deep} eyebrow={`Best for ${nice(p.name)}`} badges={[`Score ${pct(best.score)}/100`, `Confidence: ${conf.level}`]}
       title={!plans.some((x: any) => x.feasible) ? 'No plan fits\nyour water yet.' : best.id === 'current' ? 'Your rotation\nis already the best.' : `${lab(best)}: ${rot(best.rotation)}`}
-      sub={!plans.some((x: any) => x.feasible) ? `The thriftiest plan needs ${Math.round(Math.min(...plans.map((x: any) => x.water.peak_season_mm ?? 1e9)))} mm of watering in its driest season; you can give ${p.irrigation.budget_mm_per_season ?? 0} mm. Plans are still ranked below; add a tank or set your water in the Water tab.` : best.id === 'current' ? best.reasons[0] : `Score ${pct(best.score)} vs ${pct(today.score)} today.${best.income?.harvest_value_rs ? ` Profit ${rs(best.income.profit_rs)} a year, ${(best.income.profit_rs ?? 0) >= (today.income?.profit_rs ?? 0) ? '+' : '−'}${rs(Math.abs((best.income.profit_rs ?? 0) - (today.income?.profit_rs ?? 0)))} vs today.` : ''} ${best.reasons[0]}`} />
+      sub={!plans.some((x: any) => x.feasible) ? `The thriftiest plan needs ${Math.round(Math.min(...plans.map((x: any) => x.water.peak_season_mm ?? 1e9)))} mm of watering in its driest season; you can give ${p.irrigation.budget_mm_per_season ?? 0} mm. Plans are still ranked below; add a tank or set your water in the Water tab.` : best.id === 'current' ? `${best.reasons[0]} ${conf.why}` : `${conf.why} Today's rotation scores ${pct(today.score)}.${best.income?.harvest_value_rs ? ` Profit ${rs(best.income.profit_rs)} a year, ${(best.income.profit_rs ?? 0) >= (today.income?.profit_rs ?? 0) ? '+' : '−'}${rs(Math.abs((best.income.profit_rs ?? 0) - (today.income?.profit_rs ?? 0)))} vs today.` : ''} ${best.reasons[0]}`} />
     <div className="tabs" role="tablist">{plans.map((x, k) => <button key={x.id} role="tab" className={k === i ? 'on' : ''} onClick={() => { setI(k); setStep(null) }}>{x.label} <span className="rk">#{x.rank}</span></button>)}</div>
 
     <section className="card">
@@ -731,7 +811,7 @@ function Water({ p, planRes, onSaved }: any) {
   const maxM = Math.max(1, ...plans.flatMap(x => x.water.monthly_mm ?? [0]))
   return (<>
     <div><div className="eb">Smart irrigation</div><h1 className="h1" style={{ marginTop: 6 }}>Water, <span>well spent.</span></h1></div>
-    <Hero eyebrow={`Water wallet · ${nice(p.name)}`}
+    <Hero eyebrow={`Water wallet · ${nice(p.name)}`} badges={d ? [`Confidence: ${planConfidence(p, planRes).level}`] : undefined}
       title={!d ? 'Checking water\nneeds…' : `${fits} of ${plans.length} plans fit\nyour water.`}
       sub={`You can give ${Math.round(mm)} mm a season${m3 != null ? ` (${m3.toLocaleString()} m³ on ${p.field_area_ha} ha)` : ''}.${today?.water?.peak_season_mm != null ? ` Today's rotation needs ${Math.round(today.water.peak_season_mm)} mm in its driest season${best && best.id !== 'current' ? `; ${best.label} needs ${Math.round(best.water.peak_season_mm)} mm` : ''}.` : ''}`} />
     <section className="card">
@@ -770,7 +850,7 @@ function Water({ p, planRes, onSaved }: any) {
 }
 
 /* ------------------------------------------------------------------ FUTURE */
-function Future({ p, loc, scen, scenario, setScenario }: any) {
+function Future({ p, loc, scen, scenario }: any) {
   const [stressE, setStressE] = useState<api.Res<any> | null>(null)
   const [twin, setTwin] = useState<api.Res<any> | null>(null)
   const [yi, setYi] = useState(2)
@@ -820,7 +900,7 @@ function Future({ p, loc, scen, scenario, setScenario }: any) {
       // M5: same plans on NASA CMIP6 2041-2060 climate, with full and half water
       if (!loc || !p.field_area_ha) return
       const m5Rots = rows.map((r: any, k: number) => ({ id: `r${k}`, crops: r.rotation }))
-      const st = await api.stressTest(loc.latitude, loc.longitude, scenario, { rotations: m5Rots, soil_ph: p.soil?.ph ?? null, field_area_ha: p.field_area_ha, priorities: p.priorities, prices_rs_per_kg: p.prices_rs_per_kg ?? undefined, costs_rs_per_ha: p.costs_rs_per_ha ?? undefined },
+      const st = await api.stressTest(loc.latitude, loc.longitude, scenario, { rotations: m5Rots, soil_ph: p.soil?.ph ?? null, field_area_ha: p.field_area_ha, priorities: api.BALANCED, prices_rs_per_kg: p.prices_rs_per_kg ?? undefined, costs_rs_per_ha: p.costs_rs_per_ha ?? undefined },
         Math.round((p.irrigation?.budget_mm_per_season ?? 0) * p.field_area_ha * 10), `${p.farm_id}|${scenario}`, ctl.signal)
       if (ctl.signal.aborted || !st.data?.scenarios) return
       const scn = (id: string) => st.data.scenarios.find((x: any) => x.scenario_id === id)
@@ -849,11 +929,12 @@ function Future({ p, loc, scen, scenario, setScenario }: any) {
   const t0 = vals[0]?.temperatureC?.mean, t2 = vals[vals.length - 1]?.temperatureC?.mean
   const dT = t0 != null && t2 != null ? +(t2 - t0).toFixed(2) : null
   const v = vals[Math.min(yi, vals.length - 1)]
+  const last = vals[vals.length - 1], spread = last?.temperatureC?.maximum != null ? +(last.temperatureC.maximum - last.temperatureC.minimum).toFixed(1) : null
   return (<>
     <div><div className="eb">Farm time machine</div><h1 className="h1" style={{ marginTop: 6 }}>Your farm, <span>later.</span></h1></div>
-    <Hero eyebrow={`Projection · ${nice(loc?.name)}`} title={dT == null ? (scen && !s ? 'Projections not\nloaded yet.' : 'Loading the\nprojections…') : dT > 0 ? `Warmer by\n${vals[vals.length - 1].year}.` : `Little change\nby ${vals[vals.length - 1].year}.`}
-      sub={dT == null ? (scen && !s ? 'NASA projections for this field have not been fetched yet. Keep the backend running with internet; they load in the background.' : undefined) : `${dT > 0 ? '+' : ''}${dT} °C from ${vals[0].year} to ${vals[vals.length - 1].year} (${ens.label}, ${vals[0].contributingModels?.length ?? ''}-model average). Regional, not exact for your field.`} />
-    <div className="seg" style={{ gridTemplateColumns: '1fr 1fr' }}>{SCEN.map(([k, l]) => <button key={k} className={scenario === k ? 'on' : ''} onClick={() => setScenario(k)}>{l}</button>)}</div>
+    <Hero eyebrow={`Projection · ${nice(loc?.name)}`} badges={spread != null ? [`Confidence: ${spread < 1 ? 'High' : spread < 2 ? 'Medium' : 'Low'}`] : undefined} title={dT == null ? (scen && !s ? 'Projections not\nloaded yet.' : 'Loading the\nprojections…') : dT > 0 ? `Warmer by\n${vals[vals.length - 1].year}.` : `Little change\nby ${vals[vals.length - 1].year}.`}
+      sub={dT == null ? (scen && !s ? 'NASA projections for this field have not been fetched yet. Keep the backend running with internet; they load in the background.' : undefined) : `${dT > 0 ? '+' : ''}${dT} °C from ${vals[0].year} to ${vals[vals.length - 1].year} (${ens.label}, ${vals[0].contributingModels?.length ?? ''}-model average). Models agree within ${spread} °C, so confidence is ${spread != null && spread < 1 ? 'high' : spread != null && spread < 2 ? 'medium' : 'low'}. Regional, not exact for your field.`} />
+    <div className="worst"><Icon d="M12 3l9 16H3z M12 10v4 M12 17h.01" c={C.red} s={16} /><span><b>Worst case shown:</b> higher emissions (SSP3-7.0). If your plan works here, it works in milder futures too.</span></div>
     <section className="card">
       <div className="between"><div><div className="eb">Average temperature</div><div className="ct">Projected, with model spread</div></div>{scen && <SourceTag s={scen.source} what="CMIP6" />}</div>
       {!scen ? <Spinner text="Fetching NASA NEX-GDDP-CMIP6 (can take a minute)…" /> : !vals.length ? <div className="err">No projections available{scen.error ? `: ${scen.error}` : ''}.</div> : <>
@@ -869,7 +950,7 @@ function Future({ p, loc, scen, scenario, setScenario }: any) {
     <section className="card">
       <div className="between"><div><div className="eb">Climate twin · 2041–2060</div><div className="ct">Places that feel like your future</div></div>{twin && <SourceTag s={twin.source} what="NASA POWER" />}</div>
       {!twin ? <Spinner text="Matching climates…" /> : !twin.data ? <div className="err">Climate twin unavailable{twin.error ? `: ${twin.error}` : ''}.</div> : <>
-        <span className="muted">Your field's climate in the 2050s is closest to these places today. Tap one to see it.</span>
+        <div className="twinhead"><b>By the 2050s, {nice(p?.name)} will feel like {fixText(twin.data.analogs[0].location.name).split(',')[0]} does today.</b><span>Tap a place to see its farms, how the climate compares, and which rotation keeps your farm feeding you and paying in that climate.</span></div>
         {twin.data.analogs.map((a: any, k: number) => {
           const open = twinOpen === k, name = fixText(a.location.name)
           const mc: any[] = a.monthly_comparison ?? []
@@ -881,11 +962,7 @@ function Future({ p, loc, scen, scenario, setScenario }: any) {
               <span style={{ fontSize: 18, color: C.teal }}>{open ? '–' : '+'}</span>
             </button>
             {open && <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 10 }}>
-              <div className="twinpics">
-                <SatellitePlace square zoom={16} lat={loc.latitude} lon={loc.longitude} label={nice(loc.name)} caption="Your area today" />
-                <SatellitePlace square zoom={16} lat={a.location.latitude} lon={a.location.longitude} label={name} caption={`${name.split(',')[0]} today`} />
-              </div>
-              <span className="faint">Close-up satellite images (about 750 m across). Use + and − to zoom. The twin point is the town; farmland is usually at the edges.</span>
+              <TwinCompare p={p} loc={loc} a={a} name={name} hist={twin.data.historical} />
               {mc.length === 12 && <>
                 <div className="row" style={{ gap: 14, fontSize: 12, fontWeight: 700 }}>
                   <span className="row" style={{ gap: 6, color: '#795E22' }}><span style={{ width: 14, height: 3, background: '#795E22' }} />Your field, 2050s</span>
@@ -930,12 +1007,23 @@ function Future({ p, loc, scen, scenario, setScenario }: any) {
 }
 
 /* ------------------------------------------------------------------ ASK + PASSPORT */
+const FAQ: [RegExp, string][] = [
+  [/how (does|do) (it|this|cropcompass|the app) work|what (is|does) cropcompass|what are you doing|what do you do/i, 'CropCompass helps you choose a crop rotation that still feeds you and pays in a changing climate.\n1. Your field: you add where it is, what you grow and when, your water and soil.\n2. NASA data: we read rain and temperature for your field from NASA POWER (2021 to now) and NASA climate projections for the 2050s.\n3. Plans: for each possible rotation we work out water need, whether each crop suits the season, soil health and profit, and rank them.\n4. Future: we test every plan in a hotter, drier, worst-case future and find places in the world whose climate today is like yours tomorrow.\n5. Evidence: every number shows where it came from and what is still missing.'],
+  [/where.*data|which data|data source|nasa/i, 'Climate history: NASA POWER (daily weather from satellites and models, about 50 km grid). Future: NASA NEX-GDDP-CMIP6, 5 climate models, worst-case SSP3-7.0. Crop water use: FAO-56. Crop temperature ranges: FAO ECOCROP. Yields: Statistics Mauritius. Satellite pictures: Sentinel-2 and Esri.'],
+  [/shap|explain|why.*score|how.*score/i, 'Each plan gets a score out of 100 from four parts: water use, soil care, climate fit and profit. SHAP (explainable AI) shows how much each part pushes a plan above or below the average plan, so you can see exactly why it ranks where it does.'],
+  [/confidence|how sure|accurate|trust/i, 'Confidence goes down when inputs are missing or estimated: an untested soil pH, a soil type from the map, example prices, or two plans with almost the same score. Fill those in and confidence goes up.'],
+  [/twin/i, 'A climate twin is a real place whose climate today matches what your field is expected to feel like in the 2050s. Seeing how farms there look and what grows there helps you prepare now.'],
+  [/stress|worst/i, 'The stress test re-runs every plan in tougher situations: +2 °C, 20% less rain, half the water, and the NASA 2050s worst case. A plan that keeps working in most of them is a safer choice.'],
+]
+
 function Ask({ close, analysis, analysing, p, planRes }: any) {
   const [msgs, setMsgs] = useState<{ me: boolean; text: string; extra?: string }[]>([])
   const [q, setQ] = useState(''), [busy, setBusy] = useState(false)
   const bundle = analysis?.data?.bundle
   const send = async (text: string) => {
     if (!text.trim()) return
+    const faq = FAQ.find(([re]) => re.test(text))
+    if (faq) { setMsgs(m => [...m, { me: true, text }, { me: false, text: faq[1], extra: 'About CropCompass' }]); setQ(''); return }
     const pd = planRes?.data
     if (pd && /\b(plan|plans|best|switch|rotation|harvest|income|money|earn|price|profit|water need|how much water)\b/i.test(text)) {
       const best = pd.plans.find((x: any) => x.id === pd.best_plan_id), today = pd.plans[0]
@@ -946,29 +1034,28 @@ function Ask({ close, analysis, analysing, p, planRes }: any) {
       setMsgs(m => [...m, { me: true, text }, { me: false, text: lines.join('\n'), extra: `From the M2 plan engine · ${money ? 'example prices unless you entered yours · ' : ''}NASA POWER climate` }]); setQ('')
       return
     }
-    if (!bundle) { setMsgs(m => [...m, { me: true, text }, { me: false, text: analysing ? 'Still preparing the analysis, try again in a moment.' : 'Open the Passport to run the analysis first.' }]); setQ(''); return }
+    if (!bundle) { setMsgs(m => [...m, { me: true, text }, { me: false, text: analysing ? 'Still reading your farm data, try again in a moment.' : 'I could not load your farm analysis yet. Try again in a moment.' }]); setQ(''); return }
     setMsgs(m => [...m, { me: true, text }]); setQ(''); setBusy(true)
     const r = await api.ask(text, bundle)
     setBusy(false)
     setMsgs(m => [...m, { me: false, text: r.data?.answer ?? `The assistant is not reachable (${r.error}).`, extra: r.data ? [r.data.mode === 'refused' ? 'Refused: no evidence for that' : `${r.data.cited_evidence?.length ?? 0} evidence records cited`, ...(r.data.limitations ?? []).slice(0, 1)].join(' · ') : undefined }])
   }
-  const first = p?.current_rotation?.[0]
-  const sugg = ['Which plan is best for me?', 'How much water does each plan need?', 'How much profit does each plan make?', first ? `Why ${crop(first).toLowerCase()}?` : 'Why this rotation?', 'What data is missing?', 'What will the climate be in 2050?']
-  return (<>
-    <SheetHead eyebrow="Ask CropCompass" title="Grounded in your data" close={close} />
-    <div className="body" style={{ minHeight: 420 }}>
-      {analysing && <Spinner text="Preparing your farm's analysis (M1–M5)…" />}
-      {analysis?.source === 'cached' && <span className="faint">Backend offline: answering from a cached example analysis (Pamplemousses, maize → cowpea → cabbage).</span>}
-      <div className="bubble" style={{ alignSelf: 'flex-start', background: '#fff', border: `1px solid ${C.line}` }}>Ask about {nice(p?.name) || 'your field'}. Answers come only from the analysis and its sources; if there's no evidence, I'll say so.</div>
+  const end = useRef<HTMLDivElement>(null)
+  useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs.length, busy])
+  return (<div className="chatpanel" role="dialog" aria-label="Ask CropCompass">
+    <header><span className="logo" style={{ width: 30, height: 30, borderRadius: 9 }}><Icon d={I.leaf} c="#fff" s={16} /></span><div style={{ flex: 1 }}><b>Ask CropCompass</b><small>Anything about how it works, your plans, water or climate</small></div>
+      <button className="round" aria-label="Close chat" onClick={close}><Icon d="M6 6l12 12M18 6L6 18" s={16} /></button></header>
+    <div className="chatbody">
+      <div className="bubble" style={{ alignSelf: 'flex-start', background: '#fff', border: `1px solid ${C.line}` }}>Hi {USER}. Ask me anything, for example how CropCompass works, where the data comes from, or what to plant next season.</div>
       {msgs.map((m, k) => <div key={k} className="bubble" style={{ whiteSpace: 'pre-line', alignSelf: m.me ? 'flex-end' : 'flex-start', background: m.me ? C.deep : '#fff', color: m.me ? '#fff' : C.ink, border: m.me ? 0 : `1px solid ${C.line}` }}>{m.text}{m.extra && <div className="faint" style={{ marginTop: 6 }}>{m.extra}</div>}</div>)}
       {busy && <Spinner text="Thinking…" />}
-      <div className="chips" style={{ marginTop: 'auto' }}>{sugg.map(s => <button key={s} className="chip" onClick={() => send(s)}>{s}</button>)}</div>
-      <div className="row">
-        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && send(q)} placeholder="Ask about your field" aria-label="Question" style={{ flex: 1, minHeight: 46, border: '1.5px solid #D5DFDB', borderRadius: 23, padding: '0 16px', fontSize: 14.5 }} />
-        <button className="round" style={{ width: 46, height: 46, background: C.deep, border: 0 }} aria-label="Send" onClick={() => send(q)}><Icon d={I.send} c="#fff" /></button>
-      </div>
+      <div ref={end} />
     </div>
-  </>)
+    <div className="chatin">
+      <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && send(q)} placeholder="Ask anything…" aria-label="Question" />
+      <button className="round" style={{ width: 42, height: 42, background: C.deep, border: 0 }} aria-label="Send" onClick={() => send(q)}><Icon d={I.send} c="#fff" s={18} /></button>
+    </div>
+  </div>)
 }
 
 function Passport({ close, analysis, analysing, p, rerun, planRes }: any) {

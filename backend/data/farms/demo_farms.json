@@ -140,12 +140,18 @@
       "demo_note": "Illustrative farmer inputs for the demo; replace with a real farmer's answers."
     },
     {
-      "farm_id": "black-river-01",
-      "name": "Black River",
-      "location_id": "black-river-01",
-      "field_area_ha": 1.0,
+      "farm_id": "cameron-highlands-my",
+      "name": "Cameron Highlands",
+      "location_id": "site",
+      "site": {
+        "latitude": 4.5098,
+        "longitude": 101.3863,
+        "place": "Cameron Highlands, Pahang",
+        "country": "Malaysia"
+      },
+      "field_area_ha": 0.8,
       "soil": {
-        "texture": "sandy_loam",
+        "texture": "loam",
         "texture_source": "map_estimate",
         "ph": null,
         "ph_source": "unknown",
@@ -153,61 +159,58 @@
         "drainage_source": "farmer"
       },
       "irrigation": {
-        "water_source": "rain_only",
-        "budget_mm_per_season": 0,
+        "water_source": "tank",
+        "budget_mm_per_season": 250,
         "budget_source": "farmer"
       },
       "current_rotation": [
-        "maize",
-        "cowpea",
-        "sweet_potato"
+        "cabbage",
+        "tomato",
+        "cabbage"
       ],
       "priorities": {
-        "water": 0.5,
-        "soil": 0.2,
-        "climate": 0.3,
-        "income": 0.0
+        "water": 0.25,
+        "soil": 0.25,
+        "climate": 0.25,
+        "income": 0.25
       },
-      "constraints": [
-        "no_tractor",
-        "need_food_for_home"
-      ],
+      "constraints": [],
       "boundary": {
         "geometry": {
           "type": "Polygon",
           "coordinates": [
             [
               [
-                57.3805203,
-                -20.3754497
+                101.385897,
+                4.5093983
               ],
               [
-                57.3814797,
-                -20.3754497
+                101.386703,
+                4.5093983
               ],
               [
-                57.3814797,
-                -20.3745503
+                101.386703,
+                4.5102017
               ],
               [
-                57.3805203,
-                -20.3745503
+                101.385897,
+                4.5102017
               ],
               [
-                57.3805203,
-                -20.3754497
+                101.385897,
+                4.5093983
               ]
             ]
           ]
         },
         "method": "default_square",
         "confidence": null,
-        "source": "Square of the stated area around the M1 location point",
+        "source": "Square of the stated area around the field point",
         "note": "Placeholder outline: farmer should redraw."
       },
       "demo": true,
       "updated_at": "2026-11-15T00:00:00+00:00",
-      "demo_note": "Illustrative farmer inputs for the demo; replace with a real farmer's answers."
+      "demo_note": "Illustrative highland vegetable farm in Malaysia (tropical, northern hemisphere) to compare with Mauritius; replace with a real farmer's answers."
     }
   ]
 }

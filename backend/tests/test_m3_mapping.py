@@ -89,7 +89,7 @@ def test_demo_farms_sit_on_registered_locations():
     from climateM1.services.locations import LOCATIONS
     from mappingM3.farm_profile import list_farms
     farms = list_farms()
-    assert {f.farm_id for f in farms} >= {"pamplemousses-04", "flacq-02", "black-river-01"}
+    assert {f.farm_id for f in farms} >= {"pamplemousses-04", "flacq-02", "cameron-highlands-my"}
     assert all(f.location_id in LOCATIONS for f in farms)
 
 
@@ -155,7 +155,7 @@ def test_routes_list_get_context(client):
 
 def test_routes_locations_and_nearest(client):
     locs = client.get("/api/farms/locations").json()["locations"]
-    assert {l["location_id"] for l in locs} == {"pamplemousses-04", "flacq-02", "black-river-01"}
+    assert {l["location_id"] for l in locs} >= {"pamplemousses-04", "flacq-02", "black-river-01"}
     assert client.get("/api/farms/nearest-location?lat=-20.1&lon=57.57").json()["location_id"] == "pamplemousses-04"
 
 
@@ -180,14 +180,15 @@ def test_routes_boundary_measure_and_save(client):
     m = client.post("/api/farms/boundary/measure", json={"geometry": g}).json()
     assert abs(m["area_ha"] - 1.2) < 0.02 and m["nearest_location"]["location_id"] == "black-river-01"
     assert client.post("/api/farms/boundary/measure", json={"geometry": {"type": "Point"}}).status_code == 422
-    r = client.put("/api/farms/black-river-01/boundary", json={"geometry": g, "method": "manual"})
+    r = client.put("/api/farms/flacq-02/boundary", json={"geometry": g, "method": "manual"})
     assert r.json()["boundary"]["method"] == "manual"
 
 
 def test_m4_analyze_uses_m3_profile(client, monkeypatch):
     from intelligenceM4.providers import farm_provider
-    res = farm_provider.get_farm_context("black-river-01")
-    assert res.status == "ok" and res.data.current_rotation == ["maize", "cowpea", "sweet_potato"]
+    res = farm_provider.get_farm_context("cameron-highlands-my")
+    assert res.status == "ok" and res.data.current_rotation == ["cabbage", "tomato", "cabbage"]
+    assert res.data.location_id == "site_4.510_101.386"
 
 
 def test_outlines_accepted_worldwide_unless_mauritius_required():

@@ -38,25 +38,26 @@ export type FarmPick = { farms: { farm_id: string; name: string; current_rotatio
 export const FarmPickCtx = createContext<FarmPick | null>(null)
 const short = (n: string) => (n || '').replace(/\s*Field\s*\d+$/i, '')
 
-export const Hero = ({ eyebrow, title, sub, bg = C.hero, children, note }: { eyebrow: string; title: string; sub?: string; bg?: string; children?: ReactNode; note?: ReactNode }) => {
-  const fp = useContext(FarmPickCtx)
+export const Hero = ({ eyebrow, title, sub, bg = C.hero, children, note, pick, badges }: { eyebrow: string; title: string; sub?: string; bg?: string; children?: ReactNode; note?: ReactNode; pick?: boolean; badges?: string[] }) => {
+  const ctx = useContext(FarmPickCtx), fp = pick ? ctx : null
   return (<>
     <section className="hero" style={{ background: bg }}>
       <svg width="190" height="190" viewBox="0 0 100 100" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1.2" aria-hidden="true" style={{ position: 'absolute', right: fp ? 60 : -40, bottom: -60 }}>
         <path d="M50 95V45 M50 45C50 22 66 8 92 8c0 28-16 40-42 40z M50 62C50 44 38 32 14 32c0 22 12 32 36 32z" />
       </svg>
+      <div className="e"><i /><b>{eyebrow.toUpperCase()}</b></div>
       <div className="herogrid">
         <div className="herotext">
-          <div className="e"><i /><b>{eyebrow.toUpperCase()}</b></div>
           <div className="t">{title}</div>
-          {children}
+          {badges && badges.length > 0 && <div className="hbadges">{badges.map(b => <span key={b}>{b}</span>)}</div>}
         </div>
         {fp && fp.farms.length > 1 && <div className="farmpick" role="tablist" aria-label="Choose a field">
           {fp.farms.slice(0, 4).map(f => <button key={f.farm_id} role="tab" aria-selected={f.farm_id === fp.active} title={short(f.name)} className={f.farm_id === fp.active ? 'on' : ''} onClick={() => fp.set(f.farm_id)}>
-            <span className="ic"><CropPic id={f.current_rotation?.[0] ?? 'maize'} size={30} /></span><span className="nm">{short(f.name)}</span>
+            <span className="ic"><CropPic id={f.current_rotation?.[0] ?? 'maize'} size={28} /></span><span className="nm">{short(f.name)}</span>
           </button>)}
         </div>}
       </div>
+      {children}
     </section>
     {(sub || note) && <section className="heronote">{sub && <div>{sub}</div>}{note}</section>}
   </>)

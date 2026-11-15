@@ -1097,17 +1097,6 @@
       ]
     },
     {
-      "code": "M3_NOT_IMPLEMENTED",
-      "category": "module",
-      "severity": "info",
-      "message": "M3 does not yet provide farm profiles, so farm details come only from what was entered directly.",
-      "affects": [],
-      "source_module": "M3",
-      "farmer_action": null,
-      "team_action": "M3: publish the agreed farm profile function.",
-      "citations": []
-    },
-    {
       "code": "M5_RESULTS_NOT_SUPPLIED",
       "category": "module",
       "severity": "info",
@@ -1120,5 +1109,5 @@
     }
   ],
   "recommendation_status": "requires_further_validation",
-  "generated_at": "2026-11-15T03:38:30.413677+00:00"
+  "generated_at": "2026-11-15T06:21:38.768711+00:00"
 }

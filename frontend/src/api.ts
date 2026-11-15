@@ -86,7 +86,7 @@ export const suggestBoundary = (lat: number, lon: number) => call<any>(`/api/far
 export const analyze = (farm: any, scenario: string) =>
   withFallback<any>('/api/intelligence/analyze', fbAnalyze, post({ farm, scenario, year: 2050, max_alternatives: 3 }), 150000)
 export const ask = (question: string, analysis: any) =>
-  withFallback<any>('/api/intelligence/assistant', null, post({ question, analysis, use_llm: false }), 30000)
+  withFallback<any>('/api/intelligence/assistant', null, post({ question, analysis, use_llm: true }), 45000)
 
 // Cached copies to show instantly while the live call runs (stale-while-revalidate).
 export const cached = {
@@ -97,9 +97,10 @@ export const cached = {
 }
 
 // ---------------- M2 ranked plans (engine) - key names the cached what-if variant
-export type PlanOpts = { temperature_change_c?: number; rainfall_change_pct?: number; water_budget_mm?: number; rotations?: string[][] }
+export const BALANCED = { water: 0.25, soil: 0.25, climate: 0.25, income: 0.25 }
+export type PlanOpts = { temperature_change_c?: number; rainfall_change_pct?: number; water_budget_mm?: number; rotations?: string[][]; climate_monthly?: { temperature_c: number[]; precipitation_mm: number[] } }
 export const plans = (farmId: string, opts: PlanOpts = {}, key = 'base', signal?: AbortSignal) =>
-  withFallback<any>('/api/agriculture/plans', (fbPlans as any)[`${farmId}|${key}`] ?? null, post({ farm_id: farmId, ...opts }), 60000, signal)
+  withFallback<any>('/api/agriculture/plans', (fbPlans as any)[`${farmId}|${key}`] ?? null, post({ farm_id: farmId, priorities: BALANCED, ...opts }), 60000, signal)
 export const putBoundary = (id: string, geometry: any) => call<any>(`/api/farms/${id}/boundary`, { method: 'PUT', body: JSON.stringify({ geometry, method: 'manual' }) })
 export const measure = (geometry: any) => call<any>('/api/farms/boundary/measure', post({ geometry }))
 export const getThisYear = (loc: string, signal?: AbortSignal) => {
@@ -122,4 +123,49 @@ export const searchPlace = async (q: string): Promise<{ name: string; country: s
   const r = await fetch(`${NOM}/search?format=jsonv2&addressdetails=1&limit=6&accept-language=en&q=${encodeURIComponent(q)}`, { headers: { Accept: 'application/json' } })
   const j = await r.json()
   return (j as any[]).map(x => ({ name: x.display_name.split(',').slice(0, 2).join(','), country: x.address?.country ?? '', lat: +x.lat, lon: +x.lon }))
+}
+
+// nearest mapped farmland (OpenStreetMap) to a point, so a twin close-up shows fields, not the town centre
+const farmCache = new Map<string, { lat: number; lon: number } | null>()
+export const nearestFarmland = async (lat: number, lon: number): Promise<{ lat: number; lon: number } | null> => {
+  const key = `${lat.toFixed(3)},${lon.toFixed(3)}`
+  if (farmCache.has(key)) return farmCache.get(key)!
+  try {
+    const q = `[out:json][timeout:20];way(around:15000,${lat},${lon})[landuse~"^(farmland|orchard|meadow|plantation)$"];out center 40;`
+    let els: any[] | null = null
+    for (const host of ['https://overpass-api.de', 'https://overpass.kumi.systems', 'https://overpass.private.coffee']) {
+      try { const r = await fetch(`${host}/api/interpreter?data=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(9000) }); if (r.ok) { els = (await r.json()).elements ?? []; break } } catch { /* next mirror */ }
+    }
+    if (!els) return null
+    let best: { lat: number; lon: number } | null = null, bd = Infinity
+    for (const e of els) { const c = e.center; if (!c) continue; const d = (c.lat - lat) ** 2 + ((c.lon - lon) * Math.cos(lat * Math.PI / 180)) ** 2; if (d < bd) { bd = d; best = { lat: c.lat, lon: c.lon } } }
+    farmCache.set(key, best); return best
+  } catch { return null }
+}
+
+// real photos of each crop growth stage (Wikimedia Commons, open licences), looked up in the browser
+const STAGE_Q: Record<string, string[]> = {
+  maize: ['Zea mays seeds', 'maize seedling', 'maize plants young field', 'maize tassel', 'maize ear corn cob husk'],
+  tomato: ['tomato seeds', 'tomato seedlings', 'tomato plant young', 'tomato flowers', 'tomatoes ripening on vine'],
+  onion: ['onion seeds Allium cepa', 'onion seedlings', 'onion field green leaves', 'Allium cepa flower', 'onion harvest bulbs'],
+  cabbage: ['cabbage seeds', 'cabbage seedlings', 'young cabbage plants field', 'Brassica oleracea flowers', 'cabbage heads field'],
+  cowpea: ['cowpea seeds Vigna unguiculata', 'cowpea seedling', 'Vigna unguiculata plant', 'Vigna unguiculata flower', 'cowpea pods'],
+  groundnut: ['peanut seeds Arachis hypogaea', 'peanut seedling', 'Arachis hypogaea plant', 'Arachis hypogaea flower', 'peanuts harvested plant pods'],
+  sweet_potato: ['sweet potato slips', 'sweet potato sprouting', 'Ipomoea batatas leaves field', 'Ipomoea batatas flower', 'sweet potatoes harvest'],
+}
+export type Photo = { url: string; title: string; credit: string; page: string }
+const photoCache = new Map<string, Photo | null>()
+export const stagePhoto = async (crop: string, stage: number): Promise<Photo | null> => {
+  const q = STAGE_Q[crop]?.[stage]; if (!q) return null
+  const key = `${crop}|${stage}`
+  if (photoCache.has(key)) return photoCache.get(key)!
+  try {
+    const u = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q + ' filetype:bitmap')}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=480&format=json&origin=*`
+    const j = await (await fetch(u, { signal: AbortSignal.timeout(8000) })).json()
+    const pg: any = Object.values(j.query?.pages ?? {})[0]
+    const ii = pg?.imageinfo?.[0]
+    const ph = ii ? { url: ii.thumburl ?? ii.url, title: pg.title.replace(/^File:/, ''), page: ii.descriptionurl ?? 'https://commons.wikimedia.org',
+      credit: `${(ii.extmetadata?.Artist?.value ?? '').replace(/<[^>]+>/g, '').trim().slice(0, 40) || 'Wikimedia Commons'} · ${ii.extmetadata?.LicenseShortName?.value ?? 'open licence'}` } : null
+    photoCache.set(key, ph); return ph
+  } catch { return null }
 }

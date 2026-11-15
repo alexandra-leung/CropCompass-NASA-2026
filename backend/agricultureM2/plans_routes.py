@@ -21,6 +21,8 @@ class PlansRequest(BaseModel):
     max_alternatives: int = Field(default=3, ge=1, le=6)
     prices_rs_per_kg: dict[str, float] | None = Field(default=None, description="Farmer's own price per kg, by crop_id.")
     costs_rs_per_ha: dict[str, float] | None = Field(default=None, description="Farmer's growing cost per hectare per crop.")
+    priorities: dict[str, float] | None = Field(default=None, description="Override the farm's saved weights (e.g. balanced).")
+    climate_monthly: dict[str, list[float]] | None = Field(default=None, description="Use this 12-month climate instead of the farm history, e.g. a climate twin: {temperature_c: [12], precipitation_mm: [12]}.")
     rotations: list[list[str]] | None = Field(default=None, description="Evaluate exactly these rotations (stress tests) instead of generating alternatives.")
 
 
@@ -49,6 +51,16 @@ def _months(farm: Any) -> list[list[int]] | None:
     return [month_span(w.start_month, w.end_month) for w in cal]
 
 
+def _twin_rows(cm: dict[str, list[float]] | None, lat: float | None):
+    if not cm:
+        return None
+    from agricultureM2.plan_engine import climate_from_monthly
+    t, p = cm.get("temperature_c") or [], cm.get("precipitation_mm") or []
+    if len(t) != 12 or len(p) != 12:
+        raise HTTPException(status_code=422, detail="climate_monthly needs 12 temperature and 12 rain values")
+    return climate_from_monthly(t, p, lat)
+
+
 @router.post("/plans", summary="Ranked rotation plans for a farm (water need, suitability, score)")
 async def plans(req: PlansRequest) -> dict[str, Any]:
     from mappingM3.farm_profile import load_farm
@@ -61,11 +73,12 @@ async def plans(req: PlansRequest) -> dict[str, Any]:
     seasonal, err = await _seasonal(farm.location_id)
     budget = req.water_budget_mm if req.water_budget_mm is not None else farm.irrigation.budget_mm_per_season
     out = build_plans(current=farm.current_rotation, seasonal=seasonal, budget_mm=budget, area_ha=farm.field_area_ha,
-                      soil_ph=farm.soil.ph, priorities=farm.priorities.model_dump(),
+                      soil_ph=farm.soil.ph, priorities=req.priorities or farm.priorities.model_dump(),
                       d_temp=req.temperature_change_c, d_rain_pct=req.rainfall_change_pct, max_alternatives=req.max_alternatives,
                       fixed_rotations=req.rotations,
                       prices=req.prices_rs_per_kg or getattr(farm, 'prices_rs_per_kg', None),
                       costs=req.costs_rs_per_ha or getattr(farm, 'costs_rs_per_ha', None),
-                      latitude=_lat(farm.location_id), current_months=_months(farm))
+                      latitude=_lat(farm.location_id), current_months=_months(farm),
+                      climate_rows=_twin_rows(req.climate_monthly, _lat(farm.location_id)))
     out.update({"farm_id": farm.farm_id, "location_id": farm.location_id, "climate_error": err})
     return out
