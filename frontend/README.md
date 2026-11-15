@@ -9,16 +9,15 @@ are shown as "not calculated yet".
 ## Run
 
 ```bash
-# 1. backend (from backend/)
-uvicorn app:app --reload            # http://127.0.0.1:8000
-
-# 2. frontend (from frontend/)
+# From frontend/ (uses the hosted Render backend)
 npm install
 npm run dev                         # http://localhost:5173  (open on a phone: use the Network URL)
 ```
 
-`/api/*` calls are proxied to the backend (`VITE_BACKEND_URL`, default `http://127.0.0.1:8000`, see `.env.example`).
-Production build: `npm run build && npm run preview`.
+`/api/*` calls are proxied to `https://cropcompass-api-i27c.onrender.com` in both development and preview. No local backend is required. Set `VITE_API_URL` to use another hosted backend, or `VITE_BACKEND_URL` to override it (for example, `http://127.0.0.1:8000` for local backend development). Restart Vite after changing environment settings. See `.env.example`.
+On Vercel, `vercel.json` forwards `/api/*` to Render before the SPA fallback. Other static hosts need an equivalent API proxy.
+Production preview: `npm run preview` (builds first, then serves at `http://localhost:4173`).
+Home, Fields, Plans, Water, and Future are in-app tabs served from `/`.
 
 ## Screens → endpoints
 
