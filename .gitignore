@@ -234,3 +234,6 @@ __pycache__/
 
 # Generated datasets and cache
 backend/data/raw/nasa_power/*.json
+
+# M3 runtime farm store
+backend/data/farms/farms_store.json
