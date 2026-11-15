@@ -3,10 +3,10 @@ import * as api from './api'
 import type { Source } from './api'
 import { C, FarmPickCtx, Hero, I, Icon, Kpi, LineChart, SourceTag, Spinner, Tag } from './ui'
 import { CropPic, STAGES, StagePic } from './crops'
-import { SatelliteField, SatellitePlace } from './satellite'
+import { SatelliteField, SatellitePlace, classifyCells } from './satellite'
 
 type Tab = 'home' | 'fields' | 'plans' | 'water' | 'future'
-type Sheet = null | { kind: 'field' } | { kind: 'add' } | { kind: 'passport' } | { kind: 'settings' }
+type Sheet = null | { kind: 'field' } | { kind: 'add' } | { kind: 'passport' } | { kind: 'settings' } | { kind: 'soil' }
 
 const USER = 'Sanjana'
 const CROP_NAMES: Record<string, string> = { maize: 'Maize', tomato: 'Tomato', onion: 'Onion', cabbage: 'Cabbage', cowpea: 'Cowpea', groundnut: 'Groundnut', sweet_potato: 'Sweet potato' }
@@ -92,7 +92,7 @@ export default function App() {
 
       <main>
         {tab === 'home' && <Home p={p} loc={loc} farms={farmList} history={history} openField={() => setSheet({ kind: 'field' })} farmsSrc={farms.source} goFields={() => setTab('fields')} />}
-        {tab === 'fields' && <Fields farms={farmList} src={farms.source} open={(id: string) => { setFarmId(id); setSheet({ kind: 'field' }) }} add={() => setSheet({ kind: 'add' })} plans={(id: string) => { setFarmId(id); setTab('plans') }} />}
+        {tab === 'fields' && <Fields soil={() => setSheet({ kind: 'soil' })} farms={farmList} src={farms.source} open={(id: string) => { setFarmId(id); setSheet({ kind: 'field' }) }} add={() => setSheet({ kind: 'add' })} plans={(id: string) => { setFarmId(id); setTab('plans') }} />}
         {tab === 'plans' && <Plans p={p} planRes={planRes} refresh={loadPlans} />}
         {tab === 'water' && <Water p={p} planRes={planRes} onSaved={(np: any) => setFarm({ data: np, source: 'live' })} />}
         {tab === 'future' && <Future p={p} loc={loc} scen={scen} scenario={scenario} />}
@@ -113,6 +113,7 @@ export default function App() {
           <div className="sheet">
             {sheet.kind === 'field' && <FieldSheet p={p} src={farm.source} close={() => setSheet(null)} onSaved={(np: any) => { setFarm({ data: np, source: 'live' }); loadFarms() }} passport={() => { setSheet({ kind: 'passport' }); needAnalysis() }} />}
             {sheet.kind === 'add' && <AddField close={() => setSheet(null)} created={(id: string) => { setSheet(null); loadFarms(id); setTab('plans') }} />}
+            {sheet.kind === 'soil' && <SoilFlow close={() => setSheet(null)} p={p} planRes={planRes} farms={farmList} farmId={farmId} setFarmId={setFarmId} onSaved={(np: any) => setFarm({ data: np, source: 'live' })} />}
             {sheet.kind === 'settings' && <Settings close={() => setSheet(null)} p={p} planRes={planRes} onPrices={savePrices} farms={farmList} farmId={farmId} setFarmId={setFarmId} />}
             {sheet.kind === 'passport' && <Passport close={() => setSheet(null)} analysis={analysis} analysing={analysing} p={p} rerun={runAnalysis} planRes={planRes} />}
           </div>
@@ -221,12 +222,13 @@ function ThisYear({ yr, hist, name }: any) {
   </section>
 }
 
-function Fields({ farms, src, open, add, plans }: any) {
+function Fields({ soil, farms, src, open, add, plans }: any) {
   return (<>
     <div className="eb">Your land, at a glance</div>
     <div className="row"><span className="h1">Fields</span>
       <span style={{ fontSize: 12, fontWeight: 700, color: C.teal, background: '#E9F1EE', padding: '3px 8px', borderRadius: 8 }}>{String(farms.length).padStart(2, '0')}</span>
       <button className="btn" style={{ marginLeft: 'auto', minHeight: 42, padding: '0 14px', fontSize: 13.5 }} onClick={add}>+ Add field</button></div>
+    <button className="soilbtn" onClick={soil}><span className="ai" style={{ background: '#F7F1E8' }}><Icon d={I.leaf} c="#8A6A43" s={20} /></span><span style={{ flex: 1, textAlign: 'left' }}><b>Improve my soil</b><small>Pick a field, check its soil, and see which plants build it up</small></span><span style={{ color: C.teal, fontSize: 20 }}>›</span></button>
     <div className="between"><span className="muted">Farmer inputs and field outlines, from M3.</span><SourceTag s={src} /></div>
     {farms.map((f: any) => {
       const bad = f.missing_count > 0
@@ -255,24 +257,30 @@ function FieldSheet({ p, src, close, onSaved, passport }: any) {
   const [draw, setDraw] = useState<number[][] | null>(null)
   const [area, setArea] = useState<number | null>(null)
   const [auto, setAuto] = useState<string>('')
-  const [grid, setGrid] = useState<any>(null), [gridBusy, setGridBusy] = useState(false)
-  useEffect(() => { setGrid(null) }, [p?.farm_id])
-  const doGrid = async () => {
+  const [grid, setGrid] = useState<any>(null), [gridBusy, setGridBusy] = useState(false), [buffer, setBuffer] = useState(2)
+  const [edit, setEdit] = useState<number[][] | null>(null)
+  useEffect(() => { setGrid(null); setEdit(null) }, [p?.farm_id])
+  const doGrid = async (buf = buffer) => {
     setGridBusy(true); setErr('')
-    try { const g = await api.landGrid(p.farm_id); setGrid(g); onSaved(await api.getFarm(p.farm_id).then(r => r.data ?? p)) }
-    catch (e) { setErr(`Could not grid the field: ${(e as Error).message}`) } finally { setGridBusy(false) }
-  }
-  const findAuto = async () => {
-    const ring: number[][] = p.boundary?.geometry?.coordinates?.[0] ?? []
-    if (!ring.length) return
-    const pts = ring.slice(0, -1), lon = pts.reduce((a, c) => a + c[0], 0) / pts.length, lat = pts.reduce((a, c) => a + c[1], 0) / pts.length
-    setAuto('Looking for your field in OpenStreetMap…')
     try {
-      const r = await api.suggestBoundary(+lat.toFixed(6), +lon.toFixed(6))
-      if (r.status === 'suggested') { setDraw(r.geometry.coordinates[0].slice(0, -1)); setAuto(`Found a mapped ${r.landuse} outline (${r.area_ha} ha) from OpenStreetMap. Check it, adjust or save.`) }
-      else setAuto(`${r.reason} Tap the corners instead.`)
-      if (r.status !== 'suggested') setDraw([])
-    } catch { setAuto('Automatic outline unavailable (backend offline). Tap the corners instead.'); setDraw([]) }
+      const g = await api.landGrid(p.farm_id, buf)
+      const cls = await classifyCells(g.cells, g.half_cell_deg)
+      if (cls) {
+        let built = 0, use = 0
+        g.cells = g.cells.map((c: number[], k: number) => { const b = cls[k] === 0; if (b) built++; const ok = c[2] === 1 && !b; if (ok) use++; return [c[0], c[1], b ? 2 : c[2]] })
+        g.built_cells = built; g.cells_usable = use
+        g.usable_pct = g.cells_total ? Math.round(use / g.cells_total * 1000) / 10 : 0
+        g.usable_area_ha = Math.round(g.field_area_ha * g.usable_pct / 100 * 1000) / 1000
+        await api.patchFarm(p.farm_id, { usable_land_pct: g.usable_pct })
+      }
+      g.detected = !!cls
+      setGrid(g); onSaved(await api.getFarm(p.farm_id).then(r => r.data ?? p))
+    } catch (e) { setErr(`Could not grid the field: ${(e as Error).message}`) } finally { setGridBusy(false) }
+  }
+  const saveEdit = async () => {
+    if (!edit) return
+    const geometry = { type: 'Polygon', coordinates: [[...edit, edit[0]]] }
+    try { onSaved(await api.putBoundary(p.farm_id, geometry)); setEdit(null); setGrid(null) } catch (e) { setErr(`Could not save the outline: ${(e as Error).message}`) }
   }
   const saveOutline = async () => {
     if (!draw || draw.length < 3) return
@@ -295,13 +303,16 @@ function FieldSheet({ p, src, close, onSaved, passport }: any) {
   return (<>
     <SheetHead eyebrow={`${p.field_area_ha ?? '?'} ha · climate location ${nice(p.name)}`} title={nice(p.name)} close={close} />
     <div className="body">
-      {p.boundary?.geometry?.coordinates?.[0] ? <SatelliteField ring={p.boundary.geometry.coordinates[0]} grid={grid && !draw ? { cells: grid.cells, half: grid.half_cell_deg } : undefined} draft={draw ?? undefined} onTap={draw ? (lon, lat) => setDraw([...draw, [lon, lat]]) : undefined}
-        label={draw ? 'Tap the corners of your field' : p.boundary.method === 'manual' ? 'Outline drawn by farmer' : 'Placeholder outline · redraw to match your field'} /> : <div className="err">No outline yet.</div>}
-      {!draw ? <>
-        <div className="row"><button className="btn" style={{ flex: 1 }} onClick={findAuto}>Find my field automatically</button>
-          <button className="btn light" style={{ flex: 1 }} disabled={gridBusy} onClick={doGrid}>{gridBusy ? 'Gridding…' : grid ? 'Grid again' : 'Grid my field'}</button></div>
-        {grid && <div className="gridres"><div><b>{grid.usable_pct}%</b><span>plantable</span></div><div><b>{grid.usable_area_ha} ha</b><span>of {grid.field_area_ha} ha</span></div><div><b>{grid.cells_usable}</b><span>{grid.cell_m} m plots</span></div>
-          <p>Green squares can be planted. Red is the {grid.buffer_m} m edge kept for paths and borders. Profit in Plans now uses the {grid.usable_area_ha} ha you can actually plant.</p></div>}
+      {p.boundary?.geometry?.coordinates?.[0] ? <SatelliteField ring={p.boundary.geometry.coordinates[0]} edit={edit ?? undefined} onEdit={(i, lon, lat) => edit && setEdit(edit.map((c, k) => (k === i ? [lon, lat] : c)))} grid={grid && !draw && !edit ? { cells: grid.cells, half: grid.half_cell_deg } : undefined} draft={draw ?? undefined} onTap={draw ? (lon, lat) => setDraw([...draw, [lon, lat]]) : undefined}
+        label={edit ? 'Drag the yellow corners to your field edges' : draw ? 'Tap the corners of your field' : p.boundary.method === 'manual' ? 'Outline drawn by farmer' : 'Placeholder outline · redraw to match your field'} /> : <div className="err">No outline yet.</div>}
+      {edit ? <div className="row"><button className="chip" onClick={() => setEdit(null)}>Cancel</button><button className="btn" style={{ flex: 1, minHeight: 42 }} onClick={saveEdit}>Save field edges</button></div>
+      : !draw ? <>
+        <div className="row"><button className="btn light" style={{ flex: 1 }} onClick={() => { setGrid(null); setEdit((p.boundary?.geometry?.coordinates?.[0] ?? []).slice(0, -1)) }}>Edit my field</button>
+          <button className="btn" style={{ flex: 1 }} disabled={gridBusy} onClick={() => doGrid()}>{gridBusy ? 'Gridding…' : grid ? 'Grid again' : 'Grid my field'}</button></div>
+        <label className="bufrow"><span>Edge kept free (paths, borders)</span><b>{buffer} m</b>
+          <input type="range" min={0} max={10} step={0.5} value={buffer} onChange={e => setBuffer(+e.target.value)} onPointerUp={() => grid && doGrid(buffer)} onKeyUp={() => grid && doGrid(buffer)} aria-label="Internal edge buffer in metres" /></label>
+        {grid && <div className="gridres"><div><b>{grid.usable_pct}%</b><span>plantable</span></div><div><b>{grid.usable_area_ha} ha</b><span>of {grid.field_area_ha} ha</span></div><div><b>{grid.cells_usable}</b><span>of {grid.cells_total} plots ({grid.cell_m} m)</span></div>
+          <p><span className="sw" style={{ background: 'rgba(201,226,154,.9)' }} /> plantable <span className="sw" style={{ background: 'rgba(181,82,58,.8)' }} /> {grid.buffer_m} m edge <span className="sw" style={{ background: 'rgba(90,90,90,.85)' }} /> buildings or hard surface{grid.detected ? ` (${grid.built_cells} plots, read from the satellite picture)` : ''}.<br />Profit in Plans now uses the {grid.usable_area_ha} ha you can actually plant.</p></div>}
       </> :
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {auto && <span className="faint">{auto}</span>}
@@ -546,6 +557,39 @@ function TwinCompare({ p, loc, a, name, hist }: any) {
       <div className="tw"><small>{town} today</small><b>{tw.t.toFixed(1)} °C</b><span>{Math.round(tw.r)} mm rain</span></div>
     </div>}
     <span className="faint">{farm ? `Left: your field. Right: the nearest mapped farmland to ${town} (OpenStreetMap), so you can see what farms in a climate like your future one look like today.` : `Left: your field. Right: ${town}.`} Zoom with + and −.</span>
+  </>
+}
+
+function SoilFlow({ close, p, planRes, farms, farmId, setFarmId, onSaved }: any) {
+  const [ph, setPh] = useState(''), [tex, setTex] = useState('unknown'), [busy, setBusy] = useState(false), [grid, setGrid] = useState<any>(null)
+  useEffect(() => { setPh(p?.soil?.ph != null ? String(p.soil.ph) : ''); setTex(p?.soil?.texture ?? 'unknown'); setGrid(null) }, [p?.farm_id])
+  const d = planRes?.data
+  const saveSoil = async () => {
+    setBusy(true)
+    try {
+      const body: any = { soil: { texture: tex, texture_source: tex === 'unknown' ? 'unknown' : 'farmer', ...(ph !== '' && isFinite(+ph) ? { ph: +ph, ph_source: 'farmer' } : {}) } }
+      onSaved(await api.patchFarm(p.farm_id, body))
+      const g = await api.landGrid(p.farm_id); setGrid(g)
+    } catch { /* offline */ } finally { setBusy(false) }
+  }
+  const phTip = ph === '' ? null : +ph < 5.5 ? 'Acidic: add agricultural lime before planting; legumes struggle below pH 5.5.' : +ph > 7.5 ? 'Alkaline: add compost or sulphur; some nutrients get locked up.' : 'Good range for most vegetables.'
+  return <>
+    <SheetHead eyebrow="Improve my soil" title="Soil first, then plants" close={close} />
+    <div className="body">
+      <div className="steps3"><span className="on">1 · Field</span><span className={p ? 'on' : ''}>2 · Your soil</span><span className={d ? 'on' : ''}>3 · Plants for soil</span></div>
+      <div className="seg" style={{ gridTemplateColumns: `repeat(${Math.min(farms.length, 4)}, 1fr)` }}>{farms.slice(0, 4).map((f: any) => <button key={f.farm_id} className={f.farm_id === farmId ? 'on' : ''} onClick={() => setFarmId(f.farm_id)}>{nice(f.name)}</button>)}</div>
+      {!p ? <Spinner text="Loading field…" /> : <>
+        <section className="card">
+          <div className="ct">Your soil</div>
+          <div className="chips">{TEXTURES.map(([k, l]) => <button key={k} className={'chip' + (tex === k ? ' on' : '')} onClick={() => setTex(k)}>{l}</button>)}</div>
+          <label className="field">Soil pH (from a soil test kit)<input inputMode="decimal" value={ph} placeholder="e.g. 6.2" onChange={e => setPh(e.target.value)} /></label>
+          {phTip && <span className="muted">{phTip}</span>}
+          <button className="btn" disabled={busy} onClick={saveSoil}>{busy ? 'Saving and gridding…' : 'Save soil and grid my field'}</button>
+          {grid && <span className="faint">{grid.usable_pct}% of the field can be planted ({grid.usable_area_ha} of {grid.field_area_ha} ha).</span>}
+        </section>
+        {!d ? <Spinner text="Working out which plants build your soil…" /> : <SoilCard plans={d.plans} today={d.plans[0]} name={nice(p.name)} />}
+      </>}
+    </div>
   </>
 }
 
@@ -807,8 +851,6 @@ function Plans({ p, planRes, refresh }: any) {
       <span className="faint">From the M2 plan engine: NASA POWER climate, FAO-56 water use, FAO ECOCROP ranges. Check big changes with your extension officer.</span>
     </section>
 
-
-    <SoilCard plans={plans} today={today} name={nice(p.name)} />
 
     <details className="card xai">
       <summary><div><div className="eb">How this is calculated</div><div className="ct">Explainable AI · SHAP</div></div><span className="chev">⌄</span></summary>
