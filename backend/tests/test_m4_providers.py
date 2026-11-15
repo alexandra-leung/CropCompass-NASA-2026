@@ -199,9 +199,11 @@ def test_m2_exception_inside_service_becomes_unavailable(monkeypatch):
 # M3 farm profile and M4-to-M5 automatic orchestration are not implemented.
 # ---------------------------------------------------------------------------
 
-def test_m3_not_implemented_yet():
+def test_m3_unknown_farm_is_unavailable():
+    # M3 now publishes get_farm_profile; an unknown farm id is "unavailable", not invented.
+    assert farm_provider.farm_profile_implemented()
     result = farm_provider.get_farm_context("farm-1")
-    assert result.status == "not_implemented"
+    assert result.status == "unavailable"
     assert result.data is None
 
 
