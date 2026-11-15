@@ -37,3 +37,30 @@ export function SatelliteField({ ring, label }: { ring: number[][]; label: strin
     </div>
   )
 }
+
+/** Satellite picture of a place today, centred on a point (used for climate twins). */
+export function SatellitePlace({ lat, lon, zoom = 11, label }: { lat: number; lon: number; zoom?: number; label: string }) {
+  const [src, setSrc] = useState(0)
+  const W = 600, H = 300
+  const n = 2 ** zoom
+  const cx = ((lon + 180) / 360) * n * T
+  const r = (lat * Math.PI) / 180
+  const cy = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n * T
+  const x0 = cx - W / 2, y0 = cy - H / 2
+  const tiles: { x: number; y: number; left: number; top: number }[] = []
+  for (let tx = Math.floor(x0 / T); tx <= Math.floor((x0 + W) / T); tx++)
+    for (let ty = Math.floor(y0 / T); ty <= Math.floor((y0 + H) / T); ty++)
+      tiles.push({ x: ((tx % n) + n) % n, y: ty, left: tx * T - x0, top: ty * T - y0 })
+  const S = SOURCES[src]
+  return (
+    <div style={{ position: 'relative', width: '100%', overflow: 'hidden', borderRadius: 12, background: '#3E5A3A' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }} aria-label={`Satellite view of ${label}`}>
+        {tiles.map(t => <image key={`${t.x}-${t.y}-${t.left}-${src}`} href={S.url(zoom, t.x, t.y)} x={t.left} y={t.top} width={T} height={T}
+          onError={() => src < SOURCES.length - 1 && setSrc(src + 1)} />)}
+        <circle cx={W / 2} cy={H / 2} r={7} fill="none" stroke="#fff" strokeWidth={2.5} />
+      </svg>
+      <span style={{ position: 'absolute', left: 10, bottom: 8, fontSize: 11, fontWeight: 700, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.7)' }}>{label} today</span>
+      <span style={{ position: 'absolute', right: 8, top: 6, fontSize: 9, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.7)', maxWidth: '70%', textAlign: 'right' }}>{S.name}</span>
+    </div>
+  )
+}

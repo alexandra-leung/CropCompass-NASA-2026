@@ -92,3 +92,21 @@ main>*,.body>*{flex-shrink:0}
 .cmp{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px 10px;font-size:13.5px;align-items:center}
 .cmp b{font-size:12px;color:var(--mut)}
 .list>div svg{flex:none}
+.h1{font-size:23px;line-height:28px;letter-spacing:-.5px}
+.hero .t{font-size:21px;line-height:26px;letter-spacing:-.3px}
+.hero .s{font-size:14.5px;line-height:21px;color:rgba(255,255,255,.93);max-width:330px}
+.fcard{flex-direction:row}
+.fopen{all:unset;display:flex;flex-direction:column;gap:9px;cursor:pointer}
+.planbtn{min-height:40px;font-size:13px;border-radius:11px;margin-top:2px}
+@keyframes grow{from{transform:scale(.3);opacity:.5}to{transform:scale(1);opacity:1}}
+.grow{display:inline-block;transform-origin:50% 100%;animation:grow 10s ease-out forwards}
+.prog{width:72px;height:4px;border-radius:2px;background:#E5EBE7;overflow:hidden}
+.prog i{display:block;height:4px;background:var(--deep);animation:prog 10s linear forwards}
+@keyframes prog{from{width:0}to{width:100%}}
+.twin{border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.twin.on{border-color:var(--teal);background:#FAFCFB}
+.twinrow{all:unset;display:flex;align-items:center;gap:12px;width:100%;cursor:pointer}
+.rank{width:28px;height:28px;border-radius:14px;background:var(--deep);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
+.stress{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #F0F3F1;color:var(--ink)}
+.sicon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.muted{color:#4F625D}
