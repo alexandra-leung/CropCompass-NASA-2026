@@ -1,0 +1,17 @@
+{
+  "soil_ph": null,
+  "rotations": [
+    {
+      "id": "current",
+      "crops": ["maize", "maize", "maize"]
+    },
+    {
+      "id": "alternative_a",
+      "crops": ["maize", "cowpea", "sweet_potato"]
+    },
+    {
+      "id": "alternative_b",
+      "crops": ["cowpea", "sweet_potato", "groundnut"]
+    }
+  ]
+}

@@ -1,11 +1,15 @@
 from datetime import date, datetime, timedelta, timezone
+import calendar
+import math
+import statistics
 from typing import Any
 import numpy as np
 import pandas as pd
 import httpx
-from climateM1.core.config import NASA_POWER_BASE_URL
+from climateM1.core.config import NASA_POWER_BASE_URL, NASA_POWER_MONTHLY_BASE_URL
 from climateM1.models.climate import HistoryResponse
 from climateM1.services.locations import ClimateLocation
+from climateM1.services.cache import get_cached, save_cached
 import pymannkendall as mk
 from scipy.stats import theilslopes
 
@@ -216,3 +220,182 @@ async def fetch_history(location: ClimateLocation, start: str, end: str) -> dict
         response = await client.get(NASA_POWER_BASE_URL, params=params)
         response.raise_for_status()
         return normalize_power_history(response.json(), location, start, end, datetime.now(timezone.utc).isoformat())
+
+
+def _power_numeric_value(value: Any) -> float | None:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(numeric) or numeric <= -998:
+        return None
+    return numeric
+
+
+def normalize_power_monthly(
+    raw: dict[str, Any],
+    latitude: float,
+    longitude: float,
+    start_year: int,
+    end_year: int,
+    source_url: str,
+    retrieved_at: str,
+) -> dict[str, Any]:
+    """Convert NASA POWER monthly means into calendar-month climate normals."""
+    if start_year > end_year:
+        raise ValueError("Historical period start year must not exceed end year")
+
+    properties = raw.get("properties")
+    if not isinstance(properties, dict):
+        raise ValueError("NASA POWER response has no properties object")
+    parameters = properties.get("parameter")
+    if not isinstance(parameters, dict):
+        raise ValueError("NASA POWER response has no parameter data")
+    temperatures = parameters.get("T2M", {})
+    precipitation = parameters.get("PRECTOTCORR", {})
+    metadata = raw.get("parameters", {})
+    if not isinstance(metadata, dict):
+        raise ValueError("NASA POWER response has no unit metadata")
+    if not isinstance(temperatures, dict) or not isinstance(precipitation, dict):
+        raise ValueError("NASA POWER response is missing T2M or PRECTOTCORR")
+    temperature_metadata = metadata.get("T2M")
+    precipitation_metadata = metadata.get("PRECTOTCORR")
+    temperature_unit = (
+        str(temperature_metadata.get("units", "")).strip().lower()
+        if isinstance(temperature_metadata, dict)
+        else ""
+    )
+    precipitation_unit = (
+        str(precipitation_metadata.get("units", "")).strip().lower()
+        if isinstance(precipitation_metadata, dict)
+        else ""
+    )
+    if temperature_unit not in {"c", "°c", "degc", "degree c", "degrees c"}:
+        raise ValueError(f"Unexpected NASA POWER T2M unit: {temperature_unit!r}")
+    if precipitation_unit not in {"mm/day", "mm/d", "mm day-1", "mm/day (mean)"}:
+        raise ValueError(f"Unexpected NASA POWER PRECTOTCORR unit: {precipitation_unit!r}")
+
+    monthly_temperatures: dict[int, list[float]] = {month: [] for month in range(1, 13)}
+    monthly_precipitation: dict[int, list[float]] = {month: [] for month in range(1, 13)}
+    missing: list[str] = []
+    for year in range(start_year, end_year + 1):
+        for month in range(1, 13):
+            key = f"{year}{month:02d}"
+            temperature = _power_numeric_value(temperatures.get(key))
+            daily_precipitation = _power_numeric_value(precipitation.get(key))
+            if temperature is None or daily_precipitation is None or daily_precipitation < 0:
+                missing.append(key)
+                continue
+            monthly_temperatures[month].append(temperature)
+            monthly_precipitation[month].append(
+                daily_precipitation * calendar.monthrange(year, month)[1]
+            )
+    if missing:
+        raise ValueError(
+            "NASA POWER historical period is incomplete or contains invalid values; "
+            f"missing/invalid year-months: {', '.join(missing[:12])}"
+        )
+
+    years_requested = end_year - start_year + 1
+    return {
+        "temperature_c": [
+            round(statistics.fmean(monthly_temperatures[month]), 4)
+            for month in range(1, 13)
+        ],
+        "precipitation_mm": [
+            round(statistics.fmean(monthly_precipitation[month]), 4)
+            for month in range(1, 13)
+        ],
+        "temperature_unit": "degC",
+        "precipitation_unit": "mm/month",
+        "provenance": {
+            "source": "NASA POWER",
+            "source_id": "NASA POWER monthly point API",
+            "product": "Monthly meteorology (T2M, PRECTOTCORR)",
+            "source_urls": [source_url],
+            "retrieved_at": retrieved_at,
+            "data_type": "historical_gridded",
+            "scenario": None,
+            "model": "NASA POWER meteorological product",
+            "requested_coordinates": {
+                "latitude": latitude,
+                "longitude": longitude,
+            },
+            "period_start": f"{start_year}-01",
+            "period_end": f"{end_year}-12",
+            "grid_resolution": "NASA POWER point product; spatial support varies by parameter",
+            "temperature_unit": "degC",
+            "precipitation_unit": "mm/month",
+            "precipitation_method": (
+                "Monthly mean daily precipitation (mm/day) multiplied by "
+                "the actual number of calendar days, then averaged across years"
+            ),
+            "coverage_valid_years_by_month": {
+                month: years_requested for month in range(1, 13)
+            },
+            "missing_data": False,
+            "cache_status": "source_response",
+        },
+    }
+
+
+async def fetch_monthly_history(
+    latitude: float,
+    longitude: float,
+    start_year: int,
+    end_year: int,
+) -> dict[str, Any]:
+    """Fetch/cache monthly NASA POWER history for an in-process M1 consumer."""
+    if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
+        raise ValueError("Coordinates must be valid latitude/longitude values")
+    if start_year > end_year:
+        raise ValueError("Historical period start year must not exceed end year")
+
+    cache_key = (
+        f"m1-monthly-history:v2:{latitude:.17g}:{longitude:.17g}:"
+        f"{start_year}:{end_year}"
+    )
+    record = get_cached(cache_key)
+    cache_status = "fresh_cached_source_response" if record is not None else "network_source_response"
+    if record is None:
+        params = {
+            "parameters": "T2M,PRECTOTCORR",
+            "community": "AG",
+            "longitude": longitude,
+            "latitude": latitude,
+            "start": start_year,
+            "end": end_year,
+            "format": "JSON",
+            "time-standard": "UTC",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.get(NASA_POWER_MONTHLY_BASE_URL, params=params)
+                response.raise_for_status()
+            record = {
+                "source_url": str(response.url),
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "payload": response.json(),
+            }
+            save_cached(cache_key, record)
+        except httpx.HTTPError as exc:
+            record = get_cached(cache_key, allow_stale=True)
+            if record is None:
+                raise RuntimeError(
+                    f"NASA POWER monthly history request failed and no cached source response is available: {exc}"
+                ) from exc
+            cache_status = "stale_cached_source_response"
+
+    if not isinstance(record, dict) or not isinstance(record.get("payload"), dict):
+        raise ValueError("Cached NASA POWER monthly source response is invalid")
+    result = normalize_power_monthly(
+        record["payload"],
+        latitude,
+        longitude,
+        start_year,
+        end_year,
+        str(record.get("source_url", "")),
+        str(record.get("retrieved_at", "")),
+    )
+    result["provenance"]["cache_status"] = cache_status
+    return result

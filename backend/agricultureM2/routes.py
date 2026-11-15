@@ -47,7 +47,7 @@ def get_crops():
 
         return {
             "total": len(catalog),
-            "crops": catalog.where(
+            "crops": catalog.astype(object).where(
                 catalog.notna(), None
             ).to_dict(orient="records"),
         }

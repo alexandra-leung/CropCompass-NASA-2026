@@ -1,7 +1,7 @@
 import unittest
 from datetime import date, timedelta
-from app.services.history import normalize_power_history
-from app.services.locations import LOCATIONS
+from climateM1.services.history import normalize_power_history
+from climateM1.services.locations import LOCATIONS
 
 
 class HistoryNormalizationTests(unittest.TestCase):
