@@ -146,7 +146,7 @@ def test_compare_never_says_a_rotation_is_better():
     assert {"ev-alt-ranking", "ev-alt-feasibility", "ev-alt-B-rotation",
             "ev-alt-B-nfix", "ev-alt-B-repeat"} <= set(r.cited_evidence)
     assert "Rotation A" not in r.answer and "Rotation C" not in r.answer
-    assert "M5_NOT_IMPLEMENTED" in r.blind_spots
+    assert "M5_RESULTS_NOT_SUPPLIED" in r.blind_spots
 
 
 def test_compare_without_letter_lists_every_alternative():

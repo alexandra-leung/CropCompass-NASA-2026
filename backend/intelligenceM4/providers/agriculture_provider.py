@@ -7,10 +7,11 @@ Calls
 * agricultureM2.rotation_generator.generate_rotation_candidates(current, max)
 * agricultureM2.suitability.check_crop_suitability(crop_id, temperature_c, soil_ph)
 
-Water demand is reported as "not_implemented": the live agricultureM2 has no
-water route, water_wallet.py cannot locate its coefficient file, and M1 does
-not yet provide the daily ET0 series it requires. M4 will not substitute
-hypothetical values.
+Water demand is reported as "not_implemented": the sourced crop-coefficient
+file is available and the Water Wallet can calculate crop ETc from daily ET0,
+but M1 does not provide that input. The calculation also does not determine
+irrigation requirement without effective rainfall, soil-water, and efficiency
+evidence. M4 will not substitute hypothetical values.
 """
 
 from __future__ import annotations
@@ -30,9 +31,10 @@ SUITABILITY_CALL = "agricultureM2.suitability.check_crop_suitability"
 WATER_CALL = "agricultureM2.water_wallet.calculate_crop_water_demand"
 
 WATER_NOT_AVAILABLE = (
-    "M2 water demand is not available in the unified backend: no water route "
-    "is registered, water_wallet.py cannot locate crop_water_coefficients.csv, "
-    "and M1 does not provide the daily ET0 series it requires."
+    "M2 has sourced crop coefficients and a crop-ETc calculation, but no "
+    "daily reference-ET0 series is available from M1 for this analysis. "
+    "The calculation does not determine irrigation requirement without "
+    "effective rainfall, soil-water, and irrigation-efficiency evidence."
 )
 
 

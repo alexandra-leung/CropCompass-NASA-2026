@@ -68,7 +68,7 @@
       "code": "WATER_DEMAND_NOT_IMPLEMENTED",
       "category": "water",
       "severity": "warning",
-      "message": "Crop water demand has not been calculated, because M2 does not yet provide a water-demand service in the unified backend.",
+      "message": "Crop evapotranspiration has not been calculated because this analysis has no daily reference evapotranspiration series. Irrigation requirement also needs effective rainfall, soil-water, and efficiency evidence.",
       "affects": [
         "maize",
         "cowpea",
@@ -76,7 +76,7 @@
       ],
       "source_module": "M2",
       "farmer_action": null,
-      "team_action": "M2: provide a water-demand service function (the coefficient file path in the water wallet needs fixing) and agree a reference evapotranspiration source with M1.",
+      "team_action": "M2: expose the sourced crop-ETc calculation with verified daily reference evapotranspiration from M1, and only report irrigation requirement when its additional inputs are available.",
       "citations": []
     },
     {
@@ -124,14 +124,14 @@
       "citations": []
     },
     {
-      "code": "M5_NOT_IMPLEMENTED",
+      "code": "M5_RESULTS_NOT_SUPPLIED",
       "category": "module",
       "severity": "info",
-      "message": "M5 does not yet provide climate stress tests, so resilience under future scenarios has not been assessed.",
+      "message": "M5 results are absent or incomplete in this M4 analysis. M5 provides separate Climate Twin and Stress Test endpoints.",
       "affects": [],
       "source_module": "M5",
       "farmer_action": null,
-      "team_action": "M5: publish the agreed stress-test function.",
+      "team_action": "Run the required M5 endpoints with actual farm inputs, then submit their unchanged results to the M4 Evidence Passport.",
       "citations": []
     }
   ],
@@ -139,6 +139,6 @@
     "M1": "ok",
     "M2": "partial",
     "M3": "not_implemented",
-    "M5": "not_implemented"
+    "M5": "unavailable"
   }
 }

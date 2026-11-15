@@ -16,7 +16,7 @@
       "max_alternatives": 3
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T20:34:00.204468+00:00"
+    "generated_at": "2026-11-15T03:38:31.075501+00:00"
   },
   "example_analyze_response.json": {
     "module": "M4",
@@ -35,7 +35,7 @@
       "max_alternatives": 3
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T20:34:00.204468+00:00"
+    "generated_at": "2026-11-15T03:38:31.075501+00:00"
   },
   "example_assistant_request.json": {
     "module": "M4",
@@ -57,7 +57,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T20:33:54.113351+00:00"
+    "generated_at": "2026-11-15T03:38:30.444316+00:00"
   },
   "example_assistant_response.json": {
     "module": "M4",
@@ -79,7 +79,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T20:33:54.113351+00:00"
+    "generated_at": "2026-11-15T03:38:30.444316+00:00"
   },
   "example_blind_spots_response.json": {
     "module": "M4",
@@ -96,7 +96,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T20:33:54.113351+00:00"
+    "generated_at": "2026-11-15T03:38:30.444316+00:00"
   },
   "example_evidence_request.json": {
     "module": "M4",
@@ -113,7 +113,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T20:33:54.113351+00:00"
+    "generated_at": "2026-11-15T03:38:30.444316+00:00"
   },
   "example_evidence_response.json": {
     "module": "M4",
@@ -130,7 +130,7 @@
       "note": "built from the real M1/M2 fixtures in this folder"
     },
     "provider_status": "ok",
-    "generated_at": "2026-11-14T20:33:54.113351+00:00"
+    "generated_at": "2026-11-15T03:38:30.444316+00:00"
   },
   "m1_history__pamplemousses-04.json": {
     "module": "M1",

@@ -96,15 +96,14 @@ limitations are also copied into the passport's `limitations` list.
 | `IRRIGATION_BUDGET_MISSING` | water | warning | `farm.irrigation_budget_m3` is null | farmer |
 | `WATER_DEMAND_NOT_IMPLEMENTED` | water | warning | no `agriculture.water` and M2 has no water service | M2 |
 | `M2_WATER_DATA_MISSING` | water | warning | no `agriculture.water` although M2 has a water service | M4 (orchestrator) |
-| `M5_RESILIENCE_DATA_MISSING` | module | warning | no `resilience` although M5 has stress tests | M4 (orchestrator) |
 | `M1_REGISTRY_UNREADABLE` | module | warning | M1 registry unreadable; identifiers passed through | M1 |
 | `CLIMATE_RESOLUTION` | resolution | info | any M1 climate data is present. Cites M1's own `gridResolution` and `caveat`; M4 applies no resolution threshold of its own. | none |
 | `M3_NOT_IMPLEMENTED` | module | info | M3 has not published `get_farm_profile` | M3 |
-| `M5_NOT_IMPLEMENTED` | module | info | M5 has not published `run_stress_test` | M5 |
+| `M5_RESULTS_NOT_SUPPLIED` | module | info | no complete M5 result set (Climate Twin and Stress Test) was supplied to this M4 bundle | caller |
 
 **M2 `missing` semantics:** M2 checks each input before its catalog range. So when an input is absent, M2 reports the bare input name and never consults the catalog for that factor, and any catalog gap for it stays hidden until the input is supplied.
 
-"Not implemented" is decided by read-only capability probes in the providers (`water_demand_implemented`, `farm_profile_implemented`, `resilience_implemented`), which never execute upstream code.
+"Not implemented" describes a call M4 does not make during `/analyze`; it does not mean the upstream module is absent. M5 results are supplied through the separate-call workflow above.
 
 ### `module_status` (always contains `M1`, `M2`, `M3`, `M5`)
 
@@ -112,8 +111,8 @@ limitations are also copied into the passport's `limitations` list.
 |---|---|---|---|---|
 | M1 | scenarios and history present and complete | one is missing, or M1 flags incompleteness | neither present | n/a |
 | M2 | rotation present, every crop screened, water present | rotation present but screening or water incomplete; or only other M2 data present | no M2 data | n/a |
-| M3 | farm supplied by M3 | n/a | M3 exists but farm came from the farmer | M3 function missing |
-| M5 | resilience present | n/a | M5 exists but no results | M5 function missing |
+| M3 | farm supplied by M3 | n/a | n/a | M3 profile function missing |
+| M5 | Climate Twin and Stress Test supplied | only one result type supplied | no M5 results supplied | n/a; M5 is a separate-call service |
 
 ### `recommendation_status`
 
@@ -233,7 +232,7 @@ Every call goes through `intelligenceM4.providers`; nothing is copied from M1 or
    - A limitation says the temperature is an **annual regional projection, not a growing-season or field measurement**.
    - The traceability check requires each recorded value to equal the bundle field at its `field_path`.
    - If M1 has no value for that scenario/year, nothing is passed and `SUITABILITY_INPUT_NOT_PASSED` reports it.
-5. **M2 water demand and M5 resilience,** each only if implemented.
+5. **M2 water demand** only when its required verified daily ET0 input is available. M5 is intentionally a separate call because its endpoints require explicit coordinates, periods, rotations, and farmer water constraints.
 6. **Build the bundle,** then the passport and blind-spot report with the same code as `/evidence` and `/blind-spots`.
 
 Passing the temperature lets M2 consult its catalog. On today's data this turns `SUITABILITY_INPUT_NOT_PASSED` into `CROP_REFERENCE_INCOMPLETE`, because M2's catalog has no temperature ranges.
@@ -245,7 +244,7 @@ Values are in seconds, read from the environment on each request. A timeout make
 | Variable | Default | Applies to |
 |---|---|---|
 | `M4_SCENARIOS_TIMEOUT_SECONDS` | 90 | M1 `fetch_scenarios` (a cold cache downloads NASA data) |
-| `M4_HISTORY_TIMEOUT_SECONDS` | 30 | M1 `fetch_history` (always a live NASA POWER call) |
+| `M4_HISTORY_TIMEOUT_SECONDS` | 30 | M1 `fetch_history` (NASA POWER source cache, then live request on a miss) |
 | `M4_MODULE_TIMEOUT_SECONDS` | 30 | each M2 / M3 / M5 call (run in a worker thread) |
 
 ### `modules`
@@ -257,7 +256,7 @@ Values are in seconds, read from the environment on each request. A timeout make
 | `ok` | Every call succeeded with clean upstream flags. |
 | `partial` | Some calls failed or flagged incompleteness (M1 `missingData` or a failed model, M2 `insufficient_data`). |
 | `unavailable` | Every call failed (exception, timeout, import failure, invalid payload). `error` says why. |
-| `not_implemented` | The module has no function yet. `not_implemented` calls (e.g. M2 water today) never lower another call's status. |
+| `not_implemented` | M4 does not make this call in the current flow. For M5, actual results must be requested separately and supplied to `/evidence`; M2 water additionally needs daily reference ET0. |
 
 `blind_spot_report.module_status` is a different view: what the **bundle** contains (§3). The two can differ. For example, M2's calls all succeed, but the bundle still lacks water data.
 
@@ -272,7 +271,7 @@ Values are in seconds, read from the environment on each request. A timeout make
 | `registered_scenario_ids / registered_projection_years` | `climateM1.services.model_registry` | n/a |
 | `registered_location_ids` | `climateM1.services.locations.LOCATIONS` | n/a |
 
-Note: `fetch_history` has no service-layer cache (M1 caches in its route), so every call goes to NASA POWER.
+`fetch_history` caches NASA POWER source responses in the service layer by coordinates, date range, and variables. In-process M4 calls and the public M1 route therefore share cached source data.
 
 ### M2: Agriculture (live)
 
@@ -281,9 +280,11 @@ Note: `fetch_history` has no service-layer cache (M1 caches in its route), so ev
 | `agriculture_provider.evaluate_rotation(crop_ids)` | `agricultureM2.rotation_engine.evaluate_rotation` | `M2RotationResult` |
 | `agriculture_provider.generate_alternatives(current, max)` | `agricultureM2.rotation_generator.generate_rotation_candidates` | `M2GenerationResult` |
 | `agriculture_provider.check_suitability(crop, temperature_c, soil_ph)` | `agricultureM2.suitability.check_crop_suitability` | `M2SuitabilityResult` |
-| `agriculture_provider.get_water_demand(crop_ids)` | returns `not_implemented` | n/a |
+| `agriculture_provider.get_water_demand(crop_ids)` | returns `not_implemented` for `/analyze`: the sourced Kc helper still needs daily reference ET0, which M1 does not provide | n/a |
 
-### M3: Farm context (proposed contract, awaiting M3)
+### M3: Farm context
+
+`mappingM3` currently has no farm-profile service. `/analyze` uses the caller's validated `FarmContext` and marks its source as `farmer`; no M3 farm values are inferred.
 
 ```python
 # mappingM3/farm_profile.py
@@ -299,32 +300,30 @@ def get_farm_profile(farm_id: str) -> dict:
     }
 ```
 
-### M5: Resilience (proposed contract, awaiting M5)
+### M5: Resilience (separate-call integration)
 
-```python
-# resilienceM5/stress_test.py
-def run_stress_test(location_id: str, scenario: str, year: int, rotation: list[str]) -> dict:
-    return {
-        "scenario": str, "year": int,
-        "stress_tests": [ {...} ],   # M5-defined; must label NASA-projected vs hypothetical
-        "limitations": [str],
-    }
-```
-
-Until these exist, M4 reports `not_implemented` and records the missing evidence as a blind spot.
+M5 is implemented through `POST /api/resilience/climate-twin`,
+`POST /api/resilience/stress-test`, and `POST /api/resilience/rescue-mode`.
+M4 does not invoke them from `/analyze`: the caller must provide actual farm
+coordinates, the selected period, rotation candidates, and a farmer-entered
+water budget. Add the unchanged Climate Twin and Stress Test responses to
+`bundle.resilience`, then submit that bundle to `/api/intelligence/evidence`.
+M4 preserves the complete objects and traceability-checks the values at their
+bundle field paths.
 
 ## 7. Open issues for other modules
 
 | To | Issue |
 |---|---|
 | M2 | `crop_catalog.csv` has no temperature/rainfall/pH ranges, so suitability is always `insufficient_data`. |
-| M2 | No water-budget route is registered in the unified backend, so the Water Wallet calculations are not exposed through the API. |
-| M1 | Historical POWER rainfall (about 590–870 mm/yr) and NEX-GDDP projected rainfall (about 1,350–2,450 mm/yr) differ by roughly a factor of two to three at the same site. Please confirm the precipitation conversion. |
-| M1 | History caching lives in the route handler. Could it move into `services/history.py` so in-process consumers benefit? |
-| M1 | `Scenario.id` / `EnsembleScenario.id` are hard-coded `Literal["ssp245","ssp370"]`, so adding a registry scenario would fail M1's own validation. |
-| M1 | No ET₀ or seasonal projections are available, which M2 needs for water demand. The only temperature M4 can pass to suitability is an annual regional mean. |
-| M1 | `backend/data/climate_cache.sqlite3` is **tracked in git**, but the M1 contract calls it a runtime artifact. Any M1 refresh after the 6-hour TTL rewrites a tracked file. M4's tests and example builder never write to it. |
-| M3 / M5 | Please confirm or amend the proposed contracts above. |
+| M2 | The catalog contains no sourced temperature/rainfall/pH reference ranges. Water Wallet can compute crop ETc from sourced Kc values only when a daily reference-ET0 series is supplied; it does not calculate irrigation requirement. |
+| M1 / M5 | Historical and projected rainfall totals use different source products and periods. A like-for-like NEX historical model reference comparison is required before interpreting the observed POWER-to-projection difference. |
+| M1 | Daily POWER source responses are cached in `services/history.py`, including for in-process M4 calls. |
+| M1 | Scenario identifiers in the response models now accept configured registry IDs; the request-side registry validation remains authoritative. |
+| M1 | No verified daily reference-ET0 series or crop-season calendar is available to M2. M4 passes only the selected annual regional temperature mean to preliminary screening. |
+| M1 | `backend/data/climate_cache.sqlite3` is a local runtime database and is not Git-tracked. |
+| M3 | No farm-profile service is implemented; `/analyze` requires a caller-supplied farm context. |
+| M4 / M5 | M5 is a separate-call integration. Its real endpoints and Evidence Passport pass-through are covered by integration tests. |
 
 ## 8. Testing
 

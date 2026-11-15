@@ -24,7 +24,7 @@
     "fallback_reason": null
   },
   {
-    "answer": "CropCompass has not ranked these rotations, so it cannot say that Rotation B is preferable for 2050 under SSP3-7.0.\nM2 reports the ranking status as \"not_calibrated\" and agronomic feasibility as \"not_evaluated\": the alternatives are exploratory sequences, not recommendations.\nWhat M2 does report:\n- Your current rotation (maize → cowpea → cabbage): families Poaceae, Fabaceae, Brassicaceae; nitrogen-fixing crops: cowpea; no crop family repeated in consecutive seasons.\n- Rotation B (maize → tomato → onion): families Poaceae, Solanaceae, Amaryllidaceae; nitrogen-fixing crops: none; no crop family repeated in consecutive seasons.\nClimate stress tests from M5 are not available, so CropCompass cannot compare how these rotations would cope with the projected climate.",
+    "answer": "CropCompass has not ranked these rotations, so it cannot say that Rotation B is preferable for 2050 under SSP3-7.0.\nM2 reports the ranking status as \"not_calibrated\" and agronomic feasibility as \"not_evaluated\": the alternatives are exploratory sequences, not recommendations.\nWhat M2 does report:\n- Your current rotation (maize → cowpea → cabbage): families Poaceae, Fabaceae, Brassicaceae; nitrogen-fixing crops: cowpea; no crop family repeated in consecutive seasons.\n- Rotation B (maize → tomato → onion): families Poaceae, Solanaceae, Amaryllidaceae; nitrogen-fixing crops: none; no crop family repeated in consecutive seasons.\nM5 provides separate Climate Twin and Stress Test endpoints, but their results were not included in this M4 analysis, so resilience under the projected climate was not assessed.",
     "mode": "template",
     "intent": "compare_rotations",
     "cited_evidence": [
@@ -43,7 +43,7 @@
       "ev-alt-B-repeat"
     ],
     "blind_spots": [
-      "M5_NOT_IMPLEMENTED"
+      "M5_RESULTS_NOT_SUPPLIED"
     ],
     "limitations": [
       "Candidates are exploratory sequences. Planting season, soil suitability, water and climate constraints must be checked before recommendation.",

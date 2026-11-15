@@ -196,7 +196,7 @@ def test_m2_exception_inside_service_becomes_unavailable(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# M3 / M5 (not implemented yet — must degrade, and pick up the contract later)
+# M3 farm profile and M4-to-M5 automatic orchestration are not implemented.
 # ---------------------------------------------------------------------------
 
 def test_m3_not_implemented_yet():
@@ -205,10 +205,11 @@ def test_m3_not_implemented_yet():
     assert result.data is None
 
 
-def test_m5_not_implemented_yet():
+def test_m5_requires_separate_call_with_explicit_inputs():
     result = resilience_provider.get_resilience("pamplemousses-04", "ssp370", 2050, ["maize"])
     assert result.status == "not_implemented"
     assert result.data is None
+    assert "separate endpoints" in result.error
 
 
 def test_m3_contract_is_used_once_published(monkeypatch):
@@ -222,19 +223,3 @@ def test_m3_contract_is_used_once_published(monkeypatch):
     result = farm_provider.get_farm_context("farm-7")
     assert result.status == "ok"
     assert result.data.soil_ph is None  # not supplied -> stays None
-
-
-def test_m5_contract_failure_becomes_unavailable(monkeypatch):
-    fake = types.ModuleType("resilienceM5.stress_test")
-
-    def broken(*args):
-        raise ValueError("stress test failed")
-
-    fake.run_stress_test = broken
-    monkeypatch.setitem(sys.modules, "resilienceM5.stress_test", fake)
-    import resilienceM5
-    monkeypatch.setattr(resilienceM5, "stress_test", fake, raising=False)
-
-    result = resilience_provider.get_resilience("pamplemousses-04", "ssp370", 2050, ["maize"])
-    assert result.status == "unavailable"
-    assert "stress test failed" in result.error

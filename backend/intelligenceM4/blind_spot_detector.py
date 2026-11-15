@@ -24,7 +24,6 @@ from intelligenceM4.providers import (
     agriculture_provider,
     climate_provider,
     farm_provider,
-    resilience_provider,
 )
 from intelligenceM4.schemas import (
     AnalysisBundle,
@@ -52,7 +51,6 @@ SOIL_PH_MISSING = "SOIL_PH_MISSING"
 IRRIGATION_BUDGET_MISSING = "IRRIGATION_BUDGET_MISSING"
 WATER_DEMAND_NOT_IMPLEMENTED = "WATER_DEMAND_NOT_IMPLEMENTED"
 M2_WATER_DATA_MISSING = "M2_WATER_DATA_MISSING"
-M5_RESILIENCE_DATA_MISSING = "M5_RESILIENCE_DATA_MISSING"
 
 # M2 suitability `missing` entries ending with this suffix are catalog gaps;
 # any other entry is an input the suitability call did not receive.
@@ -60,7 +58,7 @@ REFERENCE_RANGE_SUFFIX = "_reference_range"
 REGISTRY_UNREADABLE = "M1_REGISTRY_UNREADABLE"
 CLIMATE_RESOLUTION = "CLIMATE_RESOLUTION"
 M3_NOT_IMPLEMENTED = "M3_NOT_IMPLEMENTED"
-M5_NOT_IMPLEMENTED = "M5_NOT_IMPLEMENTED"
+M5_RESULTS_NOT_SUPPLIED = "M5_RESULTS_NOT_SUPPLIED"
 
 # code -> category, severity, source_module, message, farmer_action, team_action
 TEMPLATES: dict[str, dict[str, Any]] = {
@@ -89,7 +87,7 @@ TEMPLATES: dict[str, dict[str, Any]] = {
         message=("No historical climate observations from M1 are available, so "
                  "recent observed conditions cannot be compared with projections."),
         team_action=("M1: historical observations could not be retrieved; NASA POWER "
-                     "may be unreachable and history caching is only in the M1 route."),
+                     "may be unreachable; retry the request when the source is available."),
     ),
     CLIMATE_HISTORY_PARTIAL: dict(
         category="climate", severity="warning", source_module="M1",
@@ -136,11 +134,13 @@ TEMPLATES: dict[str, dict[str, Any]] = {
     ),
     WATER_DEMAND_NOT_IMPLEMENTED: dict(
         category="water", severity="warning", source_module="M2",
-        message=("Crop water demand has not been calculated, because M2 does not yet "
-                 "provide a water-demand service in the unified backend."),
-        team_action=("M2: provide a water-demand service function (the coefficient "
-                     "file path in the water wallet needs fixing) and agree a "
-                     "reference evapotranspiration source with M1."),
+        message=("Crop evapotranspiration has not been calculated because this "
+                 "analysis has no daily reference evapotranspiration series. "
+                 "Irrigation requirement "
+                 "also needs effective rainfall, soil-water, and efficiency evidence."),
+        team_action=("M2: expose the sourced crop-ETc calculation with verified "
+                     "daily reference evapotranspiration from M1, and only report irrigation "
+                     "requirement when its additional inputs are available."),
     ),
     M2_WATER_DATA_MISSING: dict(
         category="water", severity="warning", source_module="M2",
@@ -149,14 +149,6 @@ TEMPLATES: dict[str, dict[str, Any]] = {
         team_action=("M4: the orchestrator must include M2's water-demand result for "
                      "this rotation; if the M2 call failed, its error is in the "
                      "module status."),
-    ),
-    M5_RESILIENCE_DATA_MISSING: dict(
-        category="module", severity="warning", source_module="M5",
-        message=("M5 provides climate stress tests, but this analysis contains no "
-                 "resilience results, so resilience has not been assessed."),
-        team_action=("M4: the orchestrator must include M5's stress-test results for "
-                     "the selected scenario and year; if the M5 call failed, its "
-                     "error is in the module status."),
     ),
     REGISTRY_UNREADABLE: dict(
         category="module", severity="warning", source_module="M1",
@@ -178,11 +170,12 @@ TEMPLATES: dict[str, dict[str, Any]] = {
                  "from what was entered directly."),
         team_action="M3: publish the agreed farm profile function.",
     ),
-    M5_NOT_IMPLEMENTED: dict(
+    M5_RESULTS_NOT_SUPPLIED: dict(
         category="module", severity="info", source_module="M5",
-        message=("M5 does not yet provide climate stress tests, so resilience under "
-                 "future scenarios has not been assessed."),
-        team_action="M5: publish the agreed stress-test function.",
+        message=("M5 results are absent or incomplete in this M4 analysis. M5 "
+                 "provides separate Climate Twin and Stress Test endpoints."),
+        team_action=("Run the required M5 endpoints with actual farm inputs, then "
+                     "submit their unchanged results to the M4 Evidence Passport."),
     ),
 }
 
@@ -311,12 +304,6 @@ def _water_rule(b: AnalysisBundle) -> list[BlindSpot]:
     return [_spot(code, affects=list(dict.fromkeys(rotation_crops(b))))]
 
 
-def _resilience_rule(b: AnalysisBundle) -> list[BlindSpot]:
-    if b.resilience is None and resilience_provider.resilience_implemented():
-        return [_spot(M5_RESILIENCE_DATA_MISSING)]
-    return []
-
-
 def registry_blind_spots(bundle: AnalysisBundle) -> list[BlindSpot]:
     """Identifiers that passed through unvalidated because M1's registry was unreadable."""
     unvalidated: list[str] = []
@@ -361,8 +348,12 @@ def _module_rules(b: AnalysisBundle) -> list[BlindSpot]:
     spots = []
     if not farm_provider.farm_profile_implemented():
         spots.append(_spot(M3_NOT_IMPLEMENTED))
-    if not resilience_provider.resilience_implemented():
-        spots.append(_spot(M5_NOT_IMPLEMENTED))
+    if (
+        b.resilience is None
+        or b.resilience.climate_twin is None
+        or not b.resilience.stress_tests
+    ):
+        spots.append(_spot(M5_RESULTS_NOT_SUPPLIED))
     return spots
 
 
@@ -373,7 +364,6 @@ RULES = (
     _suitability_rules,
     _farm_rules,
     _water_rule,
-    _resilience_rule,
     registry_blind_spots,
     _resolution_rule,
     _module_rules,
@@ -426,10 +416,15 @@ def module_status(bundle: AnalysisBundle) -> dict[UpstreamModule, ModuleStatus]:
     else:
         m3 = "ok" if bundle.farm.source == "M3" else "unavailable"
 
-    if not resilience_provider.resilience_implemented():
-        m5: ModuleStatus = "not_implemented"
+    if bundle.resilience is None:
+        m5: ModuleStatus = "unavailable"
+    elif (
+        bundle.resilience.climate_twin is not None
+        and bundle.resilience.stress_tests
+    ):
+        m5 = "ok"
     else:
-        m5 = "ok" if bundle.resilience is not None else "unavailable"
+        m5 = "partial"
 
     return {"M1": m1, "M2": m2, "M3": m3, "M5": m5}
 

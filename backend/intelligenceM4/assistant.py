@@ -249,11 +249,10 @@ BLIND_SPOT_LABELS = {
     "IRRIGATION_BUDGET_MISSING": "irrigation budget missing",
     "WATER_DEMAND_NOT_IMPLEMENTED": "water demand not calculated",
     "M2_WATER_DATA_MISSING": "water results not included",
-    "M5_RESILIENCE_DATA_MISSING": "resilience results not included",
     "M1_REGISTRY_UNREADABLE": "climate registry unreadable",
     "CLIMATE_RESOLUTION": "regional climate resolution",
     "M3_NOT_IMPLEMENTED": "farm profiles not available",
-    "M5_NOT_IMPLEMENTED": "stress tests not available",
+    "M5_RESULTS_NOT_SUPPLIED": "M5 results were not included",
 }
 
 
@@ -437,12 +436,11 @@ class _Composer:
         shown = [letter] if letter in labels else labels
         parts += [self._describe_alternative(d, label) for label in shown]
 
-        m5 = (self.spot(d, "M5_NOT_IMPLEMENTED")
-              or self.spot(d, "M5_RESILIENCE_DATA_MISSING"))
+        m5 = self.spot(d, "M5_RESULTS_NOT_SUPPLIED")
         if m5 is not None:
-            parts.append("Climate stress tests from M5 are not available, so CropCompass "
-                         "cannot compare how these rotations would cope with the projected "
-                         "climate.")
+            parts.append("M5 provides separate Climate Twin and Stress Test endpoints, "
+                         "but their results were not included in this M4 analysis, so "
+                         "resilience under the projected climate was not assessed.")
         d.text = "\n".join(parts)
         return d
 

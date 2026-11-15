@@ -207,6 +207,11 @@ def normalize_power_history(raw: dict[str, Any], location: ClimateLocation, star
 
 
 async def fetch_history(location: ClimateLocation, start: str, end: str) -> dict[str, Any]:
+    cache_key = (
+        f"m1-daily-history:v1:{location.latitude:.17g}:{location.longitude:.17g}:"
+        f"{start}:{end}:PRECTOTCORR,T2M"
+    )
+    record = get_cached(cache_key)
     params = {
         "parameters": "PRECTOTCORR,T2M",
         "community": "AG",
@@ -216,10 +221,32 @@ async def fetch_history(location: ClimateLocation, start: str, end: str) -> dict
         "end": end,
         "format": "JSON",
     }
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.get(NASA_POWER_BASE_URL, params=params)
-        response.raise_for_status()
-        return normalize_power_history(response.json(), location, start, end, datetime.now(timezone.utc).isoformat())
+    if record is None:
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.get(NASA_POWER_BASE_URL, params=params)
+                response.raise_for_status()
+            record = {
+                "source_url": str(response.url),
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "payload": response.json(),
+            }
+            save_cached(cache_key, record)
+        except httpx.HTTPError:
+            record = get_cached(cache_key, allow_stale=True)
+            if record is None:
+                raise
+
+    if not isinstance(record, dict) or not isinstance(record.get("payload"), dict):
+        raise ValueError("Cached NASA POWER daily source response is invalid")
+
+    return normalize_power_history(
+        record["payload"],
+        location,
+        start,
+        end,
+        str(record.get("retrieved_at") or datetime.now(timezone.utc).isoformat()),
+    )
 
 
 def _power_numeric_value(value: Any) -> float | None:

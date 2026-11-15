@@ -5,8 +5,7 @@ No network: the `warm_m1` fixture
     raised in-process; no M1 code changes, and the tracked cache file is never
     rewritten),
   * blocks every outgoing async HTTP request,
-  * serves M1 history from M1's recorded real output (M1 caches history only in
-    its route, not in the service layer M4 calls).
+  * serves M1 history from M1's recorded real output.
 M2 runs for real.
 """
 
@@ -111,6 +110,7 @@ def test_end_to_end_analyze(warm_m1):
 
     assert {m: r["status"] for m, r in body["modules"].items()} == {
         "M1": "ok", "M2": "partial", "M3": "not_implemented", "M5": "not_implemented"}
+    assert body["blind_spot_report"]["module_status"]["M5"] == "unavailable"
     agri = body["bundle"]["agriculture"]
     assert agri["rotation"]["rotation"] == ROTATION
     assert len(agri["alternatives"]["alternative_rotations"]) == 3

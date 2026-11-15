@@ -21,7 +21,7 @@
     "M2": {
       "status": "partial",
       "called": "agricultureM2.rotation_engine.evaluate_rotation; agricultureM2.rotation_generator.generate_rotation_candidates; agricultureM2.suitability.check_crop_suitability; agricultureM2.water_wallet.calculate_crop_water_demand",
-      "error": "agricultureM2.water_wallet.calculate_crop_water_demand: M2 water demand is not available in the unified backend: no water route is registered, water_wallet.py cannot locate crop_water_coefficients.csv, and M1 does not provide the daily ET0 series it requires.",
+      "error": "agricultureM2.water_wallet.calculate_crop_water_demand: M2 has sourced crop coefficients and a crop-ETc calculation, but no daily reference-ET0 series is available from M1 for this analysis. The calculation does not determine irrigation requirement without effective rainfall, soil-water, and irrigation-efficiency evidence.",
       "calls": [
         {
           "called": "agricultureM2.rotation_engine.evaluate_rotation",
@@ -61,7 +61,7 @@
         {
           "called": "agricultureM2.water_wallet.calculate_crop_water_demand",
           "status": "not_implemented",
-          "error": "M2 water demand is not available in the unified backend: no water route is registered, water_wallet.py cannot locate crop_water_coefficients.csv, and M1 does not provide the daily ET0 series it requires."
+          "error": "M2 has sourced crop coefficients and a crop-ETc calculation, but no daily reference-ET0 series is available from M1 for this analysis. The calculation does not determine irrigation requirement without effective rainfall, soil-water, and irrigation-efficiency evidence."
         }
       ]
     },
@@ -79,13 +79,13 @@
     },
     "M5": {
       "status": "not_implemented",
-      "called": "resilienceM5.stress_test.run_stress_test",
-      "error": "resilienceM5.stress_test.run_stress_test: M5 has not published run_stress_test yet (contract pending).",
+      "called": "M5 separate /api/resilience/climate-twin and /api/resilience/stress-test calls",
+      "error": "M5 separate /api/resilience/climate-twin and /api/resilience/stress-test calls: M5 is implemented as separate endpoints; run them with explicit coordinates, period, rotation, and farmer water budget, then submit their unchanged outputs through M4 /evidence.",
       "calls": [
         {
-          "called": "resilienceM5.stress_test.run_stress_test",
+          "called": "M5 separate /api/resilience/climate-twin and /api/resilience/stress-test calls",
           "status": "not_implemented",
-          "error": "M5 has not published run_stress_test yet (contract pending)."
+          "error": "M5 is implemented as separate endpoints; run them with explicit coordinates, period, rotation, and farmer water budget, then submit their unchanged outputs through M4 /evidence."
         }
       ]
     }
@@ -218,7 +218,7 @@
           "gridResolution": "0.25° × 0.25° (~25 km)",
           "dateRange": "2030, 2040, 2050",
           "missingData": false,
-          "retrievedAt": "2026-11-14T20:33:54.180696+00:00",
+          "retrievedAt": "2026-11-15T03:38:30.450337+00:00",
           "model": "Multi-model ensemble",
           "caveat": "Model outputs are sampled at their nearest grid cells. They are regional projections, not field-level forecasts."
         },
@@ -1185,7 +1185,7 @@
             "gridResolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
             "dateRange": "2021-01-01 → 2025-12-31",
             "missingData": false,
-            "retrievedAt": "2026-11-14T20:33:59.789966+00:00",
+            "retrievedAt": "2026-11-15T03:32:47.865217+00:00",
             "model": null,
             "caveat": null
           },
@@ -1200,7 +1200,7 @@
             "gridResolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
             "dateRange": "2021-01-01 → 2025-12-31",
             "missingData": false,
-            "retrievedAt": "2026-11-14T20:33:59.789966+00:00",
+            "retrievedAt": "2026-11-15T03:32:47.865217+00:00",
             "model": null,
             "caveat": null
           }
@@ -2101,7 +2101,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-14T20:33:54.180696+00:00",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
           "method": "Multi-model ensemble (M1)"
         },
         "qualifications": []
@@ -2120,7 +2120,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-14T20:33:54.180696+00:00",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
           "method": null
         },
         "qualifications": []
@@ -2139,7 +2139,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-14T20:33:54.180696+00:00",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
           "method": null
         },
         "qualifications": [
@@ -2160,7 +2160,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-14T20:33:54.180696+00:00",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
           "method": null
         },
         "qualifications": []
@@ -2179,7 +2179,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-14T20:33:54.180696+00:00",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
           "method": null
         },
         "qualifications": [
@@ -2221,7 +2221,7 @@
           "product": "Daily meteorology",
           "source_url": null,
           "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
-          "retrieved_at": "2026-11-14T20:33:59.789966+00:00",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
           "method": null
         },
         "qualifications": [
@@ -2242,7 +2242,7 @@
           "product": "Daily meteorology",
           "source_url": null,
           "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
-          "retrieved_at": "2026-11-14T20:33:59.789966+00:00",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
           "method": null
         },
         "qualifications": []
@@ -2261,7 +2261,7 @@
           "product": "Daily meteorology",
           "source_url": null,
           "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
-          "retrieved_at": "2026-11-14T20:33:59.789966+00:00",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
           "method": "Mann-Kendall trend test (M1)"
         },
         "qualifications": [
@@ -2283,7 +2283,7 @@
           "product": "Daily meteorology",
           "source_url": null,
           "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
-          "retrieved_at": "2026-11-14T20:33:59.789966+00:00",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
           "method": "Mann-Kendall trend test (M1)"
         },
         "qualifications": [
@@ -2305,7 +2305,7 @@
           "product": "Daily meteorology",
           "source_url": null,
           "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
-          "retrieved_at": "2026-11-14T20:33:59.789966+00:00",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
           "method": null
         },
         "qualifications": []
@@ -2575,7 +2575,7 @@
         "code": "WATER_DEMAND_NOT_IMPLEMENTED",
         "category": "water",
         "severity": "warning",
-        "message": "Crop water demand has not been calculated, because M2 does not yet provide a water-demand service in the unified backend.",
+        "message": "Crop evapotranspiration has not been calculated because this analysis has no daily reference evapotranspiration series. Irrigation requirement also needs effective rainfall, soil-water, and efficiency evidence.",
         "affects": [
           "maize",
           "cowpea",
@@ -2583,7 +2583,7 @@
         ],
         "source_module": "M2",
         "farmer_action": null,
-        "team_action": "M2: provide a water-demand service function (the coefficient file path in the water wallet needs fixing) and agree a reference evapotranspiration source with M1.",
+        "team_action": "M2: expose the sourced crop-ETc calculation with verified daily reference evapotranspiration from M1, and only report irrigation requirement when its additional inputs are available.",
         "citations": []
       },
       {
@@ -2631,19 +2631,19 @@
         "citations": []
       },
       {
-        "code": "M5_NOT_IMPLEMENTED",
+        "code": "M5_RESULTS_NOT_SUPPLIED",
         "category": "module",
         "severity": "info",
-        "message": "M5 does not yet provide climate stress tests, so resilience under future scenarios has not been assessed.",
+        "message": "M5 results are absent or incomplete in this M4 analysis. M5 provides separate Climate Twin and Stress Test endpoints.",
         "affects": [],
         "source_module": "M5",
         "farmer_action": null,
-        "team_action": "M5: publish the agreed stress-test function.",
+        "team_action": "Run the required M5 endpoints with actual farm inputs, then submit their unchanged results to the M4 Evidence Passport.",
         "citations": []
       }
     ],
     "recommendation_status": "requires_further_validation",
-    "generated_at": "2026-11-14T20:34:00.136579+00:00"
+    "generated_at": "2026-11-15T03:38:31.068440+00:00"
   },
   "blind_spot_report": {
     "analysis_id": "example-analyze-pamplemousses-04",
@@ -2731,7 +2731,7 @@
         "code": "WATER_DEMAND_NOT_IMPLEMENTED",
         "category": "water",
         "severity": "warning",
-        "message": "Crop water demand has not been calculated, because M2 does not yet provide a water-demand service in the unified backend.",
+        "message": "Crop evapotranspiration has not been calculated because this analysis has no daily reference evapotranspiration series. Irrigation requirement also needs effective rainfall, soil-water, and efficiency evidence.",
         "affects": [
           "maize",
           "cowpea",
@@ -2739,7 +2739,7 @@
         ],
         "source_module": "M2",
         "farmer_action": null,
-        "team_action": "M2: provide a water-demand service function (the coefficient file path in the water wallet needs fixing) and agree a reference evapotranspiration source with M1.",
+        "team_action": "M2: expose the sourced crop-ETc calculation with verified daily reference evapotranspiration from M1, and only report irrigation requirement when its additional inputs are available.",
         "citations": []
       },
       {
@@ -2787,14 +2787,14 @@
         "citations": []
       },
       {
-        "code": "M5_NOT_IMPLEMENTED",
+        "code": "M5_RESULTS_NOT_SUPPLIED",
         "category": "module",
         "severity": "info",
-        "message": "M5 does not yet provide climate stress tests, so resilience under future scenarios has not been assessed.",
+        "message": "M5 results are absent or incomplete in this M4 analysis. M5 provides separate Climate Twin and Stress Test endpoints.",
         "affects": [],
         "source_module": "M5",
         "farmer_action": null,
-        "team_action": "M5: publish the agreed stress-test function.",
+        "team_action": "Run the required M5 endpoints with actual farm inputs, then submit their unchanged results to the M4 Evidence Passport.",
         "citations": []
       }
     ],
@@ -2802,7 +2802,7 @@
       "M1": "ok",
       "M2": "partial",
       "M3": "not_implemented",
-      "M5": "not_implemented"
+      "M5": "unavailable"
     }
   }
 }

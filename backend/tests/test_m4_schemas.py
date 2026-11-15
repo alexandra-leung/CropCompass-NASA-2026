@@ -6,6 +6,7 @@ Run from backend/:  python -m pytest tests/test_m4_*.py -v
 import pytest
 from pydantic import ValidationError
 
+from climateM1.models.climate import EnsembleScenario, Scenario
 from intelligenceM4.fixtures import load_fixture, load_manifest
 from intelligenceM4.providers import climate_provider
 from intelligenceM4.schemas import (
@@ -47,6 +48,24 @@ def test_real_m1_fixtures_validate_with_m1_models():
     history = HistoryResponse.model_validate(load_fixture(HISTORY))
     assert scenarios.provenance.source == "NASA NEX-GDDP-CMIP6"
     assert history.provenance[0].source == "NASA POWER"
+
+
+def test_m1_scenario_response_models_allow_registry_scenario_ids():
+    scenario = Scenario.model_validate({
+        "id": "ssp126",
+        "label": "SSP1-2.6",
+        "description": "test registry scenario",
+        "model": "test-model",
+        "values": [],
+    })
+    ensemble = EnsembleScenario.model_validate({
+        "id": "ssp126",
+        "label": "SSP1-2.6",
+        "description": "test registry scenario",
+        "values": [],
+    })
+
+    assert scenario.id == ensemble.id == "ssp126"
 
 
 def test_real_m2_fixtures_validate_with_m4_mirrors():

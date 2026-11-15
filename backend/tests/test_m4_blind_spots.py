@@ -83,7 +83,7 @@ def test_real_data_blind_spots():
         bsd.SUITABILITY_INPUT_NOT_PASSED, bsd.CROP_SUITABILITY_NOT_SCREENED,
         bsd.SOIL_PH_MISSING, bsd.IRRIGATION_BUDGET_MISSING,
         bsd.WATER_DEMAND_NOT_IMPLEMENTED, bsd.CLIMATE_RESOLUTION,
-        bsd.M3_NOT_IMPLEMENTED, bsd.M5_NOT_IMPLEMENTED,
+        bsd.M3_NOT_IMPLEMENTED, bsd.M5_RESULTS_NOT_SUPPLIED,
     }
     # Without inputs M2 never consults its catalog, so no catalog gap is claimed.
     assert bsd.CROP_REFERENCE_INCOMPLETE not in spots
@@ -92,7 +92,7 @@ def test_real_data_blind_spots():
 def test_real_data_module_status():
     report = bsd.build_report(AnalysisBundle.model_validate(bundle_json()))
     assert report.module_status == {
-        "M1": "ok", "M2": "partial", "M3": "not_implemented", "M5": "not_implemented"}
+        "M1": "ok", "M2": "partial", "M3": "not_implemented", "M5": "unavailable"}
 
 
 # ---------------------------------------------------------------------------
@@ -142,27 +142,39 @@ def test_m2_water_service_exists_but_no_water_data(monkeypatch):
     assert bsd.M2_WATER_DATA_MISSING not in with_water
 
 
-def test_m5_stress_tests_exist_but_no_resilience_data(monkeypatch):
-    assert bsd.M5_RESILIENCE_DATA_MISSING not in detect()  # M5 not implemented today
+def test_m5_separate_results_must_be_complete_for_ok_status():
+    spot = detect()[bsd.M5_RESULTS_NOT_SUPPLIED]
+    assert (spot.severity, spot.source_module) == ("info", "M5")
+    assert "separate" in spot.message
+    assert spot.team_action.startswith("Run ")
+    assert bsd.build_report(AnalysisBundle.model_validate(bundle_json())).module_status["M5"] == "unavailable"
 
-    monkeypatch.setattr(resilience_provider, "resilience_implemented", lambda: True)
-    spot = detect()[bsd.M5_RESILIENCE_DATA_MISSING]
-    assert (spot.severity, spot.source_module) == ("warning", "M5")
-    assert spot.team_action.startswith("M4:")
-    assert bsd.M5_NOT_IMPLEMENTED not in detect()
+    partial = detect(resilience={
+        "scenario": "ssp370", "year": 2050, "climate_twin": {"period": {}},
+    })
+    assert bsd.M5_RESULTS_NOT_SUPPLIED in partial
+    partial_report = bsd.build_report(AnalysisBundle.model_validate(bundle_json(
+        resilience={"scenario": "ssp370", "year": 2050, "climate_twin": {"period": {}}})))
+    assert partial_report.module_status["M5"] == "partial"
 
-    with_resilience = detect(resilience={"scenario": "ssp370", "year": 2050})
-    assert bsd.M5_RESILIENCE_DATA_MISSING not in with_resilience
-
+    complete = detect(resilience={
+        "scenario": "ssp370", "year": 2050,
+        "climate_twin": {"period": {}}, "stress_tests": [{"scenario_id": "baseline"}],
+    })
+    assert bsd.M5_RESULTS_NOT_SUPPLIED not in complete
+    complete_report = bsd.build_report(AnalysisBundle.model_validate(bundle_json(
+        resilience={"scenario": "ssp370", "year": 2050,
+                    "climate_twin": {"period": {}},
+                    "stress_tests": [{"scenario_id": "baseline"}]})))
+    assert complete_report.module_status["M5"] == "ok"
 
 def test_new_data_missing_rules_block_supported(monkeypatch):
     monkeypatch.setattr(agriculture_provider, "water_demand_implemented", lambda: True)
-    monkeypatch.setattr(resilience_provider, "resilience_implemented", lambda: True)
     data = complete_bundle_json()
     del data["agriculture"]["water"]
     passport = build_passport(AnalysisBundle.model_validate(data))
     codes = {s.code for s in passport.blind_spots}
-    assert {bsd.M2_WATER_DATA_MISSING, bsd.M5_RESILIENCE_DATA_MISSING} <= codes
+    assert {bsd.M2_WATER_DATA_MISSING, bsd.M5_RESULTS_NOT_SUPPLIED} <= codes
     assert passport.recommendation_status == "requires_further_validation"
 
 
@@ -322,16 +334,25 @@ def test_registry_unreadable_rule_kept(monkeypatch):
 # M3 / M5
 # ---------------------------------------------------------------------------
 
-def test_m3_m5_not_implemented_are_info(monkeypatch):
+def test_m3_missing_profile_and_m5_missing_results_are_info(monkeypatch):
     spots = detect()
-    for code, module in ((bsd.M3_NOT_IMPLEMENTED, "M3"), (bsd.M5_NOT_IMPLEMENTED, "M5")):
+    for code, module in ((bsd.M3_NOT_IMPLEMENTED, "M3"),
+                         (bsd.M5_RESULTS_NOT_SUPPLIED, "M5")):
         assert (spots[code].category, spots[code].severity) == ("module", "info")
-        assert spots[code].team_action.startswith(f"{module}:")
+        if module == "M3":
+            assert spots[code].team_action.startswith("M3:")
+        else:
+            assert spots[code].team_action.startswith("Run ")
 
     monkeypatch.setattr(farm_provider, "farm_profile_implemented", lambda: True)
-    monkeypatch.setattr(resilience_provider, "resilience_implemented", lambda: True)
-    spots = detect()
-    assert bsd.M3_NOT_IMPLEMENTED not in spots and bsd.M5_NOT_IMPLEMENTED not in spots
+    spots = detect(resilience={"scenario": "ssp370", "year": 2050})
+    assert bsd.M3_NOT_IMPLEMENTED not in spots
+    assert bsd.M5_RESULTS_NOT_SUPPLIED in spots
+    spots = detect(resilience={
+        "scenario": "ssp370", "year": 2050,
+        "climate_twin": {}, "stress_tests": [{"scenario_id": "baseline"}],
+    })
+    assert bsd.M5_RESULTS_NOT_SUPPLIED not in spots
 
 
 # ---------------------------------------------------------------------------

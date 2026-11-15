@@ -103,7 +103,7 @@ class ScenarioValue(BaseModel):
 
 
 class Scenario(BaseModel):
-    id: Literal["ssp245", "ssp370"]
+    id: str
     label: str
     description: str
     model: str
@@ -135,7 +135,7 @@ class EnsembleValue(BaseModel):
 
 
 class EnsembleScenario(BaseModel):
-    id: Literal["ssp245", "ssp370"]
+    id: str
     label: str
     description: str
     values: list[EnsembleValue]

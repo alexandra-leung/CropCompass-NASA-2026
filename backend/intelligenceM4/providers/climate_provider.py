@@ -6,8 +6,7 @@ Calls
 * climateM1.services.projections.fetch_scenarios(location)
     Has its own per-model cache (with stale fallback) inside the service layer.
 * climateM1.services.history.fetch_history(location, start, end)
-    NOTE: M1's history cache lives in the route handler, not the service
-    layer, so this call always goes to NASA POWER. Offline => "unavailable".
+    Uses the service-layer source-response cache, including for in-process M4 calls.
 * climateM1.services.model_registry / climateM1.services.locations
     Registry lookups used to validate scenario ids, years and location ids.
 

@@ -1,32 +1,23 @@
-"""
-M5 adapter — climate resilience / stress tests.
+"""M4's resilience integration uses the separate M5 HTTP endpoints.
 
-M5 has no implementation yet. This adapter looks for the PROPOSED service
-function `resilienceM5.stress_test.run_stress_test(location_id, scenario,
-year, rotation) -> dict` (see intelligenceM4/API_CONTRACT.md). Until it
-exists, the result is "not_implemented" and M4 reports the missing resilience
-evidence as a blind spot. M4 never fabricates resilience figures.
+The endpoints need explicit coordinates, periods, rotations, and farmer water
+constraints, so /analyze does not invoke them. Their unchanged responses can
+be added to the /analyze bundle and submitted to /evidence.
 """
 
 from __future__ import annotations
 
-from intelligenceM4.providers import not_implemented, safe_call
-from intelligenceM4.schemas import ProviderResult, ResilienceInput
+from intelligenceM4.providers import not_implemented
+from intelligenceM4.schemas import ProviderResult
 
-RESILIENCE_CALL = "resilienceM5.stress_test.run_stress_test"
-
-
-def _m5_function():
-    try:
-        from resilienceM5 import stress_test
-        return getattr(stress_test, "run_stress_test", None)
-    except Exception:
-        return None
+RESILIENCE_CALL = (
+    "M5 separate /api/resilience/climate-twin and /api/resilience/stress-test calls"
+)
 
 
 def resilience_implemented() -> bool:
-    """Capability probe: does M5 expose the agreed function? (Does not call it.)"""
-    return _m5_function() is not None
+    """Whether /analyze automatically invokes M5 (it intentionally does not)."""
+    return False
 
 
 def get_resilience(
@@ -35,16 +26,10 @@ def get_resilience(
     year: int,
     rotation: list[str],
 ) -> ProviderResult:
-    m5_run = _m5_function()
-    if m5_run is None:
-        return not_implemented(
-            "M5", RESILIENCE_CALL,
-            "M5 has not published run_stress_test yet (contract pending).",
-        )
-
-    return safe_call(
-        "M5", RESILIENCE_CALL,
-        lambda: ResilienceInput.model_validate(
-            m5_run(location_id, scenario, year, list(rotation))
-        ),
+    return not_implemented(
+        "M5",
+        RESILIENCE_CALL,
+        "M5 is implemented as separate endpoints; run them with explicit "
+        "coordinates, period, rotation, and farmer water budget, then submit "
+        "their unchanged outputs through M4 /evidence.",
     )

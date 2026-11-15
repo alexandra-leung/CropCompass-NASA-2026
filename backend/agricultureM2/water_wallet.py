@@ -1,4 +1,5 @@
 
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -138,11 +139,14 @@ def calculate_crop_water_demand(
         )
 
     if any(
-        value is None or value < 0
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
         for value in daily_et0_mm
     ):
         raise ValueError(
-            "ET0 must contain nonnegative daily values."
+            "ET0 must contain finite, nonnegative daily values."
         )
 
     daily_etc = []
