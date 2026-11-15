@@ -2,7 +2,7 @@
 
 ### Climate-Resilient Agriculture Powered by NASA Earth Data
 
-**NASA Space Apps Challenge 2026 | Team Marigold**
+**NASA Space Apps Challenge 2026 | Team AthenaX**
 
 **Challenge:** [Field Shift: Adapting Farms with NASA Data](https://www.spaceappschallenge.org/2026/challenges/field-shift-adapting-farms-with-nasa-data/)
 
@@ -503,7 +503,7 @@ The `main` branch should represent the team's integrated, tested application.
 
 ## 14. Team
 
-**Team Marigold — NASA Space Apps Challenge 2026**
+**Team AthenaX — NASA Space Apps Challenge 2026**
 
 Team members:
 
