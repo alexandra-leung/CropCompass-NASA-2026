@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from climateM1.api.climate import router as climate_router
 from agricultureM2.routes import router as agriculture_router
+from agricultureM2.plans_routes import router as plans_router
 from intelligenceM4.routes import router as intelligence_router
 from mappingM3.routes import router as mapping_router
 from resilienceM5.m1_adapter import provide_m1_climate
@@ -28,6 +29,9 @@ app.include_router(
     prefix="/api/agriculture",
     tags=["M2 - Agricultural Intelligence"],
 )
+# M2 - ranked plans (water need, suitability, score)
+app.include_router(plans_router)
+
 # M3 - Farm Mapping
 app.include_router(mapping_router)
 

@@ -99,7 +99,7 @@ def test_get_farm_profile_matches_m4_contract():
     from mappingM3.farm_profile import get_farm_profile
     ctx = get_farm_profile("pamplemousses-04")
     assert set(ctx) == {"farm_id", "location_id", "soil_ph", "field_area_ha", "irrigation_budget_m3", "current_rotation", "source"}
-    assert ctx["source"] == "M3" and ctx["irrigation_budget_m3"] == 900.0
+    assert ctx["source"] == "M3" and ctx["irrigation_budget_m3"] == 3600.0
     assert ctx["soil_ph"] is None               # unknown stays unknown
     FarmContext.model_validate(ctx)
 
@@ -149,7 +149,7 @@ def test_routes_list_get_context(client):
     farms = client.get("/api/farms").json()["farms"]
     assert farms[0]["demo"] is True and len(farms) >= 3
     full = client.get("/api/farms/flacq-02").json()
-    assert full["irrigation_budget_m3"] == 2000.0 and full["validation"]["complete"] is True
+    assert full["irrigation_budget_m3"] == 5200.0 and full["validation"]["complete"] is True
     assert client.get("/api/farms/flacq-02/context").json()["source"] == "M3"
     assert client.get("/api/farms/missing").status_code == 404
 

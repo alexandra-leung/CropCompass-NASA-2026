@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import * as api from './api'
 import type { Source } from './api'
-import { Bars, C, Hero, I, Icon, Kpi, LineChart, SourceTag, Spinner, Tag } from './ui'
+import { C, Hero, I, Icon, Kpi, LineChart, SourceTag, Spinner, Tag } from './ui'
 import { CropPic } from './crops'
 import { SatelliteField, SatellitePlace } from './satellite'
 
@@ -17,6 +17,7 @@ const nice = (n?: string) => (n ?? '').replace(/ Field \d+$/, '')
 const rot = (r?: string[] | null) => (r && r.length ? r.map(crop).join(' → ') : 'Not entered')
 const TEXTURES: [string, string][] = [['sandy_loam', 'Sandy loam'], ['loam', 'Loam'], ['clay_loam', 'Clay loam'], ['clay', 'Clay'], ['unknown', "Don't know"]]
 const WATER: [string, string][] = [['rain_only', 'Rain only'], ['tank', 'Tank or pond'], ['borehole', 'Borehole'], ['irrigation_scheme', 'Irrigation scheme']]
+const MONTH_L = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
 const SCEN: [string, string][] = [['ssp245', 'Middle path · SSP2-4.5'], ['ssp370', 'Higher emissions · SSP3-7.0']]
 const srcKey = (s?: string) => (s === 'farmer' ? 'entered' : s === 'map_estimate' ? 'map' : 'missing')
 
@@ -28,7 +29,7 @@ export default function App() {
   const [farm, setFarm] = useState<api.Res<any>>({ data: null, source: 'none' })
   const [history, setHistory] = useState<api.Res<any> | null>(null)
   const [scen, setScen] = useState<api.Res<any> | null>(null)
-  const [gen, setGen] = useState<api.Res<any> | null>(null)
+  const [planRes, setPlanRes] = useState<api.Res<any> | null>(null)
   const [analysis, setAnalysis] = useState<api.Res<any> | null>(null)
   const [analysing, setAnalysing] = useState(false)
   const [scenario, setScenario] = useState('ssp245')
@@ -47,7 +48,7 @@ export default function App() {
     })()
   }, [farms])
   useEffect(() => {
-    setFarm({ data: null, source: 'none' }); setHistory(null); setScen(null); setGen(null); setAnalysis(null)
+    setFarm({ data: null, source: 'none' }); setHistory(null); setScen(null); setPlanRes(null); setAnalysis(null)
     loadFarm(farmId)
   }, [farmId])
   const p = farm.data
@@ -55,11 +56,15 @@ export default function App() {
     if (!p) return
     const ctl = new AbortController(), live = () => !ctl.signal.aborted
     setHistory(api.cached.history(p.location_id)); setScen(api.cached.scenarios(p.location_id))
-    if (p.current_rotation?.length) api.generateRotations(p.current_rotation).then(r => live() && setGen(r))
     api.getHistory(p.location_id, ctl.signal).then(r => live() && setHistory(prev => (r.source === 'live' || !prev ? r : prev)))
     api.getScenarios(p.location_id, ctl.signal).then(r => live() && setScen(prev => (r.source === 'live' || !prev ? r : prev)))
     return () => ctl.abort()
   }, [p?.farm_id, p?.location_id, (p?.current_rotation || []).join()])
+
+  const planKey = p ? [p.farm_id, p.irrigation?.budget_mm_per_season, JSON.stringify(p.priorities), (p.current_rotation || []).join(), p.soil?.ph].join('|') : ''
+  const loadPlans = () => { if (!p?.current_rotation?.length) return; setPlanRes(null); api.plans(p.farm_id).then(setPlanRes) }
+  useEffect(() => { loadPlans() }, [planKey])
+  const savePriorities = async (w: any) => { try { setFarm({ data: await api.patchFarm(p.farm_id, { priorities: w }), source: 'live' }) } catch { /* offline */ } }
 
   const runAnalysis = async () => {
     if (!p || analysing) return
@@ -83,11 +88,11 @@ export default function App() {
       </div>
 
       <main>
-        {tab === 'home' && <Home p={p} loc={loc} farms={farmList} history={history} openField={() => setSheet({ kind: 'field' })} farmsSrc={farms.source} goFields={() => setTab('fields')} />}
+        {tab === 'home' && <Home p={p} loc={loc} farms={farmList} history={history} openField={() => setSheet({ kind: 'field' })} farmsSrc={farms.source} goFields={() => setTab('fields')} planRes={planRes} goPlans={() => setTab('plans')} />}
         {tab === 'fields' && <Fields farms={farmList} src={farms.source} open={(id: string) => { setFarmId(id); setSheet({ kind: 'field' }) }} add={() => setSheet({ kind: 'add' })} plans={(id: string) => { setFarmId(id); setTab('plans') }} />}
-        {tab === 'plans' && <Plans p={p} gen={gen} />}
-        {tab === 'water' && <Water p={p} history={history} onSaved={(np: any) => setFarm({ data: np, source: 'live' })} />}
-        {tab === 'future' && <Future p={p} loc={loc} scen={scen} scenario={scenario} setScenario={setScenario} gen={gen} />}
+        {tab === 'plans' && <Plans p={p} planRes={planRes} onPriorities={savePriorities} refresh={loadPlans} />}
+        {tab === 'water' && <Water p={p} planRes={planRes} onSaved={(np: any) => setFarm({ data: np, source: 'live' })} />}
+        {tab === 'future' && <Future p={p} loc={loc} scen={scen} scenario={scenario} setScenario={setScenario} />}
       </main>
 
       <nav className="tabbar" aria-label="Sections">
@@ -104,7 +109,7 @@ export default function App() {
             {sheet.kind === 'field' && <FieldSheet p={p} src={farm.source} close={() => setSheet(null)} onSaved={(np: any) => { setFarm({ data: np, source: 'live' }); loadFarms() }} passport={() => { setSheet({ kind: 'passport' }); needAnalysis() }} />}
             {sheet.kind === 'add' && <AddField close={() => setSheet(null)} created={(id: string) => { setSheet(null); loadFarms(id); setTab('plans') }} />}
             {sheet.kind === 'ask' && <Ask close={() => setSheet(null)} analysis={analysis} analysing={analysing} p={p} />}
-            {sheet.kind === 'passport' && <Passport close={() => setSheet(null)} analysis={analysis} analysing={analysing} p={p} rerun={runAnalysis} />}
+            {sheet.kind === 'passport' && <Passport close={() => setSheet(null)} analysis={analysis} analysing={analysing} p={p} rerun={runAnalysis} planRes={planRes} />}
           </div>
         </div>
       )}
@@ -113,8 +118,10 @@ export default function App() {
 }
 
 /* ------------------------------------------------------------------ HOME */
-function Home({ p, loc, farms, history, openField, farmsSrc, goFields }: any) {
-  const h = history?.data
+function Home({ p, loc, farms, history, openField, farmsSrc, goFields, planRes, goPlans }: any) {
+  const [long, setLong] = useState<api.Res<any> | null>(null), [loadingLong, setLoadingLong] = useState(false)
+  useEffect(() => { setLong(null) }, [loc?.farm_id])
+  const h = long?.data ?? history?.data
   const ts: any[] = h?.timeseries ?? []
   const m = h?.metrics
   const hour = new Date().getHours()
@@ -136,6 +143,15 @@ function Home({ p, loc, farms, history, openField, farmsSrc, goFields }: any) {
       <Kpi onClick={goFields} v={p?.irrigation?.budget_mm_per_season != null ? String(Math.round(p.irrigation.budget_mm_per_season)) : '…'} unit="mm" l={`Water · ${nice(p?.name)}`} />
       <Kpi onClick={goFields} v={m ? `${m.dataCompleteness}` : history && !h ? '–' : '…'} unit={m ? '%' : undefined} l="Climate data" />
     </div>
+    {planRes?.data && (() => {
+      const pls: any[] = planRes.data.plans, best = pls.find((x: any) => x.id === planRes.data.best_plan_id), today = pls[0]
+      return <section className="card">
+        <div className="between"><div><div className="eb">Best plan for {nice(p?.name)}</div><div className="ct">{best.id === 'current' ? 'Keep your rotation' : `${best.label}: ${rot(best.rotation)}`}</div></div><SourceTag s={planRes.source} what="M2" /></div>
+        <div className="row" style={{ gap: 6 }}>{best.rotation.map((c: string, k: number) => <span key={k} className="row" style={{ gap: 2 }}><CropPic id={c} size={34} />{k < best.rotation.length - 1 && <span className="faint">→</span>}</span>)}</div>
+        <span className="muted" style={{ fontSize: 13.5 }}>{best.reasons[0]} Score {Math.round((best.score ?? 0) * 100)} vs {Math.round((today.score ?? 0) * 100)} today.</span>
+        <button className="btn" onClick={goPlans}>See all plans ›</button>
+      </section>
+    })()}
     <section className="card">
       <div className="between"><div><div className="eb">Climate history</div><div className="ct">Rain and heat, by year</div></div>{history && <SourceTag s={history.source} what="NASA POWER" />}</div>
       {!history && <Spinner text={`Fetching NASA POWER for ${nice(loc?.name)} (first time can take a minute)…`} />}
@@ -148,6 +164,8 @@ function Home({ p, loc, farms, history, openField, farmsSrc, goFields }: any) {
           <div><span className="dot" style={{ background: C.gold }} /><span style={{ flex: 1 }}>Longest dry spell</span><b>{ts[pick].drySpellDays} days</b></div>
         </div>}
         <span className="faint">{h.provenance?.gridResolution ? `Grid ${h.provenance.gridResolution} · regional, not a field sensor.` : 'Regional grid, not a field sensor.'}</span>
+        {!long?.data && <button className="chip" disabled={loadingLong} onClick={async () => { setLoadingLong(true); const r = await api.getHistoryLong(p.location_id); setLong(r); setLoadingLong(false) }}>{loadingLong ? 'Fetching 20 years from NASA POWER…' : 'Show 20 years (2006–2025)'}</button>}
+        {long && !long.data && <span className="faint">20-year history not available right now ({long.error}).</span>}
       </>}
     </section>
     {missing.length > 0 && <section className="card">
@@ -190,6 +208,19 @@ function Fields({ farms, src, open, add, plans }: any) {
 
 function FieldSheet({ p, src, close, onSaved, passport }: any) {
   const [err, setErr] = useState('')
+  const [draw, setDraw] = useState<number[][] | null>(null)
+  const [area, setArea] = useState<number | null>(null)
+  const saveOutline = async () => {
+    if (!draw || draw.length < 3) return
+    const geometry = { type: 'Polygon', coordinates: [[...draw, draw[0]]] }
+    setErr('')
+    try { await api.measure(geometry); onSaved(await api.putBoundary(p.farm_id, geometry)); setDraw(null); setArea(null) }
+    catch (e) { setErr(`Could not save the outline: ${(e as Error).message}`) }
+  }
+  useEffect(() => {
+    if (!draw || draw.length < 3) { setArea(null); return }
+    api.measure({ type: 'Polygon', coordinates: [[...draw, draw[0]]] }).then(r => setArea(r.area_ha)).catch(() => setArea(null))
+  }, [draw])
   const [ph, setPh] = useState<string>(p?.soil?.ph != null ? String(p.soil.ph) : '')
   const save = async (body: any) => {
     setErr('')
@@ -200,7 +231,14 @@ function FieldSheet({ p, src, close, onSaved, passport }: any) {
   return (<>
     <SheetHead eyebrow={`${p.field_area_ha ?? '?'} ha · climate location ${nice(p.name)}`} title={nice(p.name)} close={close} />
     <div className="body">
-      {p.boundary?.geometry?.coordinates?.[0] ? <SatelliteField ring={p.boundary.geometry.coordinates[0]} label={p.boundary.method === 'manual' ? 'Outline drawn by farmer' : 'Placeholder outline · redraw to match your field'} /> : <div className="err">No outline yet.</div>}
+      {p.boundary?.geometry?.coordinates?.[0] ? <SatelliteField ring={p.boundary.geometry.coordinates[0]} draft={draw ?? undefined} onTap={draw ? (lon, lat) => setDraw([...draw, [lon, lat]]) : undefined}
+        label={draw ? 'Tap the corners of your field' : p.boundary.method === 'manual' ? 'Outline drawn by farmer' : 'Placeholder outline · redraw to match your field'} /> : <div className="err">No outline yet.</div>}
+      {!draw ? <button className="btn light" onClick={() => setDraw([])}>Draw my field on the map</button> :
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span className="muted">{draw.length < 3 ? `Tap at least 3 corners (${draw.length} so far).` : `${draw.length} corners${area != null ? ` · ${area} ha` : ''}${area != null && p.field_area_ha ? ` (you said ${p.field_area_ha} ha)` : ''}`}</span>
+          <div className="row"><button className="chip" onClick={() => setDraw(draw.slice(0, -1))} disabled={!draw.length}>Undo</button><button className="chip" onClick={() => setDraw(null)}>Cancel</button>
+            <button className="btn" style={{ flex: 1, minHeight: 40 }} disabled={draw.length < 3} onClick={saveOutline}>Save outline</button></div>
+        </div>}
       <div className="between"><span className="faint">Satellite image works anywhere in the world · outline from M3</span><SourceTag s={src} /></div>
       <section className="card">
         <div className="ct">What we know</div>
@@ -295,114 +333,138 @@ function AddField({ close, created }: any) {
 
 /* ------------------------------------------------------------------ PLANS */
 const FAM: Record<string, string> = { Poaceae: 'grass family', Fabaceae: 'legume', Solanaceae: 'nightshade', Amaryllidaceae: 'onion family', Brassicaceae: 'cabbage family', Convolvulaceae: 'morning glory' }
-function Plans({ p, gen }: any) {
+const PRESETS: [string, string, Record<string, number>][] = [
+  ['water', 'Save water', { water: 0.6, soil: 0.2, climate: 0.2, income: 0 }],
+  ['soil', 'Soil health', { water: 0.2, soil: 0.6, climate: 0.2, income: 0 }],
+  ['climate', 'Climate-proof', { water: 0.2, soil: 0.2, climate: 0.6, income: 0 }],
+  ['balanced', 'Balanced', { water: 1 / 3, soil: 1 / 3, climate: 1 / 3, income: 0 }],
+]
+const presetOf = (pr: any) => { if (!pr) return 'balanced'; const top = ['water', 'soil', 'climate'].sort((a, b) => pr[b] - pr[a]); return pr[top[0]] - pr[top[1]] < 0.05 ? 'balanced' : top[0] }
+const SUIT: Record<string, [string, string, string]> = { suitable: ['#E8F3EF', '#276146', 'Suits the season'], marginal: ['#FBF5E6', '#8A6A12', 'Marginal'], unsuitable: ['#F8ECE7', '#B5523A', 'Too hot or cold'], unknown: ['#F2F6F4', '#6B7C77', 'Not checked'] }
+
+function YearStrip({ plan, label }: { plan: any; label: string }) {
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <span className="faint" style={{ fontWeight: 700 }}>{label}</span>
+    <div className="ystrip">{plan.calendar.map((m: any, k: number) => {
+      const bareRisk = !m.crop_id && m.heavy_rain
+      return <span key={k} title={`${m.month}: ${m.crop_id ? crop(m.crop_id) : 'bare soil'}${m.heavy_rain ? ', heavy rain' : ''}`}
+        className={'ycell' + (m.crop_id ? '' : ' bare') + (bareRisk ? ' risk' : '')}>{m.crop_id ? <CropPic id={m.crop_id} size={20} /> : null}</span>
+    })}</div>
+  </div>
+}
+
+function Plans({ p, planRes, onPriorities, refresh }: any) {
   const [i, setI] = useState(0)
   const [step, setStep] = useState<number | null>(null)
-  const [suit, setSuit] = useState<Record<string, any>>({})
-  const g = gen?.data
-  const plans: any[] = g ? [g.current_rotation, ...(g.alternative_rotations ?? [])] : []
+  const [busy, setBusy] = useState(false)
+  const d = planRes?.data
+  const plans: any[] = d?.plans ?? []
   const sel = plans[Math.min(i, Math.max(plans.length - 1, 0))]
   useEffect(() => { setI(0); setStep(null) }, [p?.farm_id])
   useEffect(() => {
-    const ids = Array.from(new Set(plans.flatMap(x => x.rotation)))
-    ids.forEach(id => { if (!suit[id]) api.suitability(id, p?.soil?.ph).then(r => setSuit(s => ({ ...s, [id]: r }))) })
-  }, [g])
-  useEffect(() => {
     if (step == null || !sel) return
-    const t = window.setTimeout(() => setStep(step + 1 < sel.sequence.length ? step + 1 : null), 10000)
+    const t = window.setTimeout(() => setStep(step + 1 < sel.crops.length ? step + 1 : null), 10000)
     return () => window.clearTimeout(t)
   }, [step, sel])
   if (!p) return <Spinner text="Loading farm…" />
-  const head = (
-    <>
-      <div><div className="eb">Plans for this field</div><h1 className="h1" style={{ marginTop: 6 }}>{nice(p.name)} <span>· season by season</span></h1></div>
-      <div className="ctx">
-        <span><small>Soil</small><b>{TEXTURES.find(t => t[0] === p.soil.texture)?.[1] ?? 'Unknown'}</b></span>
-        <span><small>pH</small><b>{p.soil.ph ?? '?'}</b></span>
-        <span><small>Water</small><b>{p.irrigation.budget_mm_per_season ?? '?'} mm</b></span>
-        <span><small>Crops now</small><b>{rot(p.current_rotation)}</b></span>
-      </div>
-    </>)
+  const preset = presetOf(p.priorities)
+  const setPreset = async (w: Record<string, number>) => { setBusy(true); await onPriorities(w); setBusy(false) }
+  const head = (<>
+    <div><div className="eb">Plans for this field</div><h1 className="h1" style={{ marginTop: 6 }}>{nice(p.name)} <span>· season by season</span></h1></div>
+    <div className="ctx">
+      <span><small>Soil</small><b>{TEXTURES.find(t => t[0] === p.soil.texture)?.[1] ?? 'Unknown'}</b></span>
+      <span><small>pH</small><b>{p.soil.ph ?? '?'}</b></span>
+      <span><small>Water / season</small><b>{p.irrigation.budget_mm_per_season ?? '?'} mm</b></span>
+      <span><small>Crops now</small><b>{rot(p.current_rotation)}</b></span>
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span className="eb">Rank plans by what matters to you</span>
+      <div className="seg" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>{PRESETS.map(([k, l, w]) => <button key={k} className={preset === k ? 'on' : ''} disabled={busy} onClick={() => setPreset(w)}>{l}</button>)}</div>
+    </div>
+  </>)
   if (!p.current_rotation?.length) return <>{head}<div className="err">Add the crops you grow in Fields to compare plans.</div></>
-  if (!gen) return <>{head}<Spinner text="Asking M2 for other rotations…" /></>
-  if (!g) return <>{head}<div className="err">M2 could not suggest plans{gen.error ? `: ${gen.error}` : ''}.</div></>
+  if (!planRes || busy) return <>{head}<Spinner text="Comparing plans: water need, suitability, rotation rules…" /></>
+  if (!d) return <>{head}<div className="err">The plan engine did not answer ({planRes.error}). <button className="chip" onClick={refresh}>Try again</button></div></>
+  const best = plans.find((x: any) => x.id === d.best_plan_id) ?? plans[0]
   const today = plans[0]
-  const n = sel.sequence.length
-  const legume = (x: any) => (x.nitrogen_fixing_crops?.length ?? 0) > 0
-  const repeatAt = (k: number) => sel.sequence[k].family === sel.sequence[(k - 1 + n) % n].family
-  const advice: string[] = []
-  if (!legume(today)) advice.push(`Your rotation has no legume. Put cowpea or groundnut after ${crop(today.rotation[0]).toLowerCase()}: it adds nitrogen for the next crop.`)
-  const reps = today.sequence.filter((s: any, k: number) => s.family === today.sequence[(k - 1 + today.sequence.length) % today.sequence.length].family)
-  if (reps.length) advice.push(`Avoid ${crop(reps[0].crop_id).toLowerCase()} straight after the same family: changing family breaks pest and disease cycles.`)
-  if (i > 0) {
-    const fixes = [legume(sel) && !legume(today) ? 'adds a legume' : '', !sel.has_adjacent_family_repetition && today.has_adjacent_family_repetition ? 'stops the family repeating' : ''].filter(Boolean)
-    advice.push(fixes.length ? `Plan ${String.fromCharCode(64 + i)} ${fixes.join(' and ')}.` : `Plan ${String.fromCharCode(64 + i)} does not improve on today's rotation rules${!legume(sel) ? ' and has no legume' : ''}.`)
-  }
-  if (p.soil.ph == null) advice.push('Test your soil pH, so each crop can be checked against its needs.')
+  const lab = (x: any) => x.label
+  const pct = (v: number | null) => (v == null ? '–' : `${Math.round(v * 100)}`)
+  const bd = sel.score_breakdown || {}
   return (<>
     {head}
-    <div className="tabs" role="tablist">{plans.map((_x, k) => <button key={k} role="tab" className={k === i ? 'on' : ''} onClick={() => { setI(k); setStep(null) }}>{k === 0 ? 'Today' : `Plan ${String.fromCharCode(64 + k)}`}</button>)}</div>
+    <Hero bg={C.deep} eyebrow={`Best for ${nice(p.name)} · ${PRESETS.find(x => x[0] === preset)?.[1]}`}
+      title={!plans.some((x: any) => x.feasible) ? 'No plan fits\nyour water yet.' : best.id === 'current' ? 'Your rotation\nis already the best.' : `${lab(best)}: ${rot(best.rotation)}`}
+      sub={!plans.some((x: any) => x.feasible) ? `The thriftiest plan needs ${Math.round(Math.min(...plans.map((x: any) => x.water.peak_season_mm ?? 1e9)))} mm of watering in its driest season; you can give ${p.irrigation.budget_mm_per_season ?? 0} mm. Plans are still ranked below; add a tank or set your water in the Water tab.` : best.id === 'current' ? best.reasons[0] : `Score ${pct(best.score)} vs ${pct(today.score)} today. ${best.reasons[0]}`} />
+    <div className="tabs" role="tablist">{plans.map((x, k) => <button key={x.id} role="tab" className={k === i ? 'on' : ''} onClick={() => { setI(k); setStep(null) }}>{x.label} <span className="rk">#{x.rank}</span></button>)}</div>
 
     <section className="card">
       <div className="between">
-        <div><div className="eb">{i === 0 ? 'Your rotation' : `Plan ${String.fromCharCode(64 + i)}`}</div><div className="ct">{rot(sel.rotation)}</div></div>
-        <button className="play" aria-label={step == null ? 'Play the seasons' : 'Stop'} onClick={() => setStep(step == null ? 0 : null)}>
-          <Icon d={step == null ? 'M8 5l11 7-11 7z' : 'M6 5h4v14H6z M14 5h4v14h-4z'} c="#fff" s={16} /></button>
+        <div><div className="eb">{sel.label} · rank {sel.rank} of {plans.length}</div><div className="ct">{rot(sel.rotation)}</div></div>
+        <button className="play" aria-label={step == null ? 'Play the seasons' : 'Stop'} onClick={() => setStep(step == null ? 0 : null)}><Icon d={step == null ? 'M8 5l11 7-11 7z' : 'M6 5h4v14H6z M14 5h4v14h-4z'} c="#fff" s={16} /></button>
       </div>
-      <div className="seasons" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
-        {sel.sequence.map((s: any, k: number) => {
-          const on = step === k, nf = sel.nitrogen_fixing_crops?.includes(s.crop_id), rep = repeatAt(k)
+      <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <span className="pill" style={{ background: sel.feasible ? '#E8F3EF' : '#F8ECE7', color: sel.feasible ? '#276146' : C.red, fontSize: 12 }}>{sel.feasible ? 'Works with your water' : 'Does not fit'}</span>
+        <span className="pill" style={{ background: '#F2F6F4', color: C.ink, fontSize: 12 }}>Score {pct(sel.score)} / 100</span>
+        {sel.water.peak_season_mm != null && <span className="pill" style={{ background: '#E8F1F5', color: C.water, fontSize: 12 }}>Needs {Math.round(sel.water.peak_season_mm)} mm in its driest season</span>}
+      </div>
+      {sel.failed_constraints.map((f: any, k: number) => <div key={k} className="err">{f.message}</div>)}
+      <div className="seasons" style={{ gridTemplateColumns: `repeat(${sel.crops.length}, 1fr)` }}>
+        {sel.crops.map((s: any, k: number) => {
+          const on = step === k, rep = sel.dna.repeated_family_seasons.includes(s.season), [sb, sf, st] = SUIT[s.suitability] ?? SUIT.unknown
           return <div key={k} className={'season' + (on ? ' on' : '') + (step != null && !on ? ' dim' : '')}>
-            <span className="faint">Season {s.season}</span>
+            <span className="faint" style={{ fontWeight: 700 }}>{s.season_label}</span>
             <div className="plot"><span key={on ? 'g' + step : 'n'} className={on ? 'grow' : ''}><CropPic id={s.crop_id} size={58} /></span></div>
             {on && <span className="prog"><i key={'p' + step} /></span>}
             <b>{crop(s.crop_id)}</b>
-            <span className="faint">{FAM[s.family] ?? s.family}</span>
-            <span className="pill" style={{ background: nf ? '#E8F3EF' : '#F2F6F4', color: nf ? '#276146' : C.mut }}>{nf ? '+ Adds nitrogen' : 'Uses nitrogen'}</span>
+            <span className="faint">{FAM[s.family] ?? s.family} · {s.months.length} mo</span>
+            <span className="pill" style={{ background: s.legume ? '#E8F3EF' : '#F2F6F4', color: s.legume ? '#276146' : C.mut }}>{s.legume ? '+ Adds nitrogen' : 'Uses nitrogen'}</span>
             <span className="pill" style={{ background: rep ? '#F8ECE7' : '#E8F3EF', color: rep ? C.red : '#276146' }}>{rep ? 'Pests build up' : 'Breaks pest cycle'}</span>
+            <span className="pill" style={{ background: sb, color: sf }}>{st}{s.season_temperature_c != null ? ` · ${s.season_temperature_c} °C` : ''}</span>
+            {s.irrigation_need_mm != null && <span className="pill" style={{ background: '#E8F1F5', color: C.water }}>{Math.round(s.irrigation_need_mm)} mm water</span>}
           </div>
         })}
       </div>
-      {step != null && <span className="muted" style={{ textAlign: 'center' }}>Season {step + 1} of {n}: {crop(sel.sequence[step].crop_id)} growing… next season in 10 s</span>}
-      <span className="faint">Illustration from rotation rules (M2): legumes add nitrogen; the same family twice in a row lets pests and disease build up. Not a field measurement.</span>
+      {step != null && <span className="muted" style={{ textAlign: 'center' }}>{sel.crops[step].season_label}: {crop(sel.crops[step].crop_id)} growing ({sel.crops[step].suitability_reason}) · next season in 10 s</span>}
+    </section>
+
+    <section className="card">
+      <div className="ct">Your year, month by month</div>
+      <div className="ystrip mhead">{MONTH_L.map((m, k) => <span key={k} className="ycell head">{m}</span>)}</div>
+      <YearStrip plan={today} label="Today" />
+      {sel.id !== 'current' && <YearStrip plan={sel} label={sel.label} />}
+      <div className="row" style={{ gap: 12, flexWrap: 'wrap', fontSize: 11.5, color: C.mut }}>
+        <span className="row" style={{ gap: 5 }}><span className="ycell bare" style={{ width: 14, height: 14 }} />Bare soil</span>
+        <span className="row" style={{ gap: 5 }}><span className="ycell bare risk" style={{ width: 14, height: 14 }} />Bare in heavy rain: erosion</span>
+      </div>
+    </section>
+
+    <section className="card">
+      <div className="ct">Why this score</div>
+      {(['water', 'soil', 'climate'] as const).map(k => <div key={k} className="sbar">
+        <span>{{ water: 'Water use', soil: 'Soil care', climate: 'Climate fit' }[k]}</span>
+        <span className="track"><i style={{ width: `${Math.round((sel.scores[k] ?? 0) * 100)}%`, background: k === 'water' ? C.water : k === 'soil' ? '#8A6A43' : C.teal }} /></span>
+        <b>{pct(sel.scores[k])}</b>
+      </div>)}
+      <span className="faint">Weights you chose: water {Math.round(d.weights.water * 100)}%, soil {Math.round(d.weights.soil * 100)}%, climate {Math.round(d.weights.climate * 100)}%. Contribution to score: {['water', 'soil', 'climate'].map(k => `${k} ${pct(bd[k])}`).join(', ')}.</span>
     </section>
 
     <section className="advice">
       <div className="row" style={{ gap: 8 }}><Icon d={I.leaf} c="#8A6A12" s={18} /><b style={{ color: '#6E4E00' }}>Advice for {nice(p.name)}</b></div>
-      {advice.map((a, k) => <div key={k} className="row" style={{ alignItems: 'flex-start' }}><span className="dot" style={{ background: '#C98B00' }} /><span style={{ fontSize: 13.5, lineHeight: '19px' }}>{a}</span></div>)}
-      <span className="faint" style={{ color: '#8A6A12' }}>From rotation rules and your farm inputs. Plans are not ranked yet: M2 scores are not calibrated.</span>
+      {[...(best.id !== 'current' ? [`Switch to ${lab(best)} (${rot(best.rotation)}): ranked first for what you care about.`] : []), ...sel.reasons.slice(0, 5), ...(p.soil.ph == null ? ['Test your soil pH so each crop can be checked against its needs.'] : [])].map((a: string, k: number) =>
+        <div key={k} className="row" style={{ alignItems: 'flex-start' }}><span className="dot" style={{ background: '#C98B00' }} /><span style={{ fontSize: 13.5, lineHeight: '19px' }}>{a}</span></div>)}
+      <span className="faint" style={{ color: '#8A6A12' }}>Modelled by the M2 plan engine from NASA POWER climate, FAO-56 water use and FAO ECOCROP ranges. Check big changes with your extension officer.</span>
     </section>
 
-    {i > 0 && <section className="card">
-      <div className="ct">Today versus Plan {String.fromCharCode(64 + i)}</div>
-      <div className="cmp"><span /><b>Today</b><b>Plan {String.fromCharCode(64 + i)}</b>
-        <span>Legume</span><span style={{ color: legume(today) ? '#276146' : C.red }}>{legume(today) ? 'Yes' : 'No'}</span><span style={{ color: legume(sel) ? '#276146' : C.red }}>{legume(sel) ? 'Yes' : 'No'}</span>
-        <span>Family repeats</span><span style={{ color: today.has_adjacent_family_repetition ? C.red : '#276146' }}>{today.has_adjacent_family_repetition ? 'Yes' : 'No'}</span><span style={{ color: sel.has_adjacent_family_repetition ? C.red : '#276146' }}>{sel.has_adjacent_family_repetition ? 'Yes' : 'No'}</span>
-        <span>Crop families</span><span>{new Set(today.sequence.map((s: any) => s.family)).size}</span><span>{new Set(sel.sequence.map((s: any) => s.family)).size}</span>
-      </div>
-    </section>}
-
-    <section className="card">
-      <div className="between"><div><div className="eb">Crop suitability</div><div className="ct">For this soil and climate</div></div><SourceTag s={gen.source} what="M2 · FAO" /></div>
-      <div className="list">{Array.from(new Set(sel.rotation as string[])).map(id => {
-        const s = suit[id]?.data, st = s?.status
-        const col = st === 'suitable' ? C.teal : st === 'unsuitable' ? C.red : C.gold
-        return <div key={id}><CropPic id={id} size={30} /><span style={{ flex: 1 }}><b>{crop(id)}</b><br /><span className="faint">{!s ? 'Checking…' : st === 'insufficient_data' ? `Not checked yet: missing ${(s.missing ?? []).map((x: string) => ({ temperature_c: 'temperature', soil_ph: 'soil pH', rainfall_mm: 'rainfall' } as any)[x] ?? x).join(', ')}` : st}</span></span><span className="dot" style={{ background: col }} /></div>
-      })}</div>
-    </section>
-
-    <section className="card">
-      <div className="ct">Coming from M2</div>
-      <div className="list">
-        <div><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>Ranking and soil-health score<br /><span className="faint">Not calibrated yet, so plans are not ranked.</span></span></div>
-        <div><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>Water each plan needs (FAO-56)<br /><span className="faint">Not calculated yet.</span></span></div>
-      </div>
-    </section>
+    <details className="card">
+      <summary className="ct" style={{ cursor: 'pointer' }}>How this is calculated</summary>
+      <div className="list">{d.assumptions.map((a: string, k: number) => <div key={k}><span className="dot" style={{ background: '#A9BAB5' }} /><span style={{ flex: 1 }}>{a}</span></div>)}</div>
+      <SourceTag s={planRes.source} what="M2 plan engine" />
+    </details>
   </>)
 }
 
 /* ------------------------------------------------------------------ WATER */
-function Water({ p, history, onSaved }: any) {
+function Water({ p, planRes, onSaved }: any) {
   const [mm, setMm] = useState<number>(p?.irrigation?.budget_mm_per_season ?? 0)
   const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const t = useRef<number | undefined>(undefined)
@@ -416,43 +478,97 @@ function Water({ p, history, onSaved }: any) {
       try { onSaved(await api.patchFarm(p.farm_id, { irrigation: { budget_mm_per_season: v, ...(rainOnly && v > 0 ? { water_source: 'tank' } : {}) } })); setState('saved') } catch { setState('error') }
     }, 600)
   }
-  const seas: any[] = history?.data?.seasonal ?? []
-  const years = Array.from(new Set(seas.map(x => x.period.slice(0, 4))))
-  const lastYear = years.filter(y => seas.filter(x => x.period.startsWith(y)).length === 4).pop() ?? null
-  const year = seas.filter(s => s.period.startsWith(lastYear))
-  const order = ['DJF', 'MAM', 'JJA', 'SON']
-  const names: Record<string, string> = { DJF: 'Dec–Feb', MAM: 'Mar–May', JJA: 'Jun–Aug', SON: 'Sep–Nov' }
+  const d = planRes?.data
+  const plans: any[] = d?.plans ?? []
+  const today = plans[0], best = plans.find(x => x.id === d?.best_plan_id)
+  const clim: any[] = d?.climate ?? []
+  const fits = plans.filter(x => x.water.peak_season_mm != null && x.water.peak_season_mm <= mm).length
+  const maxM = Math.max(1, ...plans.flatMap(x => x.water.monthly_mm ?? [0]))
   return (<>
     <div><div className="eb">Smart irrigation</div><h1 className="h1" style={{ marginTop: 6 }}>Water, <span>well spent.</span></h1></div>
-    <Hero eyebrow={`Water wallet · ${nice(p.name)}`} title={mm > 0 ? `You can give\n${Math.round(mm)} mm a season.` : 'Rain only:\nno irrigation.'} sub={m3 != null ? `That is ${m3.toLocaleString()} m³ on ${p.field_area_ha} ha. How much each plan needs is not calculated yet (M2 water wallet).` : 'Add the field size to convert to m³.'} />
+    <Hero eyebrow={`Water wallet · ${nice(p.name)}`}
+      title={!d ? 'Checking water\nneeds…' : `${fits} of ${plans.length} plans fit\nyour water.`}
+      sub={`You can give ${Math.round(mm)} mm a season${m3 != null ? ` (${m3.toLocaleString()} m³ on ${p.field_area_ha} ha)` : ''}.${today?.water?.peak_season_mm != null ? ` Today's rotation needs ${Math.round(today.water.peak_season_mm)} mm in its driest season${best && best.id !== 'current' ? `; ${best.label} needs ${Math.round(best.water.peak_season_mm)} mm` : ''}.` : ''}`} />
     <section className="card">
-      <div className="between"><div><div className="eb">Water you can give</div><span className="muted">per season</span></div><Tag k="entered" /></div>
+      <div className="between"><div><div className="eb">Water you can give</div><span className="muted">per season, saved to your farm</span></div><Tag k="entered" /></div>
       <div className="row" style={{ alignItems: 'baseline', gap: 6 }}><span style={{ fontSize: 36, fontWeight: 700, color: C.deep }}>{Math.round(mm)}</span><span className="muted">mm</span>
-        <span className="faint" style={{ marginLeft: 'auto' }}>{state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved to your farm' : state === 'error' ? 'Not saved: backend offline' : ''}</span></div>
-      <input type="range" min={0} max={400} step={25} value={mm} onChange={e => change(+e.target.value)} aria-label="Water per season" />
+        <span className="faint" style={{ marginLeft: 'auto' }}>{state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved · plans updated' : state === 'error' ? 'Not saved: backend offline' : ''}</span></div>
+      <input type="range" min={0} max={1000} step={25} value={mm} onChange={e => change(+e.target.value)} aria-label="Water per season" />
+      <div className="list">{plans.map(x => {
+        const need = x.water.peak_season_mm, ok = need != null && need <= mm
+        return <div key={x.id}><span className="dot" style={{ background: need == null ? '#A9BAB5' : ok ? C.teal : C.red }} /><span style={{ flex: 1 }}><b>{x.label}</b> · {rot(x.rotation)}</span><b style={{ color: need == null ? C.mut : ok ? '#276146' : C.red }}>{need == null ? '–' : `${Math.round(need)} mm`}</b></div>
+      })}</div>
     </section>
     <section className="card">
-      <div className="between"><div><div className="eb">Rain by season</div><div className="ct">{lastYear ? `Rain in ${lastYear}` : 'Rain by season'}</div></div>{history && <SourceTag s={history.source} what="NASA POWER" />}</div>
-      {!history ? <Spinner text="Reading NASA POWER…" /> : year.length === 0 ? <div className="err">No seasonal rain cached for this location.</div> :
-        <Bars unit="mm" items={order.map(o => ({ label: names[o], value: year.find(s => s.period.endsWith(o))?.rainfallMm ?? null }))} />}
-      {year.length > 0 && <div style={{ display: 'flex', gap: 10 }}>{order.map(o => <span key={o} className="faint" style={{ flex: 1, textAlign: 'center' }}>{names[o]}</span>)}</div>}
-      <span className="faint">Dry season (Jun–Nov) is when irrigation matters most.</span>
+      <div className="between"><div><div className="eb">Watering needed each month</div><div className="ct">Today vs {best && best.id !== 'current' ? best.label : 'best plan'}</div></div><Tag k="modelled" text="FAO-56" /></div>
+      {!d ? <Spinner text="Calculating…" /> : !today.water.monthly_mm ? <div className="err">No climate for this location yet, so water need cannot be calculated.</div> : <>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 130, borderBottom: '1.5px solid #D5DFDB' }}>
+          {today.water.monthly_mm.map((v: number, k: number) => {
+            const b = best && best.id !== 'current' ? best.water.monthly_mm[k] : null
+            return <div key={k} style={{ flex: 1, height: '100%', position: 'relative' }} title={`${MONTH_L[k]}: today ${Math.round(v)} mm${b != null ? `, ${best.label} ${Math.round(b)} mm` : ''}`}>
+              <span className="an" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: `${(v / maxM) * 120}px`, background: '#CBD5D1', borderRadius: '4px 4px 0 0' }} />
+              {b != null && <span className="an" style={{ position: 'absolute', left: '25%', right: '25%', bottom: 0, height: `${(b / maxM) * 120}px`, background: C.water, borderRadius: '3px 3px 0 0' }} />}
+            </div>
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>{MONTH_L.map((m, k) => <span key={k} style={{ flex: 1, textAlign: 'center', fontSize: 10.5, fontWeight: 700, color: clim[k]?.heavy_rain ? C.water : C.faint }}>{m}</span>)}</div>
+        <div className="row" style={{ gap: 14, fontSize: 11.5, color: C.mut }}><span className="row" style={{ gap: 5 }}><span style={{ width: 14, height: 10, background: '#CBD5D1', borderRadius: 3 }} />Today</span>{best && best.id !== 'current' && <span className="row" style={{ gap: 5 }}><span style={{ width: 8, height: 10, background: C.water, borderRadius: 2 }} />{best.label}</span>}<span style={{ marginLeft: 'auto' }}>Blue months = heavy rain</span></div>
+      </>}
     </section>
+    {clim.length === 12 && <section className="card">
+      <div className="between"><div><div className="eb">Rain and evaporation</div><div className="ct">Average month at this field</div></div><Tag k="observed" text="NASA POWER" /></div>
+      <LineChart labels={MONTH_L} unit="mm" height={140} series={[{ name: 'Rain', color: C.water, values: clim.map(c => c.rain_mm) }, { name: 'Evaporation (ET0)', color: '#B5523A', values: clim.map(c => c.et0_mm), dashed: true }]} />
+      <div className="row" style={{ gap: 14, fontSize: 11.5, color: C.mut }}><span className="row" style={{ gap: 5 }}><span style={{ width: 14, height: 3, background: C.water }} />Rain</span><span className="row" style={{ gap: 5 }}><span style={{ width: 14, height: 0, borderTop: '2px dashed #B5523A' }} />Evaporation (FAO-24)</span></div>
+      <span className="muted">When the dashed line is above the blue line, crops need watering.</span>
+    </section>}
   </>)
 }
 
 /* ------------------------------------------------------------------ FUTURE */
-function Future({ p, loc, scen, scenario, setScenario, gen }: any) {
+function Future({ p, loc, scen, scenario, setScenario }: any) {
+  const [stressE, setStressE] = useState<api.Res<any> | null>(null)
   const [twin, setTwin] = useState<api.Res<any> | null>(null)
-  const [stress, setStress] = useState<api.Res<any> | null>(null)
   const [yi, setYi] = useState(2)
   const [twinOpen, setTwinOpen] = useState<number | null>(0)
   useEffect(() => { if (loc) { setTwin(api.cached.twin()); api.climateTwin(loc.latitude, loc.longitude, scenario).then(r => { if (r.source === 'live') setTwin(r) }) } }, [loc?.farm_id, scenario])
-  const rotations = useMemo(() => {
-    const g = gen?.data; if (!g) return null
-    return [{ id: 'current', crops: g.current_rotation.rotation }, ...g.alternative_rotations.slice(0, 2).map((a: any, k: number) => ({ id: `alternative_${'ab'[k]}`, crops: a.rotation }))]
-  }, [gen?.data])
-  useEffect(() => { if (loc && rotations && p) { setStress(api.cached.stress()); api.stressTest(loc.latitude, loc.longitude, scenario, rotations, p.soil?.ph ?? null, p.irrigation_budget_m3 ?? 0).then(r => { if (r.source === 'live') setStress(r) }) } }, [loc?.farm_id, scenario, rotations])
+  useEffect(() => {
+    if (!p?.current_rotation?.length) return
+    const ctl = new AbortController()
+    setStressE(null)
+    const budget = p.irrigation?.budget_mm_per_season ?? 0
+    const ens2 = scen?.data?.ensemble?.find((e: any) => e.id === scenario)?.values
+    const fdt = ens2 && ens2.length > 1 ? +(ens2[ens2.length - 1].temperatureC.mean - ens2[0].temperatureC.mean).toFixed(2) : 1.5
+    const SC: [string, string, api.PlanOpts][] = [['base', 'Today', {}], ['hot', '+2 °C', { temperature_change_c: 2 }], ['dry', '20% less rain', { rainfall_change_pct: -20 }], ['water', 'Half the water', { water_budget_mm: budget / 2 }], ['future', '2050s', { temperature_change_c: Math.max(fdt, 0.5) + 0.8, rainfall_change_pct: -10 }]]
+    api.plans(p.farm_id, {}, 'base', ctl.signal).then(async r0 => {
+      const base = r0.data
+      if (ctl.signal.aborted) return
+      if (!base) { setStressE({ data: null, source: 'none' }); return }
+      // add the plans the engine itself picks for a hotter / 2050s farm, so the stress test can offer a way out
+      const gens = await Promise.all([api.plans(p.farm_id, SC[1][2], 'genhot', ctl.signal), api.plans(p.farm_id, SC[4][2], 'genfuture', ctl.signal)])
+      const rotations: string[][] = base.plans.slice(1).map((x: any) => x.rotation)
+      for (const g of gens) { const b = g.data?.plans?.find((x: any) => x.id === g.data.best_plan_id && x.feasible && x.id !== 'current'); if (b && !rotations.some(r => r.join() === b.rotation.join())) rotations.push(b.rotation) }
+      const res = await Promise.all(SC.map(([k, , o]) => api.plans(p.farm_id, { ...o, rotations }, 's' + k, ctl.signal)))
+      if (ctl.signal.aborted) return
+      const rows = (res[0].data ?? base).plans.map((pl: any, k: number) => ({ id: pl.id, label: k > base.plans.length - 1 ? `${pl.label} (heat-ready)` : pl.label, rotation: pl.rotation, cells: res.map((r, j) => {
+        const q = r.data?.plans?.find((x: any) => x.rotation.join() === pl.rotation.join())
+        const ok = !!q?.feasible, best = r.data?.best_plan_id === q?.id && ok
+        return { ok, best, tip: `${pl.label} · ${SC[j][1]}: ${q ? (q.feasible ? 'works' : q.failed_constraints.map((f: any) => f.message).join(' ')) : 'not tested'}` }
+      }) }))
+      const passes = rows.map((r: any) => [r, r.cells.filter((c: any) => c.ok).length] as const).sort((a: any, b: any) => b[1] - a[1])
+      const tough = passes[0][0], todayRow = rows[0]
+      const todayFailsAt = SC.filter((_, j) => !todayRow.cells[j].ok).map(x => x[1])
+      const path = [
+        { when: 'Now', act: tough.id === 'current' ? 'Keep your rotation' : `Switch to ${tough.label}: ${rot(tough.rotation)}`, why: `It works in ${passes[0][1]} of ${SC.length} situations; today's rotation works in ${todayRow.cells.filter((c: any) => c.ok).length}.`, color: C.deep },
+        { when: 'Each year', act: 'Cover bare soil in heavy-rain months', why: 'Sow a cover crop or leave residue in the bare months shown in Plans.', color: C.teal },
+        { when: 'If dry years', act: todayFailsAt.includes('Half the water') || todayFailsAt.includes('20% less rain') ? 'Store water: add a tank or drip line' : 'Keep the same plan', why: todayFailsAt.length ? `Today's rotation fails with: ${todayFailsAt.join(', ')}.` : 'Your plan held up in every dry test.', color: C.water },
+        { when: '2030s+', act: rows.find((r: any) => r.cells[4].best) ? `Move to ${rows.find((r: any) => r.cells[4].best).label} when winters warm` : 'Re-run CropCompass with new data', why: 'Best plan under the 2050s-like test (warmer, 10% less rain).', color: '#A0602A' },
+      ]
+      const n = rows.filter((r: any) => r.cells.every((c: any) => c.ok)).length
+      setStressE({ source: res[0].source, data: { cols: SC.map(([k, l]) => ({ key: k, label: l })), rows, path,
+        head: `${n} of ${rows.length} plans work in every situation. Toughest: ${tough.label} (${passes[0][1]} of ${SC.length}).` } })
+    })
+    return () => ctl.abort()
+  }, [p?.farm_id, p?.irrigation?.budget_mm_per_season, JSON.stringify(p?.priorities), scenario, !!scen?.data])
   const s = scen?.data
   const ens = s?.ensemble?.find((e: any) => e.id === scenario)
   const vals: any[] = ens?.values ?? []
@@ -508,23 +624,32 @@ function Future({ p, loc, scen, scenario, setScenario, gen }: any) {
       </>}
     </section>
     <section className="card">
-      <div className="between"><div><div className="eb">Stress test</div><div className="ct">Do the plans hold up?</div></div>{stress && <SourceTag s={stress.source} what="M5" />}</div>
-      {!stress ? <Spinner text="Running 4 scenarios…" /> : !stress.data ? <div className="err">Stress test unavailable{stress.error ? `: ${stress.error}` : ''}.</div> : <>
-        <span className="muted">The same plans tested in four situations.</span>
-        {stress.data.scenarios.map((sc: any) => {
-          const fut = /future|projected/.test(sc.scenario_id), dry = /restricted/.test(sc.scenario_id)
-          const title = `${fut ? '2050s climate' : 'Climate today'}${dry ? ' · half the water' : ''}`
-          const feas = Object.values(sc.rotations ?? {}).map((r: any) => r.feasible)
-          const known = feas.some(f => f != null)
-          return <div key={sc.scenario_id} className="stress">
-            <span className="sicon" style={{ background: fut ? '#F6EBDD' : '#E8F1F5' }}><Icon d={dry ? I.drop : I.clock} c={fut ? '#A0602A' : C.water} s={18} /></span>
-            <span style={{ flex: 1 }}><b style={{ fontSize: 14.5 }}>{title}</b><br />
-              <span style={{ fontSize: 13 }}>{sc.temperature_annual_mean_c?.toFixed(1)} °C · {Math.round(sc.precipitation_annual_total_mm ?? 0).toLocaleString()} mm rain · {Math.round(sc.water_budget_m3 ?? 0)} m³ water</span><br />
-              <span className="pill" style={{ display: 'inline-block', marginTop: 5, background: known ? '#E8F3EF' : '#FBF5E6', color: known ? '#276146' : '#8A6A12' }}>{known ? feas.map(f => (f ? 'Works' : 'Fails')).join(' · ') : 'Plan result waiting for M2 scores'}</span></span>
-          </div>
-        })}
+      <div className="between"><div><div className="eb">Stress test</div><div className="ct">Which plans still work?</div></div>{stressE && <SourceTag s={stressE.source} what="M2 engine" />}</div>
+      {!stressE ? <Spinner text="Re-running every plan in 5 situations…" /> : !stressE.data ? <div className="err">Stress test unavailable.</div> : <>
+        <span className="muted" style={{ fontSize: 14 }}>{stressE.data.head}</span>
+        <div className="sgrid" style={{ gridTemplateColumns: `1.4fr repeat(${stressE.data.cols.length}, 1fr)` }}>
+          <span />{stressE.data.cols.map((c: any) => <span key={c.key} className="sh">{c.label}</span>)}
+          {stressE.data.rows.map((r: any) => <Fragment key={r.id}>
+            <span className="sn"><b>{r.label}</b><br /><span className="faint">{rot(r.rotation)}</span></span>
+            {r.cells.map((c: any, k: number) => <span key={k} className="sc" title={c.tip} style={{ background: c.best ? C.deep : c.ok ? '#E8F3EF' : '#F8ECE7' }}><i style={{ background: c.best ? '#C9E29A' : c.ok ? C.teal : C.red }} /></span>)}
+          </Fragment>)}
+        </div>
+        <div className="row" style={{ gap: 12, fontSize: 12, color: C.ink, flexWrap: 'wrap' }}>
+          <span className="row" style={{ gap: 5 }}><i className="lg" style={{ background: C.teal }} />Works</span>
+          <span className="row" style={{ gap: 5 }}><i className="lg" style={{ background: C.red }} />Fails (water or heat)</span>
+          <span className="row" style={{ gap: 5 }}><i className="lg" style={{ background: '#C9E29A', outline: `2px solid ${C.deep}` }} />Best in that situation</span>
+        </div>
       </>}
     </section>
+    {stressE?.data && <section className="card">
+      <div className="between"><div><div className="eb">Path to the 2050s</div><div className="ct">What to do, and when</div></div><Tag k="pending" text="Proposed" /></div>
+      <div>{stressE.data.path.map((st: any, k: number) => <div key={k} style={{ display: 'grid', gridTemplateColumns: '64px 16px 1fr', gap: 8 }}>
+        <b style={{ fontSize: 13, color: C.deep }}>{st.when}</b>
+        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}><span style={{ width: 12, height: 12, borderRadius: 6, marginTop: 3, background: st.color }} />{k < stressE.data.path.length - 1 && <span style={{ flex: 1, width: 1.5, background: C.line }} />}</span>
+        <span style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingBottom: 16 }}><b style={{ fontSize: 14 }}>{st.act}</b><span className="muted">{st.why}</span></span>
+      </div>)}</div>
+      <span className="faint">Built from the stress test above. A plan to discuss, not a forecast.</span>
+    </section>}
   </>)
 }
 
@@ -559,7 +684,7 @@ function Ask({ close, analysis, analysing, p }: any) {
   </>)
 }
 
-function Passport({ close, analysis, analysing, p, rerun }: any) {
+function Passport({ close, analysis, analysing, p, rerun, planRes }: any) {
   const a = analysis?.data
   const pass = a?.passport, bs = a?.blind_spot_report
   const mod = a?.modules ?? {}
@@ -585,7 +710,11 @@ function Passport({ close, analysis, analysing, p, rerun }: any) {
           <div className="list">{(pass?.limitations ?? []).map((l: any, k: number) => <div key={k}><span className="dot" style={{ background: "#A9BAB5" }} /><span style={{ flex: 1 }}>{typeof l === "string" ? l : l.text}{l?.source_module ? <span className="faint"> · {l.source_module}</span> : null}</span></div>)}</div>
         </section>
       </>}
-      <button className="btn light" disabled={analysing} onClick={rerun}>{analysing ? 'Running…' : 'Run the analysis again'}</button>
+      {planRes?.data && <section className="card"><div className="ct">How plans are scored (M2 engine)</div>
+        <div className="list">{planRes.data.assumptions.map((x: string, k: number) => <div key={k}><span className="dot" style={{ background: C.teal }} /><span style={{ flex: 1 }}>{x}</span></div>)}</div>
+        <div className="list">{planRes.data.sources.map((x: any) => <div key={x.url}><span className="dot" style={{ background: '#A9BAB5' }} /><a href={x.url} target="_blank" rel="noreferrer" style={{ flex: 1, color: C.teal }}>{x.name}</a></div>)}</div>
+      </section>}
+      <div className="row"><button className="btn light" style={{ flex: 1 }} disabled={analysing} onClick={rerun}>{analysing ? 'Running…' : 'Run again'}</button><button className="btn" style={{ flex: 1 }} onClick={() => window.print()}>Save as PDF</button></div>
       <span className="faint">CropCompass helps you explore choices. It is not a guarantee of harvest or profit.</span>
     </div>
   </>)

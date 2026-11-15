@@ -13,6 +13,7 @@ import fbAnalyze from './fallback/analyze.json'
 import fbCrops from './fallback/crops.json'
 import fbGenerate from './fallback/generate.json'
 import fbSuit from './fallback/suitability.json'
+import fbPlans from './fallback/plans.json'
 
 export type Source = 'live' | 'cached' | 'none'
 export type Res<T> = { data: T | null; source: Source; error?: string }
@@ -87,3 +88,12 @@ export const cached = {
   twin: (): Res<any> => ({ data: fbTwin, source: 'cached' }),
   stress: (): Res<any> => ({ data: fbStress, source: 'cached' }),
 }
+
+// ---------------- M2 ranked plans (engine) - key names the cached what-if variant
+export type PlanOpts = { temperature_change_c?: number; rainfall_change_pct?: number; water_budget_mm?: number; rotations?: string[][] }
+export const plans = (farmId: string, opts: PlanOpts = {}, key = 'base', signal?: AbortSignal) =>
+  withFallback<any>('/api/agriculture/plans', (fbPlans as any)[`${farmId}|${key}`] ?? null, post({ farm_id: farmId, ...opts }), 60000, signal)
+export const putBoundary = (id: string, geometry: any) => call<any>(`/api/farms/${id}/boundary`, { method: 'PUT', body: JSON.stringify({ geometry, method: 'manual' }) })
+export const measure = (geometry: any) => call<any>('/api/farms/boundary/measure', post({ geometry }))
+export const getHistoryLong = (loc: string, signal?: AbortSignal) =>
+  withFallback<any>(`/api/climate/history?location_id=${loc}&start=2006-01-01&end=2025-12-31`, null, undefined, 240000, signal)

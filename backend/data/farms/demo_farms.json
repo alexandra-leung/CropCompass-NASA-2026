@@ -16,7 +16,7 @@
       },
       "irrigation": {
         "water_source": "tank",
-        "budget_mm_per_season": 150,
+        "budget_mm_per_season": 600,
         "budget_source": "farmer"
       },
       "current_rotation": [
@@ -85,7 +85,7 @@
       },
       "irrigation": {
         "water_source": "irrigation_scheme",
-        "budget_mm_per_season": 250,
+        "budget_mm_per_season": 650,
         "budget_source": "farmer"
       },
       "current_rotation": [

@@ -11,7 +11,10 @@ const SOURCES = [
   { name: 'Esri World Imagery', url: (z: number, x: number, y: number) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}` },
 ]
 
-export function SatelliteField({ ring, label }: { ring: number[][]; label: string }) {
+const x2lon = (x: number) => (x / (2 ** Z * T)) * 360 - 180
+const y2lat = (y: number) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / (2 ** Z * T)))) * 180) / Math.PI
+
+export function SatelliteField({ ring, label, draft, onTap }: { ring: number[][]; label: string; draft?: number[][]; onTap?: (lon: number, lat: number) => void }) {
   const [src, setSrc] = useState(0)
   const view = useMemo(() => {
     const xs = ring.map(c => lon2x(c[0])), ys = ring.map(c => lat2y(c[1]))
@@ -22,15 +25,21 @@ export function SatelliteField({ ring, label }: { ring: number[][]; label: strin
       for (let ty = Math.floor(y0 / T); ty <= Math.floor((y0 + H) / T); ty++)
         tiles.push({ x: tx, y: ty, left: tx * T - x0, top: ty * T - y0 })
     const pts = ring.map(c => `${(lon2x(c[0]) - x0).toFixed(1)},${(lat2y(c[1]) - y0).toFixed(1)}`).join(' ')
-    return { W, H, tiles, pts }
+    return { W, H, tiles, pts, x0, y0 }
   }, [ring])
   const S = SOURCES[src]
   return (
     <div style={{ position: 'relative', width: '100%', overflow: 'hidden', borderRadius: 14, background: '#3E5A3A' }}>
-      <svg viewBox={`0 0 ${view.W} ${view.H}`} width="100%" style={{ display: 'block' }} aria-label="Satellite view of the field">
+      <svg viewBox={`0 0 ${view.W} ${view.H}`} width="100%" style={{ display: 'block', cursor: onTap ? 'crosshair' : undefined }} aria-label="Satellite view of the field"
+        onClick={onTap ? e => { const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect(); const x = ((e.clientX - r.left) / r.width) * view.W + view.x0, y = ((e.clientY - r.top) / r.height) * view.H + view.y0; onTap(+x2lon(x).toFixed(7), +y2lat(y).toFixed(7)) } : undefined}>
         {view.tiles.map(t => <image key={`${t.x}-${t.y}-${src}`} href={S.url(Z, t.x, t.y)} x={t.left} y={t.top} width={T} height={T}
           onError={() => src < SOURCES.length - 1 && setSrc(src + 1)} />)}
-        <polygon points={view.pts} fill="rgba(201,226,154,0.18)" stroke="#E9F7C8" strokeWidth={3} />
+        {!draft && <polygon points={view.pts} fill="rgba(201,226,154,0.18)" stroke="#E9F7C8" strokeWidth={3} />}
+        {draft && draft.length > 0 && (() => {
+          const pp = draft.map(c => `${(lon2x(c[0]) - view.x0).toFixed(1)},${(lat2y(c[1]) - view.y0).toFixed(1)}`)
+          return <>{draft.length > 2 ? <polygon points={pp.join(' ')} fill="rgba(251,191,36,0.25)" stroke="#FBBF24" strokeWidth={3} /> : <polyline points={pp.join(' ')} fill="none" stroke="#FBBF24" strokeWidth={3} />}
+            {pp.map((q, k) => { const [a, b] = q.split(',').map(Number); return <circle key={k} cx={a} cy={b} r={6} fill="#FBBF24" stroke="#fff" strokeWidth={2} /> })}</>
+        })()}
       </svg>
       <span style={{ position: 'absolute', left: 10, bottom: 8, fontSize: 10.5, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.6)' }}>{label}</span>
       <span style={{ position: 'absolute', right: 8, top: 6, fontSize: 9, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.7)', maxWidth: '70%', textAlign: 'right' }}>{S.name}</span>
