@@ -1,0 +1,14 @@
+{
+  "analysis_id": "example-analyze-pamplemousses-04",
+  "farm": {
+    "location_id": "pamplemousses-04",
+    "current_rotation": [
+      "maize",
+      "cowpea",
+      "cabbage"
+    ]
+  },
+  "scenario": "ssp370",
+  "year": 2050,
+  "max_alternatives": 3
+}

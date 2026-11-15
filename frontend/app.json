@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "CropCompass",
+    "slug": "cropcompass",
+    "version": "1.0.0",
+    "android": {
+      "package": "com.teammarigold.cropcompass",
+      "versionCode": 1
+    },
+    "extra": {
+      "eas": {
+        "projectId": "80711cb0-35e6-45da-9d7b-7bec270df6fe"
+      }
+    }
+  }
+}

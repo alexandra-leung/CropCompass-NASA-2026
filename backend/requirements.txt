@@ -1,7 +1,28 @@
+
+# CropCompass 2.0 - Backend Dependencies
+
+# API Framework
 fastapi
+pydantic>=2.0,<3.0
 uvicorn[standard]
-pydantic
+
+# HTTP Clients
+httpx
 requests
-pandas
+
+# Data Processing
 numpy
+pandas
+
+# Climate Data and Statistics
+netCDF4
+scipy
+pymannkendall
+
+# Configuration
 python-dotenv
+PyYAML
+
+# Tests
+pytest
+httpx2

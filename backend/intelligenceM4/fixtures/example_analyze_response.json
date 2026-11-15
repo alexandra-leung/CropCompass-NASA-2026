@@ -1,0 +1,2786 @@
+{
+  "analysis_id": "example-analyze-pamplemousses-04",
+  "modules": {
+    "M1": {
+      "status": "ok",
+      "called": "climateM1.services.projections.fetch_scenarios; climateM1.services.history.fetch_history",
+      "error": null,
+      "calls": [
+        {
+          "called": "climateM1.services.projections.fetch_scenarios",
+          "status": "ok",
+          "error": null
+        },
+        {
+          "called": "climateM1.services.history.fetch_history",
+          "status": "ok",
+          "error": null
+        }
+      ]
+    },
+    "M2": {
+      "status": "partial",
+      "called": "agricultureM2.rotation_engine.evaluate_rotation; agricultureM2.rotation_generator.generate_rotation_candidates; agricultureM2.suitability.check_crop_suitability; agricultureM2.water_wallet.calculate_crop_water_demand",
+      "error": "agricultureM2.water_wallet.calculate_crop_water_demand: M2 has sourced crop coefficients and a crop-ETc calculation, but no daily reference-ET0 series is available from M1 for this analysis. The calculation does not determine irrigation requirement without effective rainfall, soil-water, and irrigation-efficiency evidence.",
+      "calls": [
+        {
+          "called": "agricultureM2.rotation_engine.evaluate_rotation",
+          "status": "ok",
+          "error": null
+        },
+        {
+          "called": "agricultureM2.rotation_generator.generate_rotation_candidates",
+          "status": "ok",
+          "error": null
+        },
+        {
+          "called": "agricultureM2.suitability.check_crop_suitability",
+          "status": "partial",
+          "error": null
+        },
+        {
+          "called": "agricultureM2.suitability.check_crop_suitability",
+          "status": "partial",
+          "error": null
+        },
+        {
+          "called": "agricultureM2.suitability.check_crop_suitability",
+          "status": "partial",
+          "error": null
+        },
+        {
+          "called": "agricultureM2.suitability.check_crop_suitability",
+          "status": "partial",
+          "error": null
+        },
+        {
+          "called": "agricultureM2.suitability.check_crop_suitability",
+          "status": "partial",
+          "error": null
+        },
+        {
+          "called": "agricultureM2.water_wallet.calculate_crop_water_demand",
+          "status": "not_implemented",
+          "error": "M2 has sourced crop coefficients and a crop-ETc calculation, but no daily reference-ET0 series is available from M1 for this analysis. The calculation does not determine irrigation requirement without effective rainfall, soil-water, and irrigation-efficiency evidence."
+        }
+      ]
+    },
+    "M3": {
+      "status": "not_implemented",
+      "called": "mappingM3.farm_profile.get_farm_profile",
+      "error": "mappingM3.farm_profile.get_farm_profile: M3 has not published get_farm_profile yet (contract pending).",
+      "calls": [
+        {
+          "called": "mappingM3.farm_profile.get_farm_profile",
+          "status": "not_implemented",
+          "error": "M3 has not published get_farm_profile yet (contract pending)."
+        }
+      ]
+    },
+    "M5": {
+      "status": "not_implemented",
+      "called": "M5 separate /api/resilience/climate-twin and /api/resilience/stress-test calls",
+      "error": "M5 separate /api/resilience/climate-twin and /api/resilience/stress-test calls: M5 is implemented as separate endpoints; run them with explicit coordinates, period, rotation, and farmer water budget, then submit their unchanged outputs through M4 /evidence.",
+      "calls": [
+        {
+          "called": "M5 separate /api/resilience/climate-twin and /api/resilience/stress-test calls",
+          "status": "not_implemented",
+          "error": "M5 is implemented as separate endpoints; run them with explicit coordinates, period, rotation, and farmer water budget, then submit their unchanged outputs through M4 /evidence."
+        }
+      ]
+    }
+  },
+  "bundle": {
+    "analysis_id": "example-analyze-pamplemousses-04",
+    "farm": {
+      "farm_id": null,
+      "location_id": "pamplemousses-04",
+      "soil_ph": null,
+      "field_area_ha": null,
+      "irrigation_budget_m3": null,
+      "current_rotation": [
+        "maize",
+        "cowpea",
+        "cabbage"
+      ],
+      "source": "farmer"
+    },
+    "selected_scenario": "ssp370",
+    "selected_year": 2050,
+    "climate": {
+      "scenarios": {
+        "locationId": "pamplemousses-04",
+        "baselinePeriod": "Projected annual values for 2030, 2040, 2050; not a field-level forecast",
+        "scenarios": [
+          {
+            "id": "ssp245",
+            "label": "SSP2-4.5",
+            "description": "Intermediate emissions",
+            "model": "ACCESS-CM2",
+            "values": [
+              {
+                "year": 2030,
+                "rainfallMm": 2380.2,
+                "temperatureC": 23.68,
+                "gridCell": {
+                  "latitude": -20.125,
+                  "longitude": 57.625
+                },
+                "sampleDays": 365,
+                "expectedDays": 365,
+                "missingDays": 0,
+                "completenessPct": 100.0
+              },
+              {
+                "year": 2040,
+                "rainfallMm": 2195.3,
+                "temperatureC": 24.17,
+                "gridCell": {
+                  "latitude": -20.125,
+                  "longitude": 57.625
+                },
+                "sampleDays": 366,
+                "expectedDays": 366,
+                "missingDays": 0,
+                "completenessPct": 100.0
+              },
+              {
+                "year": 2050,
+                "rainfallMm": 1759.0,
+                "temperatureC": 24.28,
+                "gridCell": {
+                  "latitude": -20.125,
+                  "longitude": 57.625
+                },
+                "sampleDays": 365,
+                "expectedDays": 365,
+                "missingDays": 0,
+                "completenessPct": 100.0
+              }
+            ]
+          },
+          {
+            "id": "ssp370",
+            "label": "SSP3-7.0",
+            "description": "High emissions",
+            "model": "ACCESS-CM2",
+            "values": [
+              {
+                "year": 2030,
+                "rainfallMm": 2029.4,
+                "temperatureC": 24.11,
+                "gridCell": {
+                  "latitude": -20.125,
+                  "longitude": 57.625
+                },
+                "sampleDays": 365,
+                "expectedDays": 365,
+                "missingDays": 0,
+                "completenessPct": 100.0
+              },
+              {
+                "year": 2040,
+                "rainfallMm": 2010.1,
+                "temperatureC": 23.9,
+                "gridCell": {
+                  "latitude": -20.125,
+                  "longitude": 57.625
+                },
+                "sampleDays": 366,
+                "expectedDays": 366,
+                "missingDays": 0,
+                "completenessPct": 100.0
+              },
+              {
+                "year": 2050,
+                "rainfallMm": 1896.8,
+                "temperatureC": 24.5,
+                "gridCell": {
+                  "latitude": -20.125,
+                  "longitude": 57.625
+                },
+                "sampleDays": 365,
+                "expectedDays": 365,
+                "missingDays": 0,
+                "completenessPct": 100.0
+              }
+            ]
+          }
+        ],
+        "provenance": {
+          "source": "NASA NEX-GDDP-CMIP6",
+          "product": "Daily downscaled CMIP6 projections",
+          "variable": "pr + tas",
+          "coordinates": {
+            "latitude": -20.103,
+            "longitude": 57.575
+          },
+          "gridResolution": "0.25° × 0.25° (~25 km)",
+          "dateRange": "2030, 2040, 2050",
+          "missingData": false,
+          "retrievedAt": "2026-11-15T03:38:30.450337+00:00",
+          "model": "Multi-model ensemble",
+          "caveat": "Model outputs are sampled at their nearest grid cells. They are regional projections, not field-level forecasts."
+        },
+        "caveats": [
+          "Precipitation flux (kg m-2 s-1) is converted to daily millimetres by multiplying by 86,400, then summed annually.",
+          "Temperature is converted from Kelvin to degrees Celsius.",
+          "Ensemble spread is the difference between the highest and lowest contributing model values; it is not a probability interval.",
+          "The nearest 0.25-degree grid cell represents regional climate conditions, not an exact field-level forecast."
+        ],
+        "modelResults": [
+          {
+            "id": "ACCESS-CM2",
+            "variant": "r1i1p1f1",
+            "status": "success",
+            "scenarios": [
+              {
+                "id": "ssp245",
+                "label": "SSP2-4.5",
+                "description": "Intermediate emissions",
+                "model": "ACCESS-CM2",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 2380.2,
+                    "temperatureC": 23.68,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 2195.3,
+                    "temperatureC": 24.17,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 366,
+                    "expectedDays": 366,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 1759.0,
+                    "temperatureC": 24.28,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              },
+              {
+                "id": "ssp370",
+                "label": "SSP3-7.0",
+                "description": "High emissions",
+                "model": "ACCESS-CM2",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 2029.4,
+                    "temperatureC": 24.11,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 2010.1,
+                    "temperatureC": 23.9,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 366,
+                    "expectedDays": 366,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 1896.8,
+                    "temperatureC": 24.5,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              }
+            ],
+            "errors": []
+          },
+          {
+            "id": "CanESM5",
+            "variant": "r1i1p1f1",
+            "status": "success",
+            "scenarios": [
+              {
+                "id": "ssp245",
+                "label": "SSP2-4.5",
+                "description": "Intermediate emissions",
+                "model": "CanESM5",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 1852.9,
+                    "temperatureC": 23.5,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 1955.4,
+                    "temperatureC": 23.65,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 1408.4,
+                    "temperatureC": 24.32,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              },
+              {
+                "id": "ssp370",
+                "label": "SSP3-7.0",
+                "description": "High emissions",
+                "model": "CanESM5",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 1530.9,
+                    "temperatureC": 23.75,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 1904.3,
+                    "temperatureC": 24.37,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 1918.2,
+                    "temperatureC": 25.24,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              }
+            ],
+            "errors": []
+          },
+          {
+            "id": "MPI-ESM1-2-HR",
+            "variant": "r1i1p1f1",
+            "status": "success",
+            "scenarios": [
+              {
+                "id": "ssp245",
+                "label": "SSP2-4.5",
+                "description": "Intermediate emissions",
+                "model": "MPI-ESM1-2-HR",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 1599.9,
+                    "temperatureC": 22.84,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 1313.7,
+                    "temperatureC": 23.5,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 366,
+                    "expectedDays": 366,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 2122.2,
+                    "temperatureC": 23.48,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              },
+              {
+                "id": "ssp370",
+                "label": "SSP3-7.0",
+                "description": "High emissions",
+                "model": "MPI-ESM1-2-HR",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 1694.0,
+                    "temperatureC": 23.43,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 1888.4,
+                    "temperatureC": 23.72,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 366,
+                    "expectedDays": 366,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 1890.3,
+                    "temperatureC": 23.49,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              }
+            ],
+            "errors": []
+          },
+          {
+            "id": "CNRM-ESM2-1",
+            "variant": "r1i1p1f2",
+            "status": "success",
+            "scenarios": [
+              {
+                "id": "ssp245",
+                "label": "SSP2-4.5",
+                "description": "Intermediate emissions",
+                "model": "CNRM-ESM2-1",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 1748.4,
+                    "temperatureC": 23.69,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 1952.7,
+                    "temperatureC": 23.79,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 366,
+                    "expectedDays": 366,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 1431.8,
+                    "temperatureC": 23.79,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              },
+              {
+                "id": "ssp370",
+                "label": "SSP3-7.0",
+                "description": "High emissions",
+                "model": "CNRM-ESM2-1",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 1939.3,
+                    "temperatureC": 23.41,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 1652.9,
+                    "temperatureC": 23.56,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 366,
+                    "expectedDays": 366,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 1567.3,
+                    "temperatureC": 23.94,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              }
+            ],
+            "errors": []
+          },
+          {
+            "id": "MRI-ESM2-0",
+            "variant": "r1i1p1f1",
+            "status": "success",
+            "scenarios": [
+              {
+                "id": "ssp245",
+                "label": "SSP2-4.5",
+                "description": "Intermediate emissions",
+                "model": "MRI-ESM2-0",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 1576.1,
+                    "temperatureC": 23.06,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 1788.4,
+                    "temperatureC": 23.43,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 366,
+                    "expectedDays": 366,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 2478.0,
+                    "temperatureC": 24.27,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              },
+              {
+                "id": "ssp370",
+                "label": "SSP3-7.0",
+                "description": "High emissions",
+                "model": "MRI-ESM2-0",
+                "values": [
+                  {
+                    "year": 2030,
+                    "rainfallMm": 2268.2,
+                    "temperatureC": 23.47,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2040,
+                    "rainfallMm": 1876.3,
+                    "temperatureC": 23.78,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 366,
+                    "expectedDays": 366,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  },
+                  {
+                    "year": 2050,
+                    "rainfallMm": 1355.5,
+                    "temperatureC": 23.92,
+                    "gridCell": {
+                      "latitude": -20.125,
+                      "longitude": 57.625
+                    },
+                    "sampleDays": 365,
+                    "expectedDays": 365,
+                    "missingDays": 0,
+                    "completenessPct": 100.0
+                  }
+                ]
+              }
+            ],
+            "errors": []
+          }
+        ],
+        "ensemble": [
+          {
+            "id": "ssp245",
+            "label": "SSP2-4.5",
+            "description": "Intermediate emissions",
+            "values": [
+              {
+                "year": 2030,
+                "rainfallMm": {
+                  "count": 5,
+                  "mean": 1831.5,
+                  "median": 1748.4,
+                  "minimum": 1576.1,
+                  "maximum": 2380.2,
+                  "spread": 804.1
+                },
+                "temperatureC": {
+                  "count": 5,
+                  "mean": 23.35,
+                  "median": 23.5,
+                  "minimum": 22.84,
+                  "maximum": 23.69,
+                  "spread": 0.85
+                },
+                "contributingModels": [
+                  "ACCESS-CM2",
+                  "CanESM5",
+                  "MPI-ESM1-2-HR",
+                  "CNRM-ESM2-1",
+                  "MRI-ESM2-0"
+                ]
+              },
+              {
+                "year": 2040,
+                "rainfallMm": {
+                  "count": 5,
+                  "mean": 1841.1,
+                  "median": 1952.7,
+                  "minimum": 1313.7,
+                  "maximum": 2195.3,
+                  "spread": 881.6
+                },
+                "temperatureC": {
+                  "count": 5,
+                  "mean": 23.71,
+                  "median": 23.65,
+                  "minimum": 23.43,
+                  "maximum": 24.17,
+                  "spread": 0.74
+                },
+                "contributingModels": [
+                  "ACCESS-CM2",
+                  "CanESM5",
+                  "MPI-ESM1-2-HR",
+                  "CNRM-ESM2-1",
+                  "MRI-ESM2-0"
+                ]
+              },
+              {
+                "year": 2050,
+                "rainfallMm": {
+                  "count": 5,
+                  "mean": 1839.88,
+                  "median": 1759.0,
+                  "minimum": 1408.4,
+                  "maximum": 2478.0,
+                  "spread": 1069.6
+                },
+                "temperatureC": {
+                  "count": 5,
+                  "mean": 24.03,
+                  "median": 24.27,
+                  "minimum": 23.48,
+                  "maximum": 24.32,
+                  "spread": 0.84
+                },
+                "contributingModels": [
+                  "ACCESS-CM2",
+                  "CanESM5",
+                  "MPI-ESM1-2-HR",
+                  "CNRM-ESM2-1",
+                  "MRI-ESM2-0"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ssp370",
+            "label": "SSP3-7.0",
+            "description": "High emissions",
+            "values": [
+              {
+                "year": 2030,
+                "rainfallMm": {
+                  "count": 5,
+                  "mean": 1892.36,
+                  "median": 1939.3,
+                  "minimum": 1530.9,
+                  "maximum": 2268.2,
+                  "spread": 737.3
+                },
+                "temperatureC": {
+                  "count": 5,
+                  "mean": 23.63,
+                  "median": 23.47,
+                  "minimum": 23.41,
+                  "maximum": 24.11,
+                  "spread": 0.7
+                },
+                "contributingModels": [
+                  "ACCESS-CM2",
+                  "CanESM5",
+                  "MPI-ESM1-2-HR",
+                  "CNRM-ESM2-1",
+                  "MRI-ESM2-0"
+                ]
+              },
+              {
+                "year": 2040,
+                "rainfallMm": {
+                  "count": 5,
+                  "mean": 1866.4,
+                  "median": 1888.4,
+                  "minimum": 1652.9,
+                  "maximum": 2010.1,
+                  "spread": 357.2
+                },
+                "temperatureC": {
+                  "count": 5,
+                  "mean": 23.87,
+                  "median": 23.78,
+                  "minimum": 23.56,
+                  "maximum": 24.37,
+                  "spread": 0.81
+                },
+                "contributingModels": [
+                  "ACCESS-CM2",
+                  "CanESM5",
+                  "MPI-ESM1-2-HR",
+                  "CNRM-ESM2-1",
+                  "MRI-ESM2-0"
+                ]
+              },
+              {
+                "year": 2050,
+                "rainfallMm": {
+                  "count": 5,
+                  "mean": 1725.62,
+                  "median": 1890.3,
+                  "minimum": 1355.5,
+                  "maximum": 1918.2,
+                  "spread": 562.7
+                },
+                "temperatureC": {
+                  "count": 5,
+                  "mean": 24.22,
+                  "median": 23.94,
+                  "minimum": 23.49,
+                  "maximum": 25.24,
+                  "spread": 1.75
+                },
+                "contributingModels": [
+                  "ACCESS-CM2",
+                  "CanESM5",
+                  "MPI-ESM1-2-HR",
+                  "CNRM-ESM2-1",
+                  "MRI-ESM2-0"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "history": {
+        "location": {
+          "id": "pamplemousses-04",
+          "name": "Pamplemousses Field 04",
+          "district": "Pamplemousses District",
+          "country": "Mauritius"
+        },
+        "units": {
+          "rainfall": "mm",
+          "temperature": "°C daily mean",
+          "drySpells": "consecutive days with rainfall < 1 mm/day"
+        },
+        "timeseries": [
+          {
+            "period": "2021",
+            "label": "2021",
+            "rainfallMm": 673.4,
+            "temperatureC": 25.3,
+            "drySpellDays": 35
+          },
+          {
+            "period": "2022",
+            "label": "2022",
+            "rainfallMm": 716.1,
+            "temperatureC": 24.9,
+            "drySpellDays": 32
+          },
+          {
+            "period": "2023",
+            "label": "2023",
+            "rainfallMm": 873.8,
+            "temperatureC": 25.76,
+            "drySpellDays": 41
+          },
+          {
+            "period": "2024",
+            "label": "2024",
+            "rainfallMm": 746.0,
+            "temperatureC": 25.59,
+            "drySpellDays": 31
+          },
+          {
+            "period": "2025",
+            "label": "2025",
+            "rainfallMm": 593.8,
+            "temperatureC": 25.8,
+            "drySpellDays": 21
+          }
+        ],
+        "seasonal": [
+          {
+            "period": "2021-DJF",
+            "label": "2021-DJF",
+            "rainfallMm": 118.2,
+            "temperatureC": 27.44,
+            "drySpellDays": 8,
+            "completenessPct": 65.6,
+            "completenessStatus": "incomplete"
+          },
+          {
+            "period": "2021-JJA",
+            "label": "2021-JJA",
+            "rainfallMm": 119.0,
+            "temperatureC": 23.17,
+            "drySpellDays": 17,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2021-MAM",
+            "label": "2021-MAM",
+            "rainfallMm": 338.1,
+            "temperatureC": 26.7,
+            "drySpellDays": 19,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2021-SON",
+            "label": "2021-SON",
+            "rainfallMm": 50.7,
+            "temperatureC": 24.15,
+            "drySpellDays": 21,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2022-DJF",
+            "label": "2022-DJF",
+            "rainfallMm": 329.3,
+            "temperatureC": 27.12,
+            "drySpellDays": 14,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2022-JJA",
+            "label": "2022-JJA",
+            "rainfallMm": 54.7,
+            "temperatureC": 22.91,
+            "drySpellDays": 21,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2022-MAM",
+            "label": "2022-MAM",
+            "rainfallMm": 324.9,
+            "temperatureC": 26.43,
+            "drySpellDays": 10,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2022-SON",
+            "label": "2022-SON",
+            "rainfallMm": 28.8,
+            "temperatureC": 23.45,
+            "drySpellDays": 25,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2023-DJF",
+            "label": "2023-DJF",
+            "rainfallMm": 262.1,
+            "temperatureC": 26.52,
+            "drySpellDays": 19,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2023-JJA",
+            "label": "2023-JJA",
+            "rainfallMm": 85.2,
+            "temperatureC": 24.13,
+            "drySpellDays": 18,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2023-MAM",
+            "label": "2023-MAM",
+            "rainfallMm": 339.4,
+            "temperatureC": 26.77,
+            "drySpellDays": 8,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2023-SON",
+            "label": "2023-SON",
+            "rainfallMm": 107.2,
+            "temperatureC": 25.14,
+            "drySpellDays": 41,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2024-DJF",
+            "label": "2024-DJF",
+            "rainfallMm": 422.3,
+            "temperatureC": 27.71,
+            "drySpellDays": 6,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2024-JJA",
+            "label": "2024-JJA",
+            "rainfallMm": 70.0,
+            "temperatureC": 23.7,
+            "drySpellDays": 31,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2024-MAM",
+            "label": "2024-MAM",
+            "rainfallMm": 250.6,
+            "temperatureC": 26.69,
+            "drySpellDays": 10,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2024-SON",
+            "label": "2024-SON",
+            "rainfallMm": 92.1,
+            "temperatureC": 24.49,
+            "drySpellDays": 26,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2025-DJF",
+            "label": "2025-DJF",
+            "rainfallMm": 152.7,
+            "temperatureC": 27.65,
+            "drySpellDays": 16,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2025-JJA",
+            "label": "2025-JJA",
+            "rainfallMm": 83.5,
+            "temperatureC": 23.58,
+            "drySpellDays": 11,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2025-MAM",
+            "label": "2025-MAM",
+            "rainfallMm": 183.2,
+            "temperatureC": 27.64,
+            "drySpellDays": 11,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2025-SON",
+            "label": "2025-SON",
+            "rainfallMm": 109.6,
+            "temperatureC": 24.33,
+            "drySpellDays": 21,
+            "completenessPct": 100.0,
+            "completenessStatus": "complete"
+          },
+          {
+            "period": "2026-DJF",
+            "label": "2026-DJF",
+            "rainfallMm": 81.5,
+            "temperatureC": 26.78,
+            "drySpellDays": 5,
+            "completenessPct": 34.4,
+            "completenessStatus": "incomplete"
+          }
+        ],
+        "metrics": {
+          "rainfallShift": -11.8,
+          "temperatureTrend": 0.168,
+          "longestDrySpell": 41,
+          "dataCompleteness": 100.0,
+          "annualRainfallTrend": {
+            "direction": "no trend",
+            "slope": -2.475,
+            "pValue": 1.0,
+            "significant": false,
+            "observations": 5
+          },
+          "annualTemperatureTrend": {
+            "direction": "no trend",
+            "slope": 0.1675,
+            "pValue": 0.2207,
+            "significant": false,
+            "observations": 5
+          }
+        },
+        "provenance": [
+          {
+            "source": "NASA POWER",
+            "product": "Daily meteorology",
+            "variable": "PRECTOTCORR",
+            "coordinates": {
+              "latitude": -20.103,
+              "longitude": 57.575
+            },
+            "gridResolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+            "dateRange": "2021-01-01 → 2025-12-31",
+            "missingData": false,
+            "retrievedAt": "2026-11-15T03:32:47.865217+00:00",
+            "model": null,
+            "caveat": null
+          },
+          {
+            "source": "NASA POWER",
+            "product": "Daily meteorology",
+            "variable": "T2M",
+            "coordinates": {
+              "latitude": -20.103,
+              "longitude": 57.575
+            },
+            "gridResolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+            "dateRange": "2021-01-01 → 2025-12-31",
+            "missingData": false,
+            "retrievedAt": "2026-11-15T03:32:47.865217+00:00",
+            "model": null,
+            "caveat": null
+          }
+        ]
+      }
+    },
+    "agriculture": {
+      "rotation": {
+        "rotation": [
+          "maize",
+          "cowpea",
+          "cabbage"
+        ],
+        "sequence": [
+          {
+            "season": 1,
+            "crop_id": "maize",
+            "crop_name": "Maize (grain)",
+            "family": "Poaceae",
+            "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+          },
+          {
+            "season": 2,
+            "crop_id": "cowpea",
+            "crop_name": "Cowpea",
+            "family": "Fabaceae",
+            "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+          },
+          {
+            "season": 3,
+            "crop_id": "cabbage",
+            "crop_name": "Cabbage",
+            "family": "Brassicaceae",
+            "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+          }
+        ],
+        "crop_count": 3,
+        "repeated_families": [],
+        "nitrogen_fixing_crops": [
+          "cowpea"
+        ],
+        "has_adjacent_family_repetition": false,
+        "soil_health_score": null,
+        "score_status": "not_calibrated"
+      },
+      "alternatives": {
+        "current_rotation": {
+          "rotation": [
+            "maize",
+            "cowpea",
+            "cabbage"
+          ],
+          "sequence": [
+            {
+              "season": 1,
+              "crop_id": "maize",
+              "crop_name": "Maize (grain)",
+              "family": "Poaceae",
+              "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+            },
+            {
+              "season": 2,
+              "crop_id": "cowpea",
+              "crop_name": "Cowpea",
+              "family": "Fabaceae",
+              "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+            },
+            {
+              "season": 3,
+              "crop_id": "cabbage",
+              "crop_name": "Cabbage",
+              "family": "Brassicaceae",
+              "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+            }
+          ],
+          "crop_count": 3,
+          "repeated_families": [],
+          "nitrogen_fixing_crops": [
+            "cowpea"
+          ],
+          "has_adjacent_family_repetition": false,
+          "soil_health_score": null,
+          "score_status": "not_calibrated"
+        },
+        "alternative_rotations": [
+          {
+            "rotation": [
+              "maize",
+              "tomato",
+              "maize"
+            ],
+            "sequence": [
+              {
+                "season": 1,
+                "crop_id": "maize",
+                "crop_name": "Maize (grain)",
+                "family": "Poaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              },
+              {
+                "season": 2,
+                "crop_id": "tomato",
+                "crop_name": "Tomato",
+                "family": "Solanaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              },
+              {
+                "season": 3,
+                "crop_id": "maize",
+                "crop_name": "Maize (grain)",
+                "family": "Poaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              }
+            ],
+            "crop_count": 3,
+            "repeated_families": [],
+            "nitrogen_fixing_crops": [],
+            "has_adjacent_family_repetition": false,
+            "soil_health_score": null,
+            "score_status": "not_calibrated"
+          },
+          {
+            "rotation": [
+              "maize",
+              "tomato",
+              "onion"
+            ],
+            "sequence": [
+              {
+                "season": 1,
+                "crop_id": "maize",
+                "crop_name": "Maize (grain)",
+                "family": "Poaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              },
+              {
+                "season": 2,
+                "crop_id": "tomato",
+                "crop_name": "Tomato",
+                "family": "Solanaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              },
+              {
+                "season": 3,
+                "crop_id": "onion",
+                "crop_name": "Onion (dry)",
+                "family": "Amaryllidaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              }
+            ],
+            "crop_count": 3,
+            "repeated_families": [],
+            "nitrogen_fixing_crops": [],
+            "has_adjacent_family_repetition": false,
+            "soil_health_score": null,
+            "score_status": "not_calibrated"
+          },
+          {
+            "rotation": [
+              "maize",
+              "tomato",
+              "cabbage"
+            ],
+            "sequence": [
+              {
+                "season": 1,
+                "crop_id": "maize",
+                "crop_name": "Maize (grain)",
+                "family": "Poaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              },
+              {
+                "season": 2,
+                "crop_id": "tomato",
+                "crop_name": "Tomato",
+                "family": "Solanaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              },
+              {
+                "season": 3,
+                "crop_id": "cabbage",
+                "crop_name": "Cabbage",
+                "family": "Brassicaceae",
+                "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+              }
+            ],
+            "crop_count": 3,
+            "repeated_families": [],
+            "nitrogen_fixing_crops": [],
+            "has_adjacent_family_repetition": false,
+            "soil_health_score": null,
+            "score_status": "not_calibrated"
+          }
+        ],
+        "alternatives_found": 3,
+        "selection_method": "Catalog-order enumeration with adjacent-family diversification filter",
+        "agronomic_feasibility": "not_evaluated",
+        "ranking_status": "not_calibrated",
+        "note": "Candidates are exploratory sequences. Planting season, soil suitability, water and climate constraints must be checked before recommendation."
+      },
+      "suitability": [
+        {
+          "crop_id": "maize",
+          "status": "insufficient_data",
+          "checks": [],
+          "missing": [
+            "temperature_c_reference_range",
+            "soil_ph"
+          ],
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "note": "This is a preliminary screening, not a complete agronomic suitability assessment."
+        },
+        {
+          "crop_id": "cowpea",
+          "status": "insufficient_data",
+          "checks": [],
+          "missing": [
+            "temperature_c_reference_range",
+            "soil_ph"
+          ],
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "note": "This is a preliminary screening, not a complete agronomic suitability assessment."
+        },
+        {
+          "crop_id": "cabbage",
+          "status": "insufficient_data",
+          "checks": [],
+          "missing": [
+            "temperature_c_reference_range",
+            "soil_ph"
+          ],
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "note": "This is a preliminary screening, not a complete agronomic suitability assessment."
+        },
+        {
+          "crop_id": "tomato",
+          "status": "insufficient_data",
+          "checks": [],
+          "missing": [
+            "temperature_c_reference_range",
+            "soil_ph"
+          ],
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "note": "This is a preliminary screening, not a complete agronomic suitability assessment."
+        },
+        {
+          "crop_id": "onion",
+          "status": "insufficient_data",
+          "checks": [],
+          "missing": [
+            "temperature_c_reference_range",
+            "soil_ph"
+          ],
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "note": "This is a preliminary screening, not a complete agronomic suitability assessment."
+        }
+      ],
+      "suitability_inputs": [
+        {
+          "factor": "temperature_c",
+          "value": 24.22,
+          "unit": "°C",
+          "source_module": "M1",
+          "field_path": "climate.scenarios.ensemble[1].values[2].temperatureC.mean",
+          "note": "M1 ensemble-mean annual mean air temperature for the selected scenario and year: an annual regional projection, not a growing-season or field measurement."
+        }
+      ],
+      "water": null
+    },
+    "resilience": null
+  },
+  "passport": {
+    "analysis_id": "example-analyze-pamplemousses-04",
+    "location_id": "pamplemousses-04",
+    "rotation": [
+      "maize",
+      "cowpea",
+      "cabbage"
+    ],
+    "evidence": [
+      {
+        "id": "ev-family-maize",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "maize",
+        "value": "Poaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.rotation.sequence[0].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-family-cowpea",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "cowpea",
+        "value": "Fabaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.rotation.sequence[1].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-family-cabbage",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "cabbage",
+        "value": "Brassicaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.rotation.sequence[2].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-nfix-cowpea",
+        "claim": "The rotation contains a nitrogen-fixing crop",
+        "subject": "cowpea",
+        "value": "cowpea",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.rotation.nitrogen_fixing_crops[0]",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Sourced crop trait lookup"
+        },
+        "qualifications": [
+          "This identifies a nitrogen-fixing opportunity; it does not quantify a nitrogen benefit.",
+          "It does not establish that the crop is suitable for this farm; climate and soil checks are still required."
+        ]
+      },
+      {
+        "id": "ev-family-repeat",
+        "claim": "No crop family is repeated in consecutive seasons",
+        "subject": "rotation",
+        "value": false,
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.rotation.has_adjacent_family_repetition",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Adjacent-season family comparison (M2)"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-soil-score",
+        "claim": "Soil health score has not been calibrated",
+        "subject": "rotation",
+        "value": null,
+        "unit": null,
+        "status": "not_evaluated",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.rotation.soil_health_score",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": [
+          "M2 score status: not_calibrated"
+        ]
+      },
+      {
+        "id": "ev-alt-feasibility",
+        "claim": "Agronomic feasibility status of the alternative rotations",
+        "subject": "alternatives",
+        "value": "not_evaluated",
+        "unit": null,
+        "status": "not_evaluated",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.agronomic_feasibility",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Catalog-order enumeration with adjacent-family diversification filter"
+        },
+        "qualifications": [
+          "Candidates are exploratory sequences. Planting season, soil suitability, water and climate constraints must be checked before recommendation."
+        ]
+      },
+      {
+        "id": "ev-alt-ranking",
+        "claim": "Ranking status of the alternative rotations",
+        "subject": "alternatives",
+        "value": "not_calibrated",
+        "unit": null,
+        "status": "not_evaluated",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.ranking_status",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-A-rotation",
+        "claim": "Crop sequence of an alternative rotation generated by the agriculture module",
+        "subject": "alternative:A",
+        "value": [
+          "maize",
+          "tomato",
+          "maize"
+        ],
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[0].rotation",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": [
+          "Not ranked or checked for agronomic feasibility by M2"
+        ]
+      },
+      {
+        "id": "ev-alt-A-family-maize",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:A:maize",
+        "value": "Poaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[0].sequence[0].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-A-family-tomato",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:A:tomato",
+        "value": "Solanaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[0].sequence[1].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-A-family-maize-2",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:A:maize",
+        "value": "Poaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[0].sequence[2].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-A-nfix",
+        "claim": "Nitrogen-fixing crops in an alternative rotation",
+        "subject": "alternative:A",
+        "value": [],
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[0].nitrogen_fixing_crops",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Sourced crop trait lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-A-repeat",
+        "claim": "Whether an alternative rotation repeats a crop family in consecutive seasons",
+        "subject": "alternative:A",
+        "value": false,
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[0].has_adjacent_family_repetition",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-B-rotation",
+        "claim": "Crop sequence of an alternative rotation generated by the agriculture module",
+        "subject": "alternative:B",
+        "value": [
+          "maize",
+          "tomato",
+          "onion"
+        ],
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[1].rotation",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": [
+          "Not ranked or checked for agronomic feasibility by M2"
+        ]
+      },
+      {
+        "id": "ev-alt-B-family-maize",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:B:maize",
+        "value": "Poaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[1].sequence[0].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-B-family-tomato",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:B:tomato",
+        "value": "Solanaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[1].sequence[1].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-B-family-onion",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:B:onion",
+        "value": "Amaryllidaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[1].sequence[2].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-B-nfix",
+        "claim": "Nitrogen-fixing crops in an alternative rotation",
+        "subject": "alternative:B",
+        "value": [],
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[1].nitrogen_fixing_crops",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Sourced crop trait lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-B-repeat",
+        "claim": "Whether an alternative rotation repeats a crop family in consecutive seasons",
+        "subject": "alternative:B",
+        "value": false,
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[1].has_adjacent_family_repetition",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-C-rotation",
+        "claim": "Crop sequence of an alternative rotation generated by the agriculture module",
+        "subject": "alternative:C",
+        "value": [
+          "maize",
+          "tomato",
+          "cabbage"
+        ],
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[2].rotation",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": [
+          "Not ranked or checked for agronomic feasibility by M2"
+        ]
+      },
+      {
+        "id": "ev-alt-C-family-maize",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:C:maize",
+        "value": "Poaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[2].sequence[0].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-C-family-tomato",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:C:tomato",
+        "value": "Solanaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[2].sequence[1].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-C-family-cabbage",
+        "claim": "Crop family is taken from the sourced crop catalog",
+        "subject": "alternative:C:cabbage",
+        "value": "Brassicaceae",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[2].sequence[2].family",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Crop catalog lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-C-nfix",
+        "claim": "Nitrogen-fixing crops in an alternative rotation",
+        "subject": "alternative:C",
+        "value": [],
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[2].nitrogen_fixing_crops",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Sourced crop trait lookup"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-alt-C-repeat",
+        "claim": "Whether an alternative rotation repeats a crop family in consecutive seasons",
+        "subject": "alternative:C",
+        "value": false,
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.alternatives.alternative_rotations[2].has_adjacent_family_repetition",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-suit-maize",
+        "claim": "Crop suitability could not be fully screened",
+        "subject": "maize",
+        "value": "insufficient_data",
+        "unit": null,
+        "status": "not_evaluated",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.suitability[0].status",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Preliminary range screening (M2)"
+        },
+        "qualifications": [
+          "Missing for screening: temperature_c_reference_range",
+          "Missing for screening: soil_ph"
+        ]
+      },
+      {
+        "id": "ev-suit-cowpea",
+        "claim": "Crop suitability could not be fully screened",
+        "subject": "cowpea",
+        "value": "insufficient_data",
+        "unit": null,
+        "status": "not_evaluated",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.suitability[1].status",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Preliminary range screening (M2)"
+        },
+        "qualifications": [
+          "Missing for screening: temperature_c_reference_range",
+          "Missing for screening: soil_ph"
+        ]
+      },
+      {
+        "id": "ev-suit-cabbage",
+        "claim": "Crop suitability could not be fully screened",
+        "subject": "cabbage",
+        "value": "insufficient_data",
+        "unit": null,
+        "status": "not_evaluated",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": "agriculture.suitability[2].status",
+          "dataset": null,
+          "product": null,
+          "source_url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Preliminary range screening (M2)"
+        },
+        "qualifications": [
+          "Missing for screening: temperature_c_reference_range",
+          "Missing for screening: soil_ph"
+        ]
+      },
+      {
+        "id": "ev-suit-input-temperature_c",
+        "claim": "Value passed to crop suitability screening",
+        "subject": "suitability-input:temperature_c",
+        "value": 24.22,
+        "unit": "°C",
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.scenarios.ensemble[1].values[2].temperatureC.mean",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": "Selected by the M4 orchestrator from an existing value; not computed"
+        },
+        "qualifications": [
+          "M1 ensemble-mean annual mean air temperature for the selected scenario and year: an annual regional projection, not a growing-season or field measurement."
+        ]
+      },
+      {
+        "id": "ev-proj",
+        "claim": "Future climate projections are available",
+        "subject": "climate",
+        "value": "NASA NEX-GDDP-CMIP6",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.scenarios.provenance.source",
+          "dataset": "NASA NEX-GDDP-CMIP6",
+          "product": "Daily downscaled CMIP6 projections",
+          "source_url": null,
+          "grid_resolution": "0.25° × 0.25° (~25 km)",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "method": "Multi-model ensemble (M1)"
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-proj-rain-mean",
+        "claim": "Projected annual rainfall ensemble mean for 2050 under SSP3-7.0",
+        "subject": "climate:ssp370:2050",
+        "value": 1725.62,
+        "unit": "mm/year",
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.scenarios.ensemble[1].values[2].rainfallMm.mean",
+          "dataset": "NASA NEX-GDDP-CMIP6",
+          "product": "Daily downscaled CMIP6 projections",
+          "source_url": null,
+          "grid_resolution": "0.25° × 0.25° (~25 km)",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-proj-rain-spread",
+        "claim": "Projected annual rainfall spread across climate models for 2050 under SSP3-7.0",
+        "subject": "climate:ssp370:2050",
+        "value": 562.7,
+        "unit": "mm/year",
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.scenarios.ensemble[1].values[2].rainfallMm.spread",
+          "dataset": "NASA NEX-GDDP-CMIP6",
+          "product": "Daily downscaled CMIP6 projections",
+          "source_url": null,
+          "grid_resolution": "0.25° × 0.25° (~25 km)",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "method": null
+        },
+        "qualifications": [
+          "Spread is the difference between the highest and lowest model values; it is not a probability interval."
+        ]
+      },
+      {
+        "id": "ev-proj-temp-mean",
+        "claim": "Projected annual mean temperature ensemble mean for 2050 under SSP3-7.0",
+        "subject": "climate:ssp370:2050",
+        "value": 24.22,
+        "unit": "°C",
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.scenarios.ensemble[1].values[2].temperatureC.mean",
+          "dataset": "NASA NEX-GDDP-CMIP6",
+          "product": "Daily downscaled CMIP6 projections",
+          "source_url": null,
+          "grid_resolution": "0.25° × 0.25° (~25 km)",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-proj-temp-spread",
+        "claim": "Projected annual mean temperature spread across climate models for 2050 under SSP3-7.0",
+        "subject": "climate:ssp370:2050",
+        "value": 1.75,
+        "unit": "°C",
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.scenarios.ensemble[1].values[2].temperatureC.spread",
+          "dataset": "NASA NEX-GDDP-CMIP6",
+          "product": "Daily downscaled CMIP6 projections",
+          "source_url": null,
+          "grid_resolution": "0.25° × 0.25° (~25 km)",
+          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "method": null
+        },
+        "qualifications": [
+          "Spread is the difference between the highest and lowest model values; it is not a probability interval."
+        ]
+      },
+      {
+        "id": "ev-proj-models",
+        "claim": "Number of climate models contributing for 2050 under SSP3-7.0",
+        "subject": "climate:ssp370:2050",
+        "value": 5,
+        "unit": "models",
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.scenarios.ensemble[1].values[2].rainfallMm.count",
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": [
+          "Contributing: ACCESS-CM2, CanESM5, MPI-ESM1-2-HR, CNRM-ESM2-1, MRI-ESM2-0"
+        ]
+      },
+      {
+        "id": "ev-hist",
+        "claim": "Historical climate observations are available",
+        "subject": "climate:history",
+        "value": "NASA POWER",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.history.provenance[0].source",
+          "dataset": "NASA POWER",
+          "product": "Daily meteorology",
+          "source_url": null,
+          "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
+          "method": null
+        },
+        "qualifications": [
+          "Period: 2021-01-01 → 2025-12-31"
+        ]
+      },
+      {
+        "id": "ev-hist-completeness",
+        "claim": "Completeness of the historical daily record",
+        "subject": "climate:history",
+        "value": 100.0,
+        "unit": "%",
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.history.metrics.dataCompleteness",
+          "dataset": "NASA POWER",
+          "product": "Daily meteorology",
+          "source_url": null,
+          "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-hist-rain-trend",
+        "claim": "Observed annual rainfall trend direction",
+        "subject": "climate:history",
+        "value": "no trend",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.history.metrics.annualRainfallTrend.direction",
+          "dataset": "NASA POWER",
+          "product": "Daily meteorology",
+          "source_url": null,
+          "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
+          "method": "Mann-Kendall trend test (M1)"
+        },
+        "qualifications": [
+          "Not statistically significant",
+          "Based on 5 annual observations"
+        ]
+      },
+      {
+        "id": "ev-hist-temp-trend",
+        "claim": "Observed annual temperature trend direction",
+        "subject": "climate:history",
+        "value": "no trend",
+        "unit": null,
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.history.metrics.annualTemperatureTrend.direction",
+          "dataset": "NASA POWER",
+          "product": "Daily meteorology",
+          "source_url": null,
+          "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
+          "method": "Mann-Kendall trend test (M1)"
+        },
+        "qualifications": [
+          "Not statistically significant",
+          "Based on 5 annual observations"
+        ]
+      },
+      {
+        "id": "ev-hist-dry-spell",
+        "claim": "Longest observed dry spell",
+        "subject": "climate:history",
+        "value": 41,
+        "unit": "days",
+        "status": "supported",
+        "provenance": {
+          "source_module": "M1",
+          "field_path": "climate.history.metrics.longestDrySpell",
+          "dataset": "NASA POWER",
+          "product": "Daily meteorology",
+          "source_url": null,
+          "grid_resolution": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+          "retrieved_at": "2026-11-15T03:32:47.865217+00:00",
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-water",
+        "claim": "Crop water demand has not been calculated",
+        "subject": "water",
+        "value": null,
+        "unit": null,
+        "status": "unavailable",
+        "provenance": {
+          "source_module": "M2",
+          "field_path": null,
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": []
+      },
+      {
+        "id": "ev-resilience",
+        "claim": "Climate resilience stress tests are unavailable",
+        "subject": "resilience",
+        "value": null,
+        "unit": null,
+        "status": "unavailable",
+        "provenance": {
+          "source_module": "M5",
+          "field_path": null,
+          "dataset": null,
+          "product": null,
+          "source_url": null,
+          "grid_resolution": null,
+          "retrieved_at": null,
+          "method": null
+        },
+        "qualifications": []
+      }
+    ],
+    "rules_applied": [
+      {
+        "rule_id": "R-CROP-FAMILY",
+        "description": "Report each crop's family from the M2 crop catalog",
+        "inputs": [
+          "agriculture.rotation.sequence"
+        ],
+        "outcome": "Families reported for every season"
+      },
+      {
+        "rule_id": "R-NFIX",
+        "description": "Report nitrogen-fixing crops flagged in the M2 crop catalog",
+        "inputs": [
+          "agriculture.rotation.nitrogen_fixing_crops"
+        ],
+        "outcome": "Nitrogen-fixing crop(s) present"
+      },
+      {
+        "rule_id": "R-FAMILY-REPEAT",
+        "description": "Report M2's adjacent-season crop family repetition check",
+        "inputs": [
+          "agriculture.rotation.has_adjacent_family_repetition"
+        ],
+        "outcome": "No repetition"
+      },
+      {
+        "rule_id": "R-SOIL-SCORE",
+        "description": "Report the M2 soil health score only if M2 has calculated it",
+        "inputs": [
+          "agriculture.rotation.soil_health_score",
+          "agriculture.rotation.score_status"
+        ],
+        "outcome": "Not reported: M2 has not calculated a score"
+      },
+      {
+        "rule_id": "R-ALTERNATIVES",
+        "description": "Report M2's feasibility and ranking status for alternatives",
+        "inputs": [
+          "agriculture.alternatives.agronomic_feasibility",
+          "agriculture.alternatives.ranking_status",
+          "agriculture.alternatives.alternative_rotations"
+        ],
+        "outcome": "Feasibility: not_evaluated; ranking: not_calibrated; alternatives labelled A, B, C… in M2's order"
+      },
+      {
+        "rule_id": "R-SUITABILITY",
+        "description": "Report M2's preliminary suitability screening for each crop",
+        "inputs": [
+          "agriculture.suitability"
+        ],
+        "outcome": "Screening reported per crop where M2 supplied it"
+      },
+      {
+        "rule_id": "R-SUIT-INPUTS",
+        "description": "Report each value passed into M2 suitability and the field it came from",
+        "inputs": [
+          "agriculture.suitability_inputs"
+        ],
+        "outcome": "Inputs passed: temperature_c"
+      },
+      {
+        "rule_id": "R-CLIMATE-PROJ",
+        "description": "Report M1 ensemble projections for the selected scenario and year",
+        "inputs": [
+          "climate.scenarios.ensemble[1].values[2]",
+          "climate.scenarios.provenance.missingData",
+          "climate.scenarios.modelResults"
+        ],
+        "outcome": "Complete ensemble reported"
+      },
+      {
+        "rule_id": "R-CLIMATE-HIST",
+        "description": "Report M1 historical observations and their completeness",
+        "inputs": [
+          "climate.history.metrics",
+          "climate.history.provenance"
+        ],
+        "outcome": "Observations reported"
+      },
+      {
+        "rule_id": "R-FARM-INPUTS",
+        "description": "Report farm inputs that were supplied",
+        "inputs": [
+          "farm"
+        ],
+        "outcome": "Supplied farm inputs reported"
+      },
+      {
+        "rule_id": "R-WATER",
+        "description": "Report M2 water results only if M2 has supplied them",
+        "inputs": [
+          "agriculture.water"
+        ],
+        "outcome": "No M2 water results"
+      },
+      {
+        "rule_id": "R-RESILIENCE",
+        "description": "Report M5 resilience results only if M5 has supplied them",
+        "inputs": [
+          "resilience"
+        ],
+        "outcome": "No M5 results"
+      }
+    ],
+    "limitations": [
+      {
+        "text": "Candidates are exploratory sequences. Planting season, soil suitability, water and climate constraints must be checked before recommendation.",
+        "source_module": "M2"
+      },
+      {
+        "text": "This is a preliminary screening, not a complete agronomic suitability assessment.",
+        "source_module": "M2"
+      },
+      {
+        "text": "The temperature passed to crop suitability screening is M1's ensemble-mean annual mean air temperature for the selected scenario and year: an annual regional projection, not a growing-season or field measurement.",
+        "source_module": "M4"
+      },
+      {
+        "text": "Precipitation flux (kg m-2 s-1) is converted to daily millimetres by multiplying by 86,400, then summed annually.",
+        "source_module": "M1"
+      },
+      {
+        "text": "Temperature is converted from Kelvin to degrees Celsius.",
+        "source_module": "M1"
+      },
+      {
+        "text": "Ensemble spread is the difference between the highest and lowest contributing model values; it is not a probability interval.",
+        "source_module": "M1"
+      },
+      {
+        "text": "The nearest 0.25-degree grid cell represents regional climate conditions, not an exact field-level forecast.",
+        "source_module": "M1"
+      },
+      {
+        "text": "Model outputs are sampled at their nearest grid cells. They are regional projections, not field-level forecasts.",
+        "source_module": "M1"
+      },
+      {
+        "text": "M4 explains results produced by other CropCompass modules. It does not establish agronomic suitability, predict yields or quantify soil benefits.",
+        "source_module": "M4"
+      }
+    ],
+    "blind_spots": [
+      {
+        "code": "CROP_REFERENCE_INCOMPLETE",
+        "category": "crop_reference",
+        "severity": "warning",
+        "message": "M2's crop catalog has no reference range for one or more factors, so suitability could not be screened for the affected crops. The absent ranges reported by M2 are cited.",
+        "affects": [
+          "maize",
+          "cowpea",
+          "cabbage",
+          "tomato",
+          "onion"
+        ],
+        "source_module": "M2",
+        "farmer_action": null,
+        "team_action": "M2: add verified temperature, rainfall and soil pH reference ranges to the crop catalog.",
+        "citations": [
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[0].missing[0]"
+          },
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[1].missing[0]"
+          },
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[2].missing[0]"
+          },
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[3].missing[0]"
+          },
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[4].missing[0]"
+          }
+        ]
+      },
+      {
+        "code": "SOIL_PH_MISSING",
+        "category": "soil",
+        "severity": "warning",
+        "message": "Soil pH was not provided, so crop soil requirements cannot be checked for this field.",
+        "affects": [
+          "maize",
+          "cowpea",
+          "cabbage"
+        ],
+        "source_module": "farmer",
+        "farmer_action": "Provide the soil pH from a recent soil test of this field (laboratory test or calibrated field kit).",
+        "team_action": null,
+        "citations": []
+      },
+      {
+        "code": "IRRIGATION_BUDGET_MISSING",
+        "category": "water",
+        "severity": "warning",
+        "message": "No irrigation water budget was provided, so the rotation cannot be checked against the water you have available.",
+        "affects": [],
+        "source_module": "farmer",
+        "farmer_action": "Provide the irrigation water available for the whole rotation, in cubic metres.",
+        "team_action": null,
+        "citations": []
+      },
+      {
+        "code": "WATER_DEMAND_NOT_IMPLEMENTED",
+        "category": "water",
+        "severity": "warning",
+        "message": "Crop evapotranspiration has not been calculated because this analysis has no daily reference evapotranspiration series. Irrigation requirement also needs effective rainfall, soil-water, and efficiency evidence.",
+        "affects": [
+          "maize",
+          "cowpea",
+          "cabbage"
+        ],
+        "source_module": "M2",
+        "farmer_action": null,
+        "team_action": "M2: expose the sourced crop-ETc calculation with verified daily reference evapotranspiration from M1, and only report irrigation requirement when its additional inputs are available.",
+        "citations": []
+      },
+      {
+        "code": "CLIMATE_RESOLUTION",
+        "category": "resolution",
+        "severity": "info",
+        "message": "Climate values describe regional model-grid conditions, not field-level forecasts. M1's reported grid resolution and caveat are cited.",
+        "affects": [],
+        "source_module": "M1",
+        "farmer_action": null,
+        "team_action": null,
+        "citations": [
+          {
+            "label": "M1 reported projection grid resolution",
+            "value": "0.25° × 0.25° (~25 km)",
+            "unit": null,
+            "source_module": "M1",
+            "field_path": "climate.scenarios.provenance.gridResolution"
+          },
+          {
+            "label": "M1 projection caveat",
+            "value": "Model outputs are sampled at their nearest grid cells. They are regional projections, not field-level forecasts.",
+            "unit": null,
+            "source_module": "M1",
+            "field_path": "climate.scenarios.provenance.caveat"
+          },
+          {
+            "label": "M1 reported observation grid resolution",
+            "value": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+            "unit": null,
+            "source_module": "M1",
+            "field_path": "climate.history.provenance[0].gridResolution"
+          }
+        ]
+      },
+      {
+        "code": "M5_RESULTS_NOT_SUPPLIED",
+        "category": "module",
+        "severity": "info",
+        "message": "M5 results are absent or incomplete in this M4 analysis. M5 provides separate Climate Twin and Stress Test endpoints.",
+        "affects": [],
+        "source_module": "M5",
+        "farmer_action": null,
+        "team_action": "Run the required M5 endpoints with actual farm inputs, then submit their unchanged results to the M4 Evidence Passport.",
+        "citations": []
+      }
+    ],
+    "recommendation_status": "requires_further_validation",
+    "generated_at": "2026-11-15T03:38:31.068440+00:00"
+  },
+  "blind_spot_report": {
+    "analysis_id": "example-analyze-pamplemousses-04",
+    "blind_spots": [
+      {
+        "code": "CROP_REFERENCE_INCOMPLETE",
+        "category": "crop_reference",
+        "severity": "warning",
+        "message": "M2's crop catalog has no reference range for one or more factors, so suitability could not be screened for the affected crops. The absent ranges reported by M2 are cited.",
+        "affects": [
+          "maize",
+          "cowpea",
+          "cabbage",
+          "tomato",
+          "onion"
+        ],
+        "source_module": "M2",
+        "farmer_action": null,
+        "team_action": "M2: add verified temperature, rainfall and soil pH reference ranges to the crop catalog.",
+        "citations": [
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[0].missing[0]"
+          },
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[1].missing[0]"
+          },
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[2].missing[0]"
+          },
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[3].missing[0]"
+          },
+          {
+            "label": "Reference range absent from M2 crop catalog",
+            "value": "temperature_c_reference_range",
+            "unit": null,
+            "source_module": "M2",
+            "field_path": "agriculture.suitability[4].missing[0]"
+          }
+        ]
+      },
+      {
+        "code": "SOIL_PH_MISSING",
+        "category": "soil",
+        "severity": "warning",
+        "message": "Soil pH was not provided, so crop soil requirements cannot be checked for this field.",
+        "affects": [
+          "maize",
+          "cowpea",
+          "cabbage"
+        ],
+        "source_module": "farmer",
+        "farmer_action": "Provide the soil pH from a recent soil test of this field (laboratory test or calibrated field kit).",
+        "team_action": null,
+        "citations": []
+      },
+      {
+        "code": "IRRIGATION_BUDGET_MISSING",
+        "category": "water",
+        "severity": "warning",
+        "message": "No irrigation water budget was provided, so the rotation cannot be checked against the water you have available.",
+        "affects": [],
+        "source_module": "farmer",
+        "farmer_action": "Provide the irrigation water available for the whole rotation, in cubic metres.",
+        "team_action": null,
+        "citations": []
+      },
+      {
+        "code": "WATER_DEMAND_NOT_IMPLEMENTED",
+        "category": "water",
+        "severity": "warning",
+        "message": "Crop evapotranspiration has not been calculated because this analysis has no daily reference evapotranspiration series. Irrigation requirement also needs effective rainfall, soil-water, and efficiency evidence.",
+        "affects": [
+          "maize",
+          "cowpea",
+          "cabbage"
+        ],
+        "source_module": "M2",
+        "farmer_action": null,
+        "team_action": "M2: expose the sourced crop-ETc calculation with verified daily reference evapotranspiration from M1, and only report irrigation requirement when its additional inputs are available.",
+        "citations": []
+      },
+      {
+        "code": "CLIMATE_RESOLUTION",
+        "category": "resolution",
+        "severity": "info",
+        "message": "Climate values describe regional model-grid conditions, not field-level forecasts. M1's reported grid resolution and caveat are cited.",
+        "affects": [],
+        "source_module": "M1",
+        "farmer_action": null,
+        "team_action": null,
+        "citations": [
+          {
+            "label": "M1 reported projection grid resolution",
+            "value": "0.25° × 0.25° (~25 km)",
+            "unit": null,
+            "source_module": "M1",
+            "field_path": "climate.scenarios.provenance.gridResolution"
+          },
+          {
+            "label": "M1 projection caveat",
+            "value": "Model outputs are sampled at their nearest grid cells. They are regional projections, not field-level forecasts.",
+            "unit": null,
+            "source_module": "M1",
+            "field_path": "climate.scenarios.provenance.caveat"
+          },
+          {
+            "label": "M1 reported observation grid resolution",
+            "value": "0.5° × 0.625° (POWER daily point product; grid support varies by variable)",
+            "unit": null,
+            "source_module": "M1",
+            "field_path": "climate.history.provenance[0].gridResolution"
+          }
+        ]
+      },
+      {
+        "code": "M5_RESULTS_NOT_SUPPLIED",
+        "category": "module",
+        "severity": "info",
+        "message": "M5 results are absent or incomplete in this M4 analysis. M5 provides separate Climate Twin and Stress Test endpoints.",
+        "affects": [],
+        "source_module": "M5",
+        "farmer_action": null,
+        "team_action": "Run the required M5 endpoints with actual farm inputs, then submit their unchanged results to the M4 Evidence Passport.",
+        "citations": []
+      }
+    ],
+    "module_status": {
+      "M1": "ok",
+      "M2": "partial",
+      "M3": "unavailable",
+      "M5": "unavailable"
+    }
+  }
+}
