@@ -83,7 +83,7 @@ def test_real_data_blind_spots():
         bsd.SUITABILITY_INPUT_NOT_PASSED, bsd.CROP_SUITABILITY_NOT_SCREENED,
         bsd.SOIL_PH_MISSING, bsd.IRRIGATION_BUDGET_MISSING,
         bsd.WATER_DEMAND_NOT_IMPLEMENTED, bsd.CLIMATE_RESOLUTION,
-        bsd.M5_NOT_IMPLEMENTED,
+        bsd.M3_NOT_IMPLEMENTED, bsd.M5_NOT_IMPLEMENTED,
     }
     # Without inputs M2 never consults its catalog, so no catalog gap is claimed.
     assert bsd.CROP_REFERENCE_INCOMPLETE not in spots
@@ -92,7 +92,7 @@ def test_real_data_blind_spots():
 def test_real_data_module_status():
     report = bsd.build_report(AnalysisBundle.model_validate(bundle_json()))
     assert report.module_status == {
-        "M1": "ok", "M2": "partial", "M3": "unavailable", "M5": "not_implemented"}
+        "M1": "ok", "M2": "partial", "M3": "not_implemented", "M5": "not_implemented"}
 
 
 # ---------------------------------------------------------------------------
@@ -323,7 +323,6 @@ def test_registry_unreadable_rule_kept(monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_m3_m5_not_implemented_are_info(monkeypatch):
-    monkeypatch.setattr(farm_provider, "farm_profile_implemented", lambda: False)
     spots = detect()
     for code, module in ((bsd.M3_NOT_IMPLEMENTED, "M3"), (bsd.M5_NOT_IMPLEMENTED, "M5")):
         assert (spots[code].category, spots[code].severity) == ("module", "info")
