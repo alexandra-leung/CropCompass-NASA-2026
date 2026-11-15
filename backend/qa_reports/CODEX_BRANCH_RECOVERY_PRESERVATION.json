@@ -1,0 +1,7 @@
+{
+  "tracked_files_checked": 177,
+  "changed_existing_tracked_files": [],
+  "data_files_checked": 21,
+  "changed_existing_data_files": [],
+  "git_status": "?? backend/qa_reports/CODEX_BRANCH_RECOVERY_AUDIT.md\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_BASELINE.txt\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_FILE_INVENTORY.md\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_LIVE_CHECKS.json\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_OPENAPI.json\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_POWER_SAMPLE.json\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_PROBES.json\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_REPRODUCE.py\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_STATIC_EVIDENCE.json\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_TEST_DELTA.json\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_TEST_RESULTS.txt\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_TEST_RESULTS.xml\n?? backend/qa_reports/CODEX_BRANCH_RECOVERY_WORKFLOW.json\n"
+}

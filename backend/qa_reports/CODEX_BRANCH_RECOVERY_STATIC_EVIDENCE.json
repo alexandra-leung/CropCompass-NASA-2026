@@ -1,0 +1,831 @@
+{
+  "python": [
+    {
+      "file": "backend\\app.py",
+      "syntax": "ok",
+      "lines": 58
+    },
+    {
+      "file": "backend\\agricultureM2\\crop_catalog.py",
+      "syntax": "ok",
+      "lines": 101
+    },
+    {
+      "file": "backend\\agricultureM2\\plans_routes.py",
+      "syntax": "ok",
+      "lines": 71
+    },
+    {
+      "file": "backend\\agricultureM2\\plan_engine.py",
+      "syntax": "ok",
+      "lines": 405
+    },
+    {
+      "file": "backend\\agricultureM2\\rotation_engine.py",
+      "syntax": "ok",
+      "lines": 86
+    },
+    {
+      "file": "backend\\agricultureM2\\rotation_generator.py",
+      "syntax": "ok",
+      "lines": 63
+    },
+    {
+      "file": "backend\\agricultureM2\\routes.py",
+      "syntax": "ok",
+      "lines": 144
+    },
+    {
+      "file": "backend\\agricultureM2\\scoring.py",
+      "syntax": "ok",
+      "lines": 26
+    },
+    {
+      "file": "backend\\agricultureM2\\suitability.py",
+      "syntax": "ok",
+      "lines": 83
+    },
+    {
+      "file": "backend\\agricultureM2\\water_wallet.py",
+      "syntax": "ok",
+      "lines": 183
+    },
+    {
+      "file": "backend\\agricultureM2\\__init__.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\climateM1\\climate_processor.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\climateM1\\nasa_power.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\climateM1\\projections.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\climateM1\\routes.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\climateM1\\__init__.py",
+      "syntax": "ok",
+      "lines": 1
+    },
+    {
+      "file": "backend\\intelligenceM4\\assistant.py",
+      "syntax": "ok",
+      "lines": 873
+    },
+    {
+      "file": "backend\\intelligenceM4\\blind_spot_detector.py",
+      "syntax": "ok",
+      "lines": 439
+    },
+    {
+      "file": "backend\\intelligenceM4\\data_quality.py",
+      "syntax": "ok",
+      "lines": 1
+    },
+    {
+      "file": "backend\\intelligenceM4\\evidence_passport.py",
+      "syntax": "ok",
+      "lines": 656
+    },
+    {
+      "file": "backend\\intelligenceM4\\orchestrator.py",
+      "syntax": "ok",
+      "lines": 270
+    },
+    {
+      "file": "backend\\intelligenceM4\\rag_assistant.py",
+      "syntax": "ok",
+      "lines": 1
+    },
+    {
+      "file": "backend\\intelligenceM4\\routes.py",
+      "syntax": "ok",
+      "lines": 106
+    },
+    {
+      "file": "backend\\intelligenceM4\\schemas.py",
+      "syntax": "ok",
+      "lines": 489
+    },
+    {
+      "file": "backend\\intelligenceM4\\traceability.py",
+      "syntax": "ok",
+      "lines": 46
+    },
+    {
+      "file": "backend\\intelligenceM4\\__init__.py",
+      "syntax": "ok",
+      "lines": 1
+    },
+    {
+      "file": "backend\\mappingM3\\farm_profile.py",
+      "syntax": "ok",
+      "lines": 302
+    },
+    {
+      "file": "backend\\mappingM3\\field_boundaries.py",
+      "syntax": "ok",
+      "lines": 204
+    },
+    {
+      "file": "backend\\mappingM3\\routes.py",
+      "syntax": "ok",
+      "lines": 171
+    },
+    {
+      "file": "backend\\mappingM3\\soil_inputs.py",
+      "syntax": "ok",
+      "lines": 73
+    },
+    {
+      "file": "backend\\mappingM3\\units.py",
+      "syntax": "ok",
+      "lines": 30
+    },
+    {
+      "file": "backend\\mappingM3\\__init__.py",
+      "syntax": "ok",
+      "lines": 1
+    },
+    {
+      "file": "backend\\resilienceM5\\climate_twin.py",
+      "syntax": "ok",
+      "lines": 165
+    },
+    {
+      "file": "backend\\resilienceM5\\m1_adapter.py",
+      "syntax": "ok",
+      "lines": 136
+    },
+    {
+      "file": "backend\\resilienceM5\\m2_adapter.py",
+      "syntax": "ok",
+      "lines": 188
+    },
+    {
+      "file": "backend\\resilienceM5\\rescue_mode.py",
+      "syntax": "ok",
+      "lines": 199
+    },
+    {
+      "file": "backend\\resilienceM5\\routes.py",
+      "syntax": "ok",
+      "lines": 168
+    },
+    {
+      "file": "backend\\resilienceM5\\scenario_engine.py",
+      "syntax": "ok",
+      "lines": 305
+    },
+    {
+      "file": "backend\\resilienceM5\\stress_test.py",
+      "syntax": "ok",
+      "lines": 237
+    },
+    {
+      "file": "backend\\resilienceM5\\__init__.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\scripts\\warm_m5.py",
+      "syntax": "ok",
+      "lines": 37
+    },
+    {
+      "file": "backend\\shared\\schemas.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\shared\\__init__.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\tests\\test_agriculture_api.py",
+      "syntax": "ok",
+      "lines": 10
+    },
+    {
+      "file": "backend\\tests\\test_m2_plan_engine.py",
+      "syntax": "ok",
+      "lines": 135
+    },
+    {
+      "file": "backend\\tests\\test_m3_mapping.py",
+      "syntax": "ok",
+      "lines": 204
+    },
+    {
+      "file": "backend\\tests\\test_m4_assistant.py",
+      "syntax": "ok",
+      "lines": 608
+    },
+    {
+      "file": "backend\\tests\\test_m4_blind_spots.py",
+      "syntax": "ok",
+      "lines": 498
+    },
+    {
+      "file": "backend\\tests\\test_m4_evidence.py",
+      "syntax": "ok",
+      "lines": 420
+    },
+    {
+      "file": "backend\\tests\\test_m4_integration.py",
+      "syntax": "ok",
+      "lines": 303
+    },
+    {
+      "file": "backend\\tests\\test_m4_providers.py",
+      "syntax": "ok",
+      "lines": 227
+    },
+    {
+      "file": "backend\\tests\\test_m4_schemas.py",
+      "syntax": "ok",
+      "lines": 271
+    },
+    {
+      "file": "backend\\tests\\test_m5_m2_integration.py",
+      "syntax": "ok",
+      "lines": 188
+    },
+    {
+      "file": "backend\\tests\\test_m5_resilience.py",
+      "syntax": "ok",
+      "lines": 487
+    },
+    {
+      "file": "backend\\tests\\test_m5_stress_algorithms.py",
+      "syntax": "ok",
+      "lines": 205
+    },
+    {
+      "file": "backend\\tests\\test_water_wallet.py",
+      "syntax": "ok",
+      "lines": 30
+    },
+    {
+      "file": "backend\\tests\\climateM1\\test_history_normalization.py",
+      "syntax": "ok",
+      "lines": 87
+    },
+    {
+      "file": "backend\\intelligenceM4\\fixtures\\build_fixtures.py",
+      "syntax": "ok",
+      "lines": 248
+    },
+    {
+      "file": "backend\\intelligenceM4\\fixtures\\__init__.py",
+      "syntax": "ok",
+      "lines": 23
+    },
+    {
+      "file": "backend\\intelligenceM4\\providers\\agriculture_provider.py",
+      "syntax": "ok",
+      "lines": 98
+    },
+    {
+      "file": "backend\\intelligenceM4\\providers\\climate_provider.py",
+      "syntax": "ok",
+      "lines": 128
+    },
+    {
+      "file": "backend\\intelligenceM4\\providers\\farm_provider.py",
+      "syntax": "ok",
+      "lines": 40
+    },
+    {
+      "file": "backend\\intelligenceM4\\providers\\resilience_provider.py",
+      "syntax": "ok",
+      "lines": 35
+    },
+    {
+      "file": "backend\\intelligenceM4\\providers\\__init__.py",
+      "syntax": "ok",
+      "lines": 98
+    },
+    {
+      "file": "backend\\intelligenceM4\\rag\\grounding.py",
+      "syntax": "ok",
+      "lines": 1
+    },
+    {
+      "file": "backend\\intelligenceM4\\rag\\retriever.py",
+      "syntax": "ok",
+      "lines": 1
+    },
+    {
+      "file": "backend\\intelligenceM4\\rag\\__init__.py",
+      "syntax": "ok",
+      "lines": 1
+    },
+    {
+      "file": "backend\\climateM1\\api\\climate.py",
+      "syntax": "ok",
+      "lines": 104
+    },
+    {
+      "file": "backend\\climateM1\\core\\config.py",
+      "syntax": "ok",
+      "lines": 19
+    },
+    {
+      "file": "backend\\climateM1\\models\\climate.py",
+      "syntax": "ok",
+      "lines": 161
+    },
+    {
+      "file": "backend\\climateM1\\services\\cache.py",
+      "syntax": "ok",
+      "lines": 46
+    },
+    {
+      "file": "backend\\climateM1\\services\\history.py",
+      "syntax": "ok",
+      "lines": 428
+    },
+    {
+      "file": "backend\\climateM1\\services\\locations.py",
+      "syntax": "ok",
+      "lines": 17
+    },
+    {
+      "file": "backend\\climateM1\\services\\model_registry.py",
+      "syntax": "ok",
+      "lines": 59
+    },
+    {
+      "file": "backend\\climateM1\\services\\projections.py",
+      "syntax": "ok",
+      "lines": 1074
+    },
+    {
+      "file": "backend\\agricultureM2\\providers\\gaez.py",
+      "syntax": "ok",
+      "lines": 0
+    },
+    {
+      "file": "backend\\agricultureM2\\providers\\m1_climate.py",
+      "syntax": "ok",
+      "lines": 106
+    },
+    {
+      "file": "backend\\agricultureM2\\providers\\__init__.py",
+      "syntax": "ok",
+      "lines": 0
+    }
+  ],
+  "data": [
+    {
+      "file": "backend\\data\\climate_cache.sqlite3",
+      "bytes": 349573120,
+      "tracked": false,
+      "sha256": "785864a81b00b0f73bd12c4ae32cf10901831061dbac7605b541f84cb133909b"
+    },
+    {
+      "file": "backend\\data\\farms\\demo_farms.json",
+      "bytes": 5561,
+      "tracked": true,
+      "sha256": "248162bb7e61b992e12c44a60660e80af98a7344a4fbc546534e61cd9379a441"
+    },
+    {
+      "file": "backend\\data\\fixtures\\m5_test_rotation_request.json",
+      "bytes": 329,
+      "tracked": true,
+      "sha256": "ad6c680975ce60727237e43428ed956f73f4e3eedc8b38656e980fbd80597f86"
+    },
+    {
+      "file": "backend\\data\\processed\\m5_farm_climate_cache.json",
+      "bytes": 605211,
+      "tracked": true,
+      "sha256": "39175070aca5fbf1714373db81138c60a9a7c7923f8fb14aa7a2497437d47eac"
+    },
+    {
+      "file": "backend\\data\\reference\\crop_catalog.csv",
+      "bytes": 760,
+      "tracked": true,
+      "sha256": "dcdc5578e6fe135d9ff049ce53d284accf66cf78df105608629b52289a095e47"
+    },
+    {
+      "file": "backend\\data\\reference\\crop_economics.csv",
+      "bytes": 2852,
+      "tracked": true,
+      "sha256": "5ae5b6f9d34a750a97489a02bccc741d493216dbb7b00abb1115bc590cfff48f"
+    },
+    {
+      "file": "backend\\data\\reference\\crop_ranges.csv",
+      "bytes": 1023,
+      "tracked": true,
+      "sha256": "073ca9b207c1b86677ad7a00c3995adae3b541393f337daf99ebee3e7951e0ef"
+    },
+    {
+      "file": "backend\\data\\reference\\crop_water_coefficients.csv",
+      "bytes": 643,
+      "tracked": true,
+      "sha256": "663086888bf3a6f92b49faa6d4a35a18d7bbb0cd8d1d89c10da203d1bf622496"
+    },
+    {
+      "file": "backend\\data\\reference\\gaez_layers.csv",
+      "bytes": 0,
+      "tracked": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "backend\\data\\raw\\fao_gaez\\.gitkeep",
+      "bytes": 0,
+      "tracked": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\.gitkeep",
+      "bytes": 0,
+      "tracked": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\6cc4c440992b9c885dbfd9fb.json",
+      "bytes": 5198,
+      "tracked": true,
+      "sha256": "79ff3c9e2de6dca0343f3015a9ffe03fa4c6bccded9f70a90af5b66145c244f3"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\725f5f5e7e4819640664a39d.json",
+      "bytes": 5163,
+      "tracked": true,
+      "sha256": "e71219c1a3434dfd03e345183352541972a8c9783c9419f55a1829324de2eb20"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\818b86777df86e824d106299.json",
+      "bytes": 5183,
+      "tracked": true,
+      "sha256": "74f737cee92cc30786815b97d1011007e6a6506b588ca1a09a6b379a82642d74"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\c7113f34c1aa7c2a73bc01f9.json",
+      "bytes": 5158,
+      "tracked": true,
+      "sha256": "71d558a700745faf923cf9b0139f7bebdfe71c6fa63fe79d3bb7c2dab125cd71"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\cb4f14dea210ea1834e0e401.json",
+      "bytes": 5162,
+      "tracked": true,
+      "sha256": "ff905faa2454654103ccf17f4fd206c4be4ee980a5f38d4df35163b92ee5e75f"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\d27c2620ebcc7589af19863d.json",
+      "bytes": 5195,
+      "tracked": true,
+      "sha256": "78443c09fc5a09b035ad7ce78e7e522c63b094c19b3bdda95c080052baae904f"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\d6edb5f1814aa811fa9abe14.json",
+      "bytes": 5186,
+      "tracked": true,
+      "sha256": "445e2d8d9efc5934837a23f50457ecf028f729c1930cb3eaf40ef4f40ab0e831"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\d79144185c1ba0dcf4b34cdd.json",
+      "bytes": 5179,
+      "tracked": true,
+      "sha256": "ac8b3c960ce3c44e1298585a715b1faa8615f5a718711e2b710dacf1238d00e0"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\e0e447521b46c14908af5b37.json",
+      "bytes": 5165,
+      "tracked": true,
+      "sha256": "065424f6bee00b6cbf00727193301ad0f3df2e1a6977eb687ee4ac19e0b50f3a"
+    },
+    {
+      "file": "backend\\data\\raw\\nasa_power\\m5_analogs\\f7c2b3c71edf6db7ccf02fa0.json",
+      "bytes": 5172,
+      "tracked": true,
+      "sha256": "279a4384b6c2f03883d2eb57af19098cd2d15b4f5b073d5f2fd06080689b356a"
+    }
+  ],
+  "branch_commits": [
+    "ce1da6d Alexandra Leung Dat Wan: Merge branch 'Alexandra' into kentish",
+    "b1cb43b Kentish Thummanah: Patch work after testing v2",
+    "4874480 Kentish Thummanah: Testing v1 of whole backend, sending to work on frontend untill full testing complete",
+    "b8d2add Kentish Thummanah: Merge branch 'kentish' of github.com:alexandra-leung/CropCompass-NASA-2026 into kentish",
+    "b9602c8 Kentish Thummanah: Integrate M4 with M5 and testing good",
+    "aaec3d0 sanj-xna: Update team name from Marigold to AthenaX"
+  ],
+  "main_diff": {
+    ".gitignore": "M",
+    ".vscode/settings.json": "A",
+    "README.md": "M",
+    "backend/.env.example": "M",
+    "backend/agricultureM2/crop_catalog.py": "M",
+    "backend/agricultureM2/plan_engine.py": "A",
+    "backend/agricultureM2/plans_routes.py": "A",
+    "backend/agricultureM2/providers/__init__.py": "A",
+    "backend/agricultureM2/providers/gaez.py": "A",
+    "backend/agricultureM2/providers/m1_climate.py": "A",
+    "backend/agricultureM2/rotation_engine.py": "M",
+    "backend/agricultureM2/rotation_generator.py": "M",
+    "backend/agricultureM2/routes.py": "M",
+    "backend/agricultureM2/scoring.py": "M",
+    "backend/agricultureM2/suitability.py": "M",
+    "backend/agricultureM2/water_wallet.py": "M",
+    "backend/app.py": "M",
+    "backend/climateM1/API_CONTRACT.md": "A",
+    "backend/climateM1/__init__.py": "M",
+    "backend/climateM1/api/climate.py": "A",
+    "backend/climateM1/config/model_registry.json": "A",
+    "backend/climateM1/core/config.py": "A",
+    "backend/climateM1/models/climate.py": "A",
+    "backend/climateM1/services/cache.py": "A",
+    "backend/climateM1/services/history.py": "A",
+    "backend/climateM1/services/locations.py": "A",
+    "backend/climateM1/services/model_registry.py": "A",
+    "backend/climateM1/services/projections.py": "A",
+    "backend/data/farms/demo_farms.json": "A",
+    "backend/data/fixtures/m5_test_rotation_request.json": "A",
+    "backend/data/processed/m5_farm_climate_cache.json": "A",
+    "backend/data/raw/fao_gaez/.gitkeep": "A",
+    "backend/data/raw/nasa_power/m5_analogs/6cc4c440992b9c885dbfd9fb.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/725f5f5e7e4819640664a39d.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/818b86777df86e824d106299.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/c7113f34c1aa7c2a73bc01f9.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/cb4f14dea210ea1834e0e401.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/d27c2620ebcc7589af19863d.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/d6edb5f1814aa811fa9abe14.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/d79144185c1ba0dcf4b34cdd.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/e0e447521b46c14908af5b37.json": "A",
+    "backend/data/raw/nasa_power/m5_analogs/f7c2b3c71edf6db7ccf02fa0.json": "A",
+    "backend/data/reference/crop_catalog.csv": "M",
+    "backend/data/reference/crop_economics.csv": "A",
+    "backend/data/reference/crop_ranges.csv": "A",
+    "backend/data/reference/crop_water_coefficients.csv": "M",
+    "backend/data/reference/gaez_layers.csv": "A",
+    "backend/intelligenceM4/API_CONTRACT.md": "A",
+    "backend/intelligenceM4/README.md": "A",
+    "backend/intelligenceM4/__init__.py": "M",
+    "backend/intelligenceM4/assistant.py": "A",
+    "backend/intelligenceM4/blind_spot_detector.py": "A",
+    "backend/intelligenceM4/data_quality.py": "M",
+    "backend/intelligenceM4/evidence_passport.py": "M",
+    "backend/intelligenceM4/fixtures/__init__.py": "A",
+    "backend/intelligenceM4/fixtures/build_fixtures.py": "A",
+    "backend/intelligenceM4/fixtures/example_analyze_request.json": "A",
+    "backend/intelligenceM4/fixtures/example_analyze_response.json": "A",
+    "backend/intelligenceM4/fixtures/example_assistant_request.json": "A",
+    "backend/intelligenceM4/fixtures/example_assistant_response.json": "A",
+    "backend/intelligenceM4/fixtures/example_blind_spots_response.json": "A",
+    "backend/intelligenceM4/fixtures/example_evidence_request.json": "A",
+    "backend/intelligenceM4/fixtures/example_evidence_response.json": "A",
+    "backend/intelligenceM4/fixtures/m1_history__pamplemousses-04.json": "A",
+    "backend/intelligenceM4/fixtures/m1_scenarios__pamplemousses-04.json": "A",
+    "backend/intelligenceM4/fixtures/m2_generate__maize-cowpea-cabbage__max3.json": "A",
+    "backend/intelligenceM4/fixtures/m2_generate__maize-maize-maize__max3.json": "A",
+    "backend/intelligenceM4/fixtures/m2_rotation__maize-cowpea-cabbage.json": "A",
+    "backend/intelligenceM4/fixtures/m2_rotation__maize-maize-maize.json": "A",
+    "backend/intelligenceM4/fixtures/m2_suitability__cowpea__no-inputs.json": "A",
+    "backend/intelligenceM4/fixtures/m2_suitability__cowpea__temp25-ph6.5.json": "A",
+    "backend/intelligenceM4/fixtures/manifest.json": "A",
+    "backend/intelligenceM4/orchestrator.py": "A",
+    "backend/intelligenceM4/providers/__init__.py": "A",
+    "backend/intelligenceM4/providers/agriculture_provider.py": "A",
+    "backend/intelligenceM4/providers/climate_provider.py": "A",
+    "backend/intelligenceM4/providers/farm_provider.py": "A",
+    "backend/intelligenceM4/providers/resilience_provider.py": "A",
+    "backend/intelligenceM4/rag/__init__.py": "A",
+    "backend/intelligenceM4/rag/grounding.py": "A",
+    "backend/intelligenceM4/rag/retriever.py": "A",
+    "backend/intelligenceM4/rag_assistant.py": "M",
+    "backend/intelligenceM4/routes.py": "M",
+    "backend/intelligenceM4/schemas.py": "A",
+    "backend/intelligenceM4/traceability.py": "A",
+    "backend/m5_stress_result.json": "A",
+    "backend/m5_twin_result.json": "A",
+    "backend/mappingM3/API_CONTRACT.md": "A",
+    "backend/mappingM3/README.md": "A",
+    "backend/mappingM3/__init__.py": "M",
+    "backend/mappingM3/farm_profile.py": "M",
+    "backend/mappingM3/field_boundaries.py": "M",
+    "backend/mappingM3/routes.py": "M",
+    "backend/mappingM3/soil_inputs.py": "A",
+    "backend/mappingM3/units.py": "A",
+    "backend/qa_reports/BACKEND_READINESS.md": "A",
+    "backend/qa_reports/BACKEND_TEST_RESULTS.md": "A",
+    "backend/qa_reports/DATASET_VALIDATION.md": "A",
+    "backend/qa_reports/FINAL_BACKEND_AUDIT.md": "A",
+    "backend/qa_reports/FINAL_EXTERNAL_AND_INTEGRATION_VERIFICATION.md": "A",
+    "backend/qa_reports/INTEGRATION_TEST_RESULTS.md": "A",
+    "backend/qa_reports/live_external_integration_workflow.json": "A",
+    "backend/qa_reports/nex_historical_reference_comparison.json": "A",
+    "backend/requirements.txt": "M",
+    "backend/resilienceM5/API_CONTRACT.md": "A",
+    "backend/resilienceM5/FRONTEND_INTEGRATION_EXAMPLE.md": "A",
+    "backend/resilienceM5/M5_INTEGRATION_GUIDE.md": "A",
+    "backend/resilienceM5/M5_SCIENTIFIC_VALIDATION.md": "A",
+    "backend/resilienceM5/README.md": "A",
+    "backend/resilienceM5/climate_twin.py": "M",
+    "backend/resilienceM5/m1_adapter.py": "A",
+    "backend/resilienceM5/m2_adapter.py": "A",
+    "backend/resilienceM5/rescue_mode.py": "A",
+    "backend/resilienceM5/routes.py": "M",
+    "backend/resilienceM5/scenario_engine.py": "A",
+    "backend/resilienceM5/stress_test.py": "M",
+    "backend/scripts/warm_m5.py": "A",
+    "backend/tests/climateM1/test_history_normalization.py": "A",
+    "backend/tests/test_agriculture_api.py": "A",
+    "backend/tests/test_m2_plan_engine.py": "A",
+    "backend/tests/test_m3_mapping.py": "A",
+    "backend/tests/test_m4_assistant.py": "A",
+    "backend/tests/test_m4_blind_spots.py": "A",
+    "backend/tests/test_m4_evidence.py": "A",
+    "backend/tests/test_m4_integration.py": "A",
+    "backend/tests/test_m4_providers.py": "A",
+    "backend/tests/test_m4_schemas.py": "A",
+    "backend/tests/test_m5_m2_integration.py": "A",
+    "backend/tests/test_m5_resilience.py": "A",
+    "backend/tests/test_m5_stress_algorithms.py": "A",
+    "backend/tests/test_water_wallet.py": "A",
+    "frontend/.env.example": "A",
+    "frontend/.gitignore": "A",
+    "frontend/.oxlintrc.json": "A",
+    "frontend/README.md": "A",
+    "frontend/index.html": "A",
+    "frontend/package-lock.json": "A",
+    "frontend/package.json": "A",
+    "frontend/public/favicon.svg": "A",
+    "frontend/public/icons.svg": "A",
+    "frontend/src/App.tsx": "A",
+    "frontend/src/api.ts": "A",
+    "frontend/src/crops.tsx": "A",
+    "frontend/src/fallback/analyze.json": "A",
+    "frontend/src/fallback/crops.json": "A",
+    "frontend/src/fallback/farm_profiles.json": "A",
+    "frontend/src/fallback/farms.json": "A",
+    "frontend/src/fallback/generate.json": "A",
+    "frontend/src/fallback/history.json": "A",
+    "frontend/src/fallback/history_all.json": "A",
+    "frontend/src/fallback/locations.json": "A",
+    "frontend/src/fallback/m5_stress.json": "A",
+    "frontend/src/fallback/m5_twins.json": "A",
+    "frontend/src/fallback/plans.json": "A",
+    "frontend/src/fallback/scenarios.json": "A",
+    "frontend/src/fallback/stress.json": "A",
+    "frontend/src/fallback/suitability.json": "A",
+    "frontend/src/fallback/thisyear.json": "A",
+    "frontend/src/fallback/twin.json": "A",
+    "frontend/src/index.css": "A",
+    "frontend/src/main.tsx": "A",
+    "frontend/src/satellite.tsx": "A",
+    "frontend/src/ui.tsx": "A",
+    "frontend/tsconfig.app.json": "A",
+    "frontend/tsconfig.json": "A",
+    "frontend/tsconfig.node.json": "A",
+    "frontend/vite.config.ts": "A"
+  },
+  "integration_diff": {
+    "README.md": "M",
+    "backend/.env.example": "M",
+    "backend/CropCompass-Nasa/README.md": "D",
+    "backend/CropCompass-Nasa/backend/__pycache__/app.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__init__.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/__init__.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/__init__.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/crop_catalog.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/crop_catalog.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/rotation_engine.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/rotation_engine.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/rotation_generator.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/rotation_generator.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/rotation_water_comparison.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/rotation_water_comparison.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/routes.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/routes.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/suitability.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/suitability.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/water_budget.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/water_budget.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/water_wallet.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/__pycache__/water_wallet.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/crop_catalog.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/providers/__init__.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/providers/gaez.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/providers/m1_climate.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/rotation_engine.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/rotation_generator.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/rotation_water_comparison.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/routes.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/scoring.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/suitability.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/water_budget.py": "D",
+    "backend/CropCompass-Nasa/backend/agricultureM2/water_wallet.py": "D",
+    "backend/CropCompass-Nasa/backend/app.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/__init__.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/__pycache__/__init__.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/__pycache__/__init__.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/api/__pycache__/climate.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/api/__pycache__/climate.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/api/climate.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/climate_processor.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/config/model_registry.json": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/core/__pycache__/config.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/core/__pycache__/config.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/core/config.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/models/__pycache__/climate.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/models/__pycache__/climate.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/models/climate.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/nasa_power.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/projections.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/routes.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/cache.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/cache.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/history.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/history.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/locations.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/locations.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/model_registry.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/model_registry.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/projections.cpython-311.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/__pycache__/projections.cpython-312.pyc": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/cache.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/history.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/locations.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/model_registry.py": "D",
+    "backend/CropCompass-Nasa/backend/climateM1/services/projections.py": "D",
+    "backend/CropCompass-Nasa/backend/data/climate_cache.sqlite3": "D",
+    "backend/CropCompass-Nasa/backend/data/reference/crop_catalog.csv": "D",
+    "backend/CropCompass-Nasa/backend/data/reference/crop_water_coefficients.csv": "D",
+    "backend/CropCompass-Nasa/backend/data/reference/gaez_layers.csv": "D",
+    "backend/CropCompass-Nasa/backend/intelligenceM4/__init__.py": "D",
+    "backend/CropCompass-Nasa/backend/intelligenceM4/data_quality.py": "D",
+    "backend/CropCompass-Nasa/backend/intelligenceM4/evidence_passport.py": "D",
+    "backend/CropCompass-Nasa/backend/intelligenceM4/rag_assistant.py": "D",
+    "backend/CropCompass-Nasa/backend/intelligenceM4/routes.py": "D",
+    "backend/CropCompass-Nasa/backend/mappingM3/__init__.py": "D",
+    "backend/CropCompass-Nasa/backend/mappingM3/farm_profile.py": "D",
+    "backend/CropCompass-Nasa/backend/mappingM3/field_boundaries.py": "D",
+    "backend/CropCompass-Nasa/backend/mappingM3/routes.py": "D",
+    "backend/CropCompass-Nasa/backend/requirements.txt": "D",
+    "backend/CropCompass-Nasa/backend/resilienceM5/__init__.py": "D",
+    "backend/CropCompass-Nasa/backend/resilienceM5/climate_twin.py": "D",
+    "backend/CropCompass-Nasa/backend/resilienceM5/routes.py": "D",
+    "backend/CropCompass-Nasa/backend/resilienceM5/stress_test.py": "D",
+    "backend/CropCompass-Nasa/backend/shared/__init__.py": "D",
+    "backend/CropCompass-Nasa/backend/shared/schemas.py": "D",
+    "backend/CropCompass-Nasa/backend/test_crop_data.py": "D",
+    "backend/CropCompass-Nasa/backend/test_final_validation.py": "D",
+    "backend/CropCompass-Nasa/backend/test_rotation_comparison.py": "D",
+    "backend/CropCompass-Nasa/backend/test_water_budget.py": "D",
+    "backend/CropCompass-Nasa/backend/tests/climateM1/test_history_normalization.py": "D",
+    "backend/CropCompass-Nasa/frontend/rotation_studio.html": "D",
+    "backend/agricultureM2/routes.py": "M",
+    "backend/agricultureM2/water_wallet.py": "M",
+    "backend/climateM1/models/climate.py": "M",
+    "backend/climateM1/services/history.py": "M",
+    "backend/intelligenceM4/API_CONTRACT.md": "M",
+    "backend/intelligenceM4/assistant.py": "M",
+    "backend/intelligenceM4/blind_spot_detector.py": "M",
+    "backend/intelligenceM4/evidence_passport.py": "M",
+    "backend/intelligenceM4/fixtures/example_analyze_response.json": "M",
+    "backend/intelligenceM4/fixtures/example_assistant_response.json": "M",
+    "backend/intelligenceM4/fixtures/example_blind_spots_response.json": "M",
+    "backend/intelligenceM4/fixtures/example_evidence_response.json": "M",
+    "backend/intelligenceM4/fixtures/manifest.json": "M",
+    "backend/intelligenceM4/providers/agriculture_provider.py": "M",
+    "backend/intelligenceM4/providers/climate_provider.py": "M",
+    "backend/intelligenceM4/providers/resilience_provider.py": "M",
+    "backend/intelligenceM4/schemas.py": "M",
+    "backend/qa_reports/BACKEND_READINESS.md": "A",
+    "backend/qa_reports/BACKEND_TEST_RESULTS.md": "A",
+    "backend/qa_reports/DATASET_VALIDATION.md": "A",
+    "backend/qa_reports/FINAL_BACKEND_AUDIT.md": "A",
+    "backend/qa_reports/FINAL_EXTERNAL_AND_INTEGRATION_VERIFICATION.md": "A",
+    "backend/qa_reports/INTEGRATION_TEST_RESULTS.md": "A",
+    "backend/qa_reports/live_external_integration_workflow.json": "A",
+    "backend/qa_reports/nex_historical_reference_comparison.json": "A",
+    "backend/requirements.txt": "M",
+    "backend/resilienceM5/README.md": "M",
+    "backend/tests/climateM1/test_history_normalization.py": "M",
+    "backend/tests/test_agriculture_api.py": "A",
+    "backend/tests/test_m4_assistant.py": "M",
+    "backend/tests/test_m4_blind_spots.py": "M",
+    "backend/tests/test_m4_evidence.py": "M",
+    "backend/tests/test_m4_integration.py": "M",
+    "backend/tests/test_m4_providers.py": "M",
+    "backend/tests/test_m4_schemas.py": "M",
+    "backend/tests/test_water_wallet.py": "A"
+  }
+}

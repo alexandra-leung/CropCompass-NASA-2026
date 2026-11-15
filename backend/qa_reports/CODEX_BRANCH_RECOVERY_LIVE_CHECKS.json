@@ -1,0 +1,43 @@
+{
+  "NASA_POWER": {
+    "url": "https://power.larc.nasa.gov/api/temporal/monthly/point?community=AG&parameters=T2M,PRECTOTCORR&latitude=-20.103&longitude=57.575&start=2024&end=2024&format=JSON&time-standard=UTC",
+    "status": 200,
+    "bytes": 942,
+    "content_type": "application/json",
+    "seconds": 2.01,
+    "parameters": {
+      "PRECTOTCORR": {
+        "units": "mm/day",
+        "longname": "Precipitation Corrected"
+      },
+      "T2M": {
+        "units": "C",
+        "longname": "Temperature at 2 Meters"
+      }
+    },
+    "header": {
+      "title": "NASA/POWER Source Native Resolution Monthly and Annual",
+      "api": {
+        "version": "v2.10.0",
+        "name": "POWER Monthly and Annual API"
+      },
+      "sources": [
+        "MERRA2"
+      ],
+      "fill_value": -999.0,
+      "time_standard": "UTC",
+      "start": "20240101",
+      "end": "20241231"
+    }
+  },
+  "NASA_NEX": {
+    "url": "https://ds.nccs.nasa.gov/thredds/ncss/grid/AMES/NEX/GDDP-CMIP6/ACCESS-CM2/ssp245/r1i1p1f1/pr/pr_day_ACCESS-CM2_ssp245_r1i1p1f1_gn_2041_v2.0.nc?var=pr&horizStride=1&time_start=2041-01-01T12%3A00%3A00Z&time_end=2041-12-31T12%3A00%3A00Z&accept=netcdf3&addLatLon=true&north=-19.6030&south=-20.6030&west=57.0750&east=58.0750",
+    "error": "HTTPSConnectionPool(host='ds.nccs.nasa.gov', port=443): Max retries exceeded with url: /thredds/ncss/grid/AMES/NEX/GDDP-CMIP6/ACCESS-CM2/ssp245/r1i1p1f1/pr/pr_day_ACCESS-CM2_ssp245_r1i1p1f1_gn_2041_v2.0.nc?var=pr&horizStride=1&time_start=2041-01-01T12%3A00%3A00Z&time_end=2041-12-31T12%3A00%3A00Z&accept=netcdf3&addLatLon=true&north=-19.6030&south=-20.6030&west=57.0750&east=58.0750 (Caused by ConnectTimeoutError(<HTTPSConnection(host='ds.nccs.nasa.gov', port=443) at 0x1a2249c1810>, 'Connection to ds.nccs.nasa.gov timed out. (connect timeout=10)'))",
+    "seconds": 10.23
+  },
+  "Statistics_Mauritius": {
+    "url": "https://mauritius-chamber-of-agriculture.org/wp-content/uploads/2025/04/Area-harvested-production-of-foodcrops-2024.pdf",
+    "error": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+    "seconds": 0.47
+  }
+}

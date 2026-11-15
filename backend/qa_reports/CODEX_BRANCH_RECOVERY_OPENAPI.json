@@ -1,0 +1,4689 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CropCompass 2.0",
+    "description": "NASA Space Apps Challenge 2026",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/climate/history": {
+      "get": {
+        "tags": [
+          "Climate intelligence"
+        ],
+        "summary": "Climate History",
+        "operationId": "climate_history_api_climate_history_get",
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "pamplemousses-04",
+              "title": "Location Id"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "default": "2021-01-01",
+              "title": "Start"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "default": "2025-12-31",
+              "title": "End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResponse-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/climate/scenarios": {
+      "get": {
+        "tags": [
+          "Climate intelligence"
+        ],
+        "summary": "Climate Scenarios",
+        "operationId": "climate_scenarios_api_climate_scenarios_get",
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "pamplemousses-04",
+              "title": "Location Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioResponse-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agriculture/crops": {
+      "get": {
+        "tags": [
+          "M2 - Agricultural Intelligence"
+        ],
+        "summary": "Get Crops",
+        "operationId": "get_crops_api_agriculture_crops_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agriculture/rotation": {
+      "post": {
+        "tags": [
+          "M2 - Agricultural Intelligence"
+        ],
+        "summary": "Analyze Rotation",
+        "operationId": "analyze_rotation_api_agriculture_rotation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agriculture/generate": {
+      "post": {
+        "tags": [
+          "M2 - Agricultural Intelligence"
+        ],
+        "summary": "Generate Rotations",
+        "operationId": "generate_rotations_api_agriculture_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRotationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agriculture/suitability/{crop_id}": {
+      "get": {
+        "tags": [
+          "M2 - Agricultural Intelligence"
+        ],
+        "summary": "Crop Suitability",
+        "operationId": "crop_suitability_api_agriculture_suitability__crop_id__get",
+        "parameters": [
+          {
+            "name": "crop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Crop Id"
+            }
+          },
+          {
+            "name": "temperature_c",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Temperature C"
+            }
+          },
+          {
+            "name": "soil_ph",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Soil Ph"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agriculture/plans": {
+      "post": {
+        "tags": [
+          "M2 - Agricultural Intelligence"
+        ],
+        "summary": "Ranked rotation plans for a farm (water need, suitability, score)",
+        "operationId": "plans_api_agriculture_plans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlansRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Plans Api Agriculture Plans Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms": {
+      "get": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "List farms (demo farms first)",
+        "operationId": "list_farms_api_farms_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Farms Api Farms Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Create a farm",
+        "operationId": "create_api_farms_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FarmProfileIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Api Farms Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms/locations": {
+      "get": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Registered climate locations the farmer can choose from",
+        "operationId": "locations_api_farms_locations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Locations Api Farms Locations Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms/nearest-location": {
+      "get": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Closest registered location to a tapped point",
+        "operationId": "nearest_api_farms_nearest_location_get",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Lon"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Nearest Api Farms Nearest Location Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms/boundary/measure": {
+      "post": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Area and centre of a drawn field outline",
+        "operationId": "measure_api_farms_boundary_measure_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Measure Api Farms Boundary Measure Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms/boundary/suggest": {
+      "get": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Automatic outline suggestion (falls back to manual)",
+        "operationId": "suggest_api_farms_boundary_suggest_get",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180,
+              "minimum": -180,
+              "title": "Lon"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Suggest Api Farms Boundary Suggest Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms/validate": {
+      "post": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Check a profile for missing or contradictory inputs",
+        "operationId": "validate_api_farms_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FarmProfileIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Validate Api Farms Validate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms/{farm_id}": {
+      "get": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Full farm profile with validation report",
+        "operationId": "get_farm_api_farms__farm_id__get",
+        "parameters": [
+          {
+            "name": "farm_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Farm Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Farm Api Farms  Farm Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Replace a farm profile",
+        "operationId": "update_api_farms__farm_id__put",
+        "parameters": [
+          {
+            "name": "farm_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Farm Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FarmProfileIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Update Api Farms  Farm Id  Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Change some fields of a farm (e.g. the water slider)",
+        "operationId": "patch_api_farms__farm_id__patch",
+        "parameters": [
+          {
+            "name": "farm_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Farm Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patch Api Farms  Farm Id  Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Delete a farm you created (demo farms stay)",
+        "operationId": "delete_api_farms__farm_id__delete",
+        "parameters": [
+          {
+            "name": "farm_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Farm Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms/{farm_id}/context": {
+      "get": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Farm context in the M4 contract",
+        "operationId": "context_api_farms__farm_id__context_get",
+        "parameters": [
+          {
+            "name": "farm_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Farm Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Context Api Farms  Farm Id  Context Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farms/{farm_id}/boundary": {
+      "put": {
+        "tags": [
+          "M3 - Farm Mapping"
+        ],
+        "summary": "Save a drawn field outline",
+        "operationId": "put_boundary_api_farms__farm_id__boundary_put",
+        "parameters": [
+          {
+            "name": "farm_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Farm Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FieldBoundary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Put Boundary Api Farms  Farm Id  Boundary Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intelligence/evidence": {
+      "post": {
+        "tags": [
+          "M4 - Explainable AI & Integration"
+        ],
+        "summary": "Build the Evidence Passport for a supplied analysis",
+        "description": "Deterministically cites the M1/M2/M3/M5 results in the supplied AnalysisBundle. Every upstream value carries the exact field_path it was copied from. Missing data is reported, never filled in.",
+        "operationId": "evidence_api_intelligence_evidence_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisBundle-Input"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidencePassport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intelligence/blind-spots": {
+      "post": {
+        "tags": [
+          "M4 - Explainable AI & Integration"
+        ],
+        "summary": "Detect missing or incomplete evidence in a supplied analysis",
+        "description": "Deterministic rules over the supplied AnalysisBundle. Reports what is missing and who can supply it; never fills in a value. Uses the same detector as /evidence, so both endpoints report identical blind spots. module_status always contains M1, M2, M3 and M5.",
+        "operationId": "blind_spots_api_intelligence_blind_spots_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisBundle-Input"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlindSpotReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intelligence/assistant": {
+      "post": {
+        "tags": [
+          "M4 - Explainable AI & Integration"
+        ],
+        "summary": "Answer a question about a supplied analysis, grounded in its evidence",
+        "description": "Answers only from the Evidence Passport and blind spots built from the supplied AnalysisBundle. Template answers by default; use_llm=true lets an optional LLM (configured by environment variables) rephrase the template answer, falling back to the template on any problem. Every number in an answer must come from the cited evidence. Questions about yields, money, input doses, quantified soil improvement or crop choice are refused.",
+        "operationId": "assistant_api_intelligence_assistant_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intelligence/analyze": {
+      "post": {
+        "tags": [
+          "M4 - Explainable AI & Integration"
+        ],
+        "summary": "Run the full CropCompass analysis for a farm in one call",
+        "description": "Calls M1 (climate), M2 (rotation, alternatives, suitability for every crop), M3 and M5 when implemented, then builds the Evidence Passport and Blind-Spot Report. A failing or slow module is reported as unavailable and the analysis continues; only invalid input returns 4xx. The returned `bundle` can be sent unchanged to /evidence, /blind-spots and /assistant.",
+        "operationId": "analyze_api_intelligence_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resilience/health": {
+      "get": {
+        "tags": [
+          "Member 5 \u2014 Climate Resilience"
+        ],
+        "summary": "Health",
+        "operationId": "health_api_resilience_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resilience/climate-twin": {
+      "post": {
+        "tags": [
+          "Member 5 \u2014 Climate Resilience"
+        ],
+        "summary": "Climate Twin Endpoint",
+        "operationId": "climate_twin_endpoint_api_resilience_climate_twin_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClimateTwinResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resilience/stress-test": {
+      "post": {
+        "tags": [
+          "Member 5 \u2014 Climate Resilience"
+        ],
+        "summary": "Stress Test Endpoint",
+        "operationId": "stress_test_endpoint_api_resilience_stress_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/resilience/rescue-mode": {
+      "post": {
+        "tags": [
+          "Member 5 \u2014 Climate Resilience"
+        ],
+        "summary": "Rescue Mode Endpoint",
+        "operationId": "rescue_mode_endpoint_api_resilience_rescue_mode_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgricultureInput": {
+        "properties": {
+          "rotation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/M2RotationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alternatives": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/M2GenerationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "suitability": {
+            "items": {
+              "$ref": "#/components/schemas/M2SuitabilityResult"
+            },
+            "type": "array",
+            "title": "Suitability"
+          },
+          "suitability_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/SuitabilityInput"
+            },
+            "type": "array",
+            "title": "Suitability Inputs"
+          },
+          "water": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water"
+          }
+        },
+        "type": "object",
+        "title": "AgricultureInput"
+      },
+      "AnalysisBundle-Input": {
+        "properties": {
+          "analysis_id": {
+            "type": "string",
+            "title": "Analysis Id"
+          },
+          "farm": {
+            "$ref": "#/components/schemas/FarmContext"
+          },
+          "selected_scenario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Scenario"
+          },
+          "selected_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Year"
+          },
+          "climate": {
+            "$ref": "#/components/schemas/ClimateInput-Input"
+          },
+          "agriculture": {
+            "$ref": "#/components/schemas/AgricultureInput"
+          },
+          "resilience": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResilienceInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "analysis_id",
+          "farm"
+        ],
+        "title": "AnalysisBundle"
+      },
+      "AnalysisBundle-Output": {
+        "properties": {
+          "analysis_id": {
+            "type": "string",
+            "title": "Analysis Id"
+          },
+          "farm": {
+            "$ref": "#/components/schemas/FarmContext"
+          },
+          "selected_scenario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Scenario"
+          },
+          "selected_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Year"
+          },
+          "climate": {
+            "$ref": "#/components/schemas/ClimateInput-Output"
+          },
+          "agriculture": {
+            "$ref": "#/components/schemas/AgricultureInput"
+          },
+          "resilience": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResilienceInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "analysis_id",
+          "farm"
+        ],
+        "title": "AnalysisBundle"
+      },
+      "AnalyzeRequest": {
+        "properties": {
+          "farm": {
+            "$ref": "#/components/schemas/FarmContext"
+          },
+          "scenario": {
+            "type": "string",
+            "title": "Scenario",
+            "default": "ssp370"
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year",
+            "default": 2050
+          },
+          "max_alternatives": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Max Alternatives",
+            "default": 3
+          },
+          "analysis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "farm"
+        ],
+        "title": "AnalyzeRequest"
+      },
+      "AnalyzeResponse": {
+        "properties": {
+          "analysis_id": {
+            "type": "string",
+            "title": "Analysis Id"
+          },
+          "modules": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ModuleReport"
+            },
+            "propertyNames": {
+              "enum": [
+                "M1",
+                "M2",
+                "M3",
+                "M5"
+              ]
+            },
+            "type": "object",
+            "title": "Modules"
+          },
+          "bundle": {
+            "$ref": "#/components/schemas/AnalysisBundle-Output"
+          },
+          "passport": {
+            "$ref": "#/components/schemas/EvidencePassport"
+          },
+          "blind_spot_report": {
+            "$ref": "#/components/schemas/BlindSpotReport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analysis_id",
+          "modules",
+          "bundle",
+          "passport",
+          "blind_spot_report"
+        ],
+        "title": "AnalyzeResponse"
+      },
+      "AreaRequest": {
+        "properties": {
+          "geometry": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Geometry"
+          }
+        },
+        "type": "object",
+        "required": [
+          "geometry"
+        ],
+        "title": "AreaRequest"
+      },
+      "AssistantRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Question"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/AnalysisBundle-Input"
+          },
+          "use_llm": {
+            "type": "boolean",
+            "title": "Use Llm",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "question",
+          "analysis"
+        ],
+        "title": "AssistantRequest"
+      },
+      "AssistantResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "template",
+              "llm",
+              "refused"
+            ],
+            "title": "Mode"
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intent"
+          },
+          "cited_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cited Evidence"
+          },
+          "blind_spots": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Blind Spots"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "refusal_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal Reason"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "mode"
+        ],
+        "title": "AssistantResponse"
+      },
+      "BlindSpot": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "soil",
+              "water",
+              "climate",
+              "crop_reference",
+              "resolution",
+              "module"
+            ],
+            "title": "Category"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "warning",
+              "info"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "affects": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Affects"
+          },
+          "source_module": {
+            "type": "string",
+            "enum": [
+              "M1",
+              "M2",
+              "M3",
+              "M5",
+              "M4",
+              "farmer"
+            ],
+            "title": "Source Module"
+          },
+          "farmer_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Action"
+          },
+          "team_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Action"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Citations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "category",
+          "severity",
+          "message",
+          "source_module"
+        ],
+        "title": "BlindSpot"
+      },
+      "BlindSpotReport": {
+        "properties": {
+          "analysis_id": {
+            "type": "string",
+            "title": "Analysis Id"
+          },
+          "blind_spots": {
+            "items": {
+              "$ref": "#/components/schemas/BlindSpot"
+            },
+            "type": "array",
+            "title": "Blind Spots"
+          },
+          "module_status": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "ok",
+                "partial",
+                "unavailable",
+                "not_implemented"
+              ]
+            },
+            "propertyNames": {
+              "enum": [
+                "M1",
+                "M2",
+                "M3",
+                "M5"
+              ]
+            },
+            "type": "object",
+            "title": "Module Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analysis_id",
+          "blind_spots",
+          "module_status"
+        ],
+        "title": "BlindSpotReport"
+      },
+      "CallReport": {
+        "properties": {
+          "called": {
+            "type": "string",
+            "title": "Called"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "partial",
+              "unavailable",
+              "not_implemented"
+            ],
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "called",
+          "status"
+        ],
+        "title": "CallReport"
+      },
+      "CandidateLocation": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "id",
+          "name"
+        ],
+        "title": "CandidateLocation"
+      },
+      "Citation": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "source_module": {
+            "type": "string",
+            "enum": [
+              "M1",
+              "M2",
+              "M3",
+              "M5",
+              "M4",
+              "farmer"
+            ],
+            "title": "Source Module"
+          },
+          "field_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "value",
+          "source_module"
+        ],
+        "title": "Citation",
+        "description": "An upstream value a blind spot rests on, kept out of the message text."
+      },
+      "ClimateAnalog": {
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/CandidateLocation"
+          },
+          "distance_index": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Distance Index"
+          },
+          "temperature_rmse_c": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Temperature Rmse C"
+          },
+          "precipitation_mae_mm_per_month": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Precipitation Mae Mm Per Month"
+          },
+          "temperature_distance_component": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Temperature Distance Component"
+          },
+          "precipitation_distance_component": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Precipitation Distance Component"
+          },
+          "monthly_comparison": {
+            "items": {
+              "$ref": "#/components/schemas/MonthlyComparison"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "minItems": 12,
+            "title": "Monthly Comparison"
+          },
+          "candidate_provenance": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Candidate Provenance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location",
+          "distance_index",
+          "temperature_rmse_c",
+          "precipitation_mae_mm_per_month",
+          "temperature_distance_component",
+          "precipitation_distance_component",
+          "monthly_comparison",
+          "candidate_provenance"
+        ],
+        "title": "ClimateAnalog"
+      },
+      "ClimateInput-Input": {
+        "properties": {
+          "scenarios": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioResponse-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "history": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HistoryResponse-Input"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ClimateInput"
+      },
+      "ClimateInput-Output": {
+        "properties": {
+          "scenarios": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioResponse-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "history": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HistoryResponse-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ClimateInput"
+      },
+      "ClimateMetrics": {
+        "properties": {
+          "rainfallShift": {
+            "type": "number",
+            "title": "Rainfallshift"
+          },
+          "temperatureTrend": {
+            "type": "number",
+            "title": "Temperaturetrend"
+          },
+          "longestDrySpell": {
+            "type": "integer",
+            "title": "Longestdryspell"
+          },
+          "dataCompleteness": {
+            "type": "number",
+            "title": "Datacompleteness"
+          },
+          "annualRainfallTrend": {
+            "$ref": "#/components/schemas/ClimateTrend"
+          },
+          "annualTemperatureTrend": {
+            "$ref": "#/components/schemas/ClimateTrend"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rainfallShift",
+          "temperatureTrend",
+          "longestDrySpell",
+          "dataCompleteness",
+          "annualRainfallTrend",
+          "annualTemperatureTrend"
+        ],
+        "title": "ClimateMetrics"
+      },
+      "ClimateTrend": {
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "increasing",
+              "decreasing",
+              "no trend"
+            ],
+            "title": "Direction"
+          },
+          "slope": {
+            "type": "number",
+            "title": "Slope"
+          },
+          "pValue": {
+            "type": "number",
+            "title": "Pvalue"
+          },
+          "significant": {
+            "type": "boolean",
+            "title": "Significant"
+          },
+          "observations": {
+            "type": "integer",
+            "title": "Observations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "direction",
+          "slope",
+          "pValue",
+          "significant",
+          "observations"
+        ],
+        "title": "ClimateTrend"
+      },
+      "ClimateTwinResponse": {
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/CoordinatePayload"
+          },
+          "scenario": {
+            "type": "string",
+            "enum": [
+              "ssp245",
+              "ssp370"
+            ],
+            "title": "Scenario"
+          },
+          "period": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Period"
+          },
+          "historical": {
+            "$ref": "#/components/schemas/MonthlyClimatePayload"
+          },
+          "projected_target": {
+            "$ref": "#/components/schemas/MonthlyClimatePayload"
+          },
+          "analogs": {
+            "items": {
+              "$ref": "#/components/schemas/ClimateAnalog"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Analogs"
+          },
+          "candidate_count": {
+            "type": "integer",
+            "minimum": 3.0,
+            "title": "Candidate Count"
+          },
+          "excluded_candidates": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Excluded Candidates"
+          },
+          "method": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Method"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "scenario",
+          "period",
+          "historical",
+          "projected_target",
+          "analogs",
+          "candidate_count",
+          "excluded_candidates",
+          "method",
+          "limitations"
+        ],
+        "title": "ClimateTwinResponse"
+      },
+      "CoordinatePayload": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "title": "CoordinatePayload"
+      },
+      "Coordinates": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "title": "Coordinates"
+      },
+      "EnsembleScenario": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/EnsembleValue"
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "description",
+          "values"
+        ],
+        "title": "EnsembleScenario"
+      },
+      "EnsembleStatistics": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          },
+          "median": {
+            "type": "number",
+            "title": "Median"
+          },
+          "minimum": {
+            "type": "number",
+            "title": "Minimum"
+          },
+          "maximum": {
+            "type": "number",
+            "title": "Maximum"
+          },
+          "spread": {
+            "type": "number",
+            "title": "Spread"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "mean",
+          "median",
+          "minimum",
+          "maximum",
+          "spread"
+        ],
+        "title": "EnsembleStatistics"
+      },
+      "EnsembleValue": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "rainfallMm": {
+            "$ref": "#/components/schemas/EnsembleStatistics"
+          },
+          "temperatureC": {
+            "$ref": "#/components/schemas/EnsembleStatistics"
+          },
+          "contributingModels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Contributingmodels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "rainfallMm",
+          "temperatureC",
+          "contributingModels"
+        ],
+        "title": "EnsembleValue"
+      },
+      "EvidencePassport": {
+        "properties": {
+          "analysis_id": {
+            "type": "string",
+            "title": "Analysis Id"
+          },
+          "location_id": {
+            "type": "string",
+            "title": "Location Id"
+          },
+          "rotation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rotation"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRecord"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "rules_applied": {
+            "items": {
+              "$ref": "#/components/schemas/RuleApplied"
+            },
+            "type": "array",
+            "title": "Rules Applied"
+          },
+          "limitations": {
+            "items": {
+              "$ref": "#/components/schemas/Limitation"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "blind_spots": {
+            "items": {
+              "$ref": "#/components/schemas/BlindSpot"
+            },
+            "type": "array",
+            "title": "Blind Spots"
+          },
+          "recommendation_status": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "requires_further_validation",
+              "insufficient_evidence"
+            ],
+            "title": "Recommendation Status"
+          },
+          "generated_at": {
+            "type": "string",
+            "title": "Generated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analysis_id",
+          "location_id",
+          "rotation",
+          "evidence",
+          "rules_applied",
+          "limitations",
+          "blind_spots",
+          "recommendation_status",
+          "generated_at"
+        ],
+        "title": "EvidencePassport"
+      },
+      "EvidenceRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "claim": {
+            "type": "string",
+            "title": "Claim"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "partial",
+              "unsupported",
+              "not_evaluated",
+              "unavailable"
+            ],
+            "title": "Status"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/intelligenceM4__schemas__Provenance"
+          },
+          "qualifications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Qualifications"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "claim",
+          "status",
+          "provenance"
+        ],
+        "title": "EvidenceRecord"
+      },
+      "FarmContext": {
+        "properties": {
+          "farm_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farm Id"
+          },
+          "location_id": {
+            "type": "string",
+            "title": "Location Id"
+          },
+          "soil_ph": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 14.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Ph"
+          },
+          "field_area_ha": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Area Ha"
+          },
+          "irrigation_budget_m3": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irrigation Budget M3"
+          },
+          "current_rotation": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Rotation"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "M3",
+              "farmer"
+            ],
+            "title": "Source",
+            "default": "farmer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_id"
+        ],
+        "title": "FarmContext",
+        "description": "Farm context \u2014 proposed M3 contract. Farmer may also supply it directly.\n\nNone means \"not provided\" and becomes a blind spot. Never defaulted."
+      },
+      "FarmProfileIn": {
+        "properties": {
+          "farm_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]{1,48}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farm Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "location_id": {
+            "type": "string",
+            "title": "Location Id",
+            "default": "site"
+          },
+          "site": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Site"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rotation_calendar": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PlantingWindow"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation Calendar"
+          },
+          "field_area_ha": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 500.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Area Ha"
+          },
+          "soil": {
+            "$ref": "#/components/schemas/SoilInputs"
+          },
+          "irrigation": {
+            "$ref": "#/components/schemas/Irrigation"
+          },
+          "current_rotation": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Rotation"
+          },
+          "priorities": {
+            "$ref": "#/components/schemas/Priorities"
+          },
+          "prices_rs_per_kg": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices Rs Per Kg",
+            "description": "Farmer's own selling price per kg, by crop_id (used for harvest value)."
+          },
+          "costs_rs_per_ha": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Costs Rs Per Ha",
+            "description": "Farmer's growing cost per hectare per crop."
+          },
+          "constraints": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "little_labour_at_harvest",
+                "no_tractor",
+                "must_sell_to_market",
+                "need_food_for_home",
+                "short_lease"
+              ]
+            },
+            "type": "array",
+            "title": "Constraints"
+          },
+          "boundary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FieldBoundary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "FarmProfileIn",
+        "description": "What the farmer submits (create or full update)."
+      },
+      "FieldBoundary": {
+        "properties": {
+          "geometry": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Geometry"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "auto_suggested",
+              "default_square"
+            ],
+            "title": "Method",
+            "default": "manual"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "geometry"
+        ],
+        "title": "FieldBoundary",
+        "description": "A field outline plus how it was obtained."
+      },
+      "GenerateRotationRequest": {
+        "properties": {
+          "current_rotation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "minItems": 2,
+            "title": "Current Rotation"
+          },
+          "max_alternatives": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Max Alternatives",
+            "default": 3
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_rotation"
+        ],
+        "title": "GenerateRotationRequest"
+      },
+      "GridCell": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "title": "GridCell"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoryPoint": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "rainfallMm": {
+            "type": "number",
+            "title": "Rainfallmm"
+          },
+          "temperatureC": {
+            "type": "number",
+            "title": "Temperaturec"
+          },
+          "drySpellDays": {
+            "type": "integer",
+            "title": "Dryspelldays"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "label",
+          "rainfallMm",
+          "temperatureC",
+          "drySpellDays"
+        ],
+        "title": "HistoryPoint"
+      },
+      "HistoryResponse-Input": {
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "units": {
+            "$ref": "#/components/schemas/Units"
+          },
+          "timeseries": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryPoint"
+            },
+            "type": "array",
+            "title": "Timeseries"
+          },
+          "seasonal": {
+            "items": {
+              "$ref": "#/components/schemas/SeasonalPoint"
+            },
+            "type": "array",
+            "title": "Seasonal"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/ClimateMetrics"
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/Provenance-Input"
+            },
+            "type": "array",
+            "title": "Provenance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location",
+          "units",
+          "timeseries",
+          "seasonal",
+          "metrics",
+          "provenance"
+        ],
+        "title": "HistoryResponse"
+      },
+      "HistoryResponse-Output": {
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "units": {
+            "$ref": "#/components/schemas/Units"
+          },
+          "timeseries": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryPoint"
+            },
+            "type": "array",
+            "title": "Timeseries"
+          },
+          "seasonal": {
+            "items": {
+              "$ref": "#/components/schemas/SeasonalPoint"
+            },
+            "type": "array",
+            "title": "Seasonal"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/ClimateMetrics"
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/climateM1__models__climate__Provenance"
+            },
+            "type": "array",
+            "title": "Provenance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location",
+          "units",
+          "timeseries",
+          "seasonal",
+          "metrics",
+          "provenance"
+        ],
+        "title": "HistoryResponse"
+      },
+      "Irrigation": {
+        "properties": {
+          "water_source": {
+            "type": "string",
+            "enum": [
+              "rain_only",
+              "tank",
+              "borehole",
+              "irrigation_scheme",
+              "unknown"
+            ],
+            "title": "Water Source",
+            "default": "unknown"
+          },
+          "budget_mm_per_season": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Mm Per Season"
+          },
+          "budget_source": {
+            "type": "string",
+            "enum": [
+              "farmer",
+              "unknown"
+            ],
+            "title": "Budget Source",
+            "default": "unknown"
+          }
+        },
+        "type": "object",
+        "title": "Irrigation"
+      },
+      "Limitation": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "source_module": {
+            "type": "string",
+            "enum": [
+              "M1",
+              "M2",
+              "M3",
+              "M5",
+              "M4",
+              "farmer"
+            ],
+            "title": "Source Module"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "source_module"
+        ],
+        "title": "Limitation"
+      },
+      "Location": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "district": {
+            "type": "string",
+            "title": "District"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country",
+            "default": "Mauritius"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "district"
+        ],
+        "title": "Location"
+      },
+      "M2GenerationResult": {
+        "properties": {
+          "current_rotation": {
+            "$ref": "#/components/schemas/M2RotationResult"
+          },
+          "alternative_rotations": {
+            "items": {
+              "$ref": "#/components/schemas/M2RotationResult"
+            },
+            "type": "array",
+            "title": "Alternative Rotations"
+          },
+          "alternatives_found": {
+            "type": "integer",
+            "title": "Alternatives Found"
+          },
+          "selection_method": {
+            "type": "string",
+            "title": "Selection Method"
+          },
+          "agronomic_feasibility": {
+            "type": "string",
+            "title": "Agronomic Feasibility"
+          },
+          "ranking_status": {
+            "type": "string",
+            "title": "Ranking Status"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "current_rotation",
+          "alternative_rotations",
+          "alternatives_found",
+          "selection_method",
+          "agronomic_feasibility",
+          "ranking_status"
+        ],
+        "title": "M2GenerationResult",
+        "description": "Mirror of agricultureM2.rotation_generator.generate_rotation_candidates()."
+      },
+      "M2RepeatedFamily": {
+        "properties": {
+          "season": {
+            "type": "integer",
+            "title": "Season"
+          },
+          "crop_family": {
+            "type": "string",
+            "title": "Crop Family"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "season",
+          "crop_family"
+        ],
+        "title": "M2RepeatedFamily"
+      },
+      "M2RotationResult": {
+        "properties": {
+          "rotation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rotation"
+          },
+          "sequence": {
+            "items": {
+              "$ref": "#/components/schemas/M2SequenceItem"
+            },
+            "type": "array",
+            "title": "Sequence"
+          },
+          "crop_count": {
+            "type": "integer",
+            "title": "Crop Count"
+          },
+          "repeated_families": {
+            "items": {
+              "$ref": "#/components/schemas/M2RepeatedFamily"
+            },
+            "type": "array",
+            "title": "Repeated Families"
+          },
+          "nitrogen_fixing_crops": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Nitrogen Fixing Crops"
+          },
+          "has_adjacent_family_repetition": {
+            "type": "boolean",
+            "title": "Has Adjacent Family Repetition"
+          },
+          "soil_health_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Health Score"
+          },
+          "score_status": {
+            "type": "string",
+            "title": "Score Status"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "rotation",
+          "sequence",
+          "crop_count",
+          "repeated_families",
+          "nitrogen_fixing_crops",
+          "has_adjacent_family_repetition",
+          "score_status"
+        ],
+        "title": "M2RotationResult",
+        "description": "Mirror of agricultureM2.rotation_engine.evaluate_rotation()."
+      },
+      "M2SequenceItem": {
+        "properties": {
+          "season": {
+            "type": "integer",
+            "title": "Season"
+          },
+          "crop_id": {
+            "type": "string",
+            "title": "Crop Id"
+          },
+          "crop_name": {
+            "type": "string",
+            "title": "Crop Name"
+          },
+          "family": {
+            "type": "string",
+            "title": "Family"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "season",
+          "crop_id",
+          "crop_name",
+          "family",
+          "source_url"
+        ],
+        "title": "M2SequenceItem"
+      },
+      "M2SuitabilityCheck": {
+        "properties": {
+          "factor": {
+            "type": "string",
+            "title": "Factor"
+          },
+          "actual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "minimum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum"
+          },
+          "maximum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "factor",
+          "passed"
+        ],
+        "title": "M2SuitabilityCheck"
+      },
+      "M2SuitabilityResult": {
+        "properties": {
+          "crop_id": {
+            "type": "string",
+            "title": "Crop Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "within_checked_ranges",
+              "outside_reference_range",
+              "insufficient_data"
+            ],
+            "title": "Status"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/M2SuitabilityCheck"
+            },
+            "type": "array",
+            "title": "Checks"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "crop_id",
+          "status",
+          "checks",
+          "missing",
+          "source_url"
+        ],
+        "title": "M2SuitabilityResult",
+        "description": "Mirror of agricultureM2.suitability.check_crop_suitability()."
+      },
+      "ModelResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "variant": {
+            "type": "string",
+            "title": "Variant"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "partial",
+              "failed"
+            ],
+            "title": "Status",
+            "default": "success"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/Scenario"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "variant",
+          "scenarios"
+        ],
+        "title": "ModelResult"
+      },
+      "ModuleReport": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "partial",
+              "unavailable",
+              "not_implemented"
+            ],
+            "title": "Status"
+          },
+          "called": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Called"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "calls": {
+            "items": {
+              "$ref": "#/components/schemas/CallReport"
+            },
+            "type": "array",
+            "title": "Calls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ModuleReport",
+        "description": "Outcome of the provider calls made for one module during /analyze."
+      },
+      "MonthlyClimatePayload": {
+        "properties": {
+          "temperature_c": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "minItems": 12,
+            "title": "Temperature C"
+          },
+          "precipitation_mm": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "minItems": 12,
+            "title": "Precipitation Mm"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Provenance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "temperature_c",
+          "precipitation_mm",
+          "provenance"
+        ],
+        "title": "MonthlyClimatePayload"
+      },
+      "MonthlyComparison": {
+        "properties": {
+          "month": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Month"
+          },
+          "future_t_c": {
+            "type": "number",
+            "title": "Future T C"
+          },
+          "candidate_t_c": {
+            "type": "number",
+            "title": "Candidate T C"
+          },
+          "future_p_mm": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Future P Mm"
+          },
+          "candidate_p_mm": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Candidate P Mm"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "future_t_c",
+          "candidate_t_c",
+          "future_p_mm",
+          "candidate_p_mm"
+        ],
+        "title": "MonthlyComparison"
+      },
+      "PatchRequest": {
+        "properties": {
+          "field_area_ha": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Area Ha"
+          },
+          "soil": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil"
+          },
+          "irrigation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irrigation"
+          },
+          "current_rotation": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Rotation"
+          },
+          "priorities": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priorities"
+          },
+          "constraints": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraints"
+          },
+          "boundary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boundary"
+          },
+          "prices_rs_per_kg": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices Rs Per Kg"
+          },
+          "costs_rs_per_ha": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Costs Rs Per Ha"
+          }
+        },
+        "type": "object",
+        "title": "PatchRequest"
+      },
+      "PlansRequest": {
+        "properties": {
+          "farm_id": {
+            "type": "string",
+            "title": "Farm Id"
+          },
+          "temperature_change_c": {
+            "type": "number",
+            "maximum": 5.0,
+            "minimum": -2.0,
+            "title": "Temperature Change C",
+            "default": 0.0
+          },
+          "rainfall_change_pct": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": -60.0,
+            "title": "Rainfall Change Pct",
+            "default": 0.0
+          },
+          "water_budget_mm": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Budget Mm",
+            "description": "Override the farm's budget (what-if)"
+          },
+          "max_alternatives": {
+            "type": "integer",
+            "maximum": 6.0,
+            "minimum": 1.0,
+            "title": "Max Alternatives",
+            "default": 3
+          },
+          "prices_rs_per_kg": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices Rs Per Kg",
+            "description": "Farmer's own price per kg, by crop_id."
+          },
+          "costs_rs_per_ha": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Costs Rs Per Ha",
+            "description": "Farmer's growing cost per hectare per crop."
+          },
+          "rotations": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotations",
+            "description": "Evaluate exactly these rotations (stress tests) instead of generating alternatives."
+          }
+        },
+        "type": "object",
+        "required": [
+          "farm_id"
+        ],
+        "title": "PlansRequest"
+      },
+      "PlantingWindow": {
+        "properties": {
+          "crop_id": {
+            "type": "string",
+            "title": "Crop Id"
+          },
+          "start_month": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Start Month"
+          },
+          "end_month": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "End Month"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crop_id",
+          "start_month",
+          "end_month"
+        ],
+        "title": "PlantingWindow"
+      },
+      "Priorities": {
+        "properties": {
+          "water": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Water",
+            "default": 0.25
+          },
+          "soil": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Soil",
+            "default": 0.25
+          },
+          "climate": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Climate",
+            "default": 0.25
+          },
+          "income": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Income",
+            "default": 0.25
+          }
+        },
+        "type": "object",
+        "title": "Priorities",
+        "description": "Farmer weights. Stored normalised so they sum to 1 (plan section 11)."
+      },
+      "Provenance-Input": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "product": {
+            "type": "string",
+            "title": "Product"
+          },
+          "variable": {
+            "type": "string",
+            "title": "Variable"
+          },
+          "coordinates": {
+            "$ref": "#/components/schemas/Coordinates"
+          },
+          "gridResolution": {
+            "type": "string",
+            "title": "Gridresolution"
+          },
+          "dateRange": {
+            "type": "string",
+            "title": "Daterange"
+          },
+          "missingData": {
+            "type": "boolean",
+            "title": "Missingdata"
+          },
+          "retrievedAt": {
+            "type": "string",
+            "title": "Retrievedat"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "caveat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caveat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "product",
+          "variable",
+          "coordinates",
+          "gridResolution",
+          "dateRange",
+          "missingData",
+          "retrievedAt"
+        ],
+        "title": "Provenance"
+      },
+      "RescueRequest": {
+        "properties": {
+          "stress_output": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Stress Output"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stress_output"
+        ],
+        "title": "RescueRequest"
+      },
+      "ResilienceInput": {
+        "properties": {
+          "scenario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "climate_twin": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Climate Twin"
+          },
+          "stress_tests": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Stress Tests"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ResilienceInput",
+        "description": "M5 outputs supplied to M4 for traceable evidence collection."
+      },
+      "RotationRequest": {
+        "properties": {
+          "crops": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "minItems": 2,
+            "title": "Crops"
+          }
+        },
+        "type": "object",
+        "required": [
+          "crops"
+        ],
+        "title": "RotationRequest"
+      },
+      "RuleApplied": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Inputs"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule_id",
+          "description",
+          "inputs",
+          "outcome"
+        ],
+        "title": "RuleApplied"
+      },
+      "Scenario": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioValue"
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "description",
+          "model",
+          "values"
+        ],
+        "title": "Scenario"
+      },
+      "ScenarioResponse-Input": {
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "title": "Locationid"
+          },
+          "baselinePeriod": {
+            "type": "string",
+            "title": "Baselineperiod"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/Scenario"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance-Input"
+          },
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Caveats"
+          },
+          "modelResults": {
+            "items": {
+              "$ref": "#/components/schemas/ModelResult"
+            },
+            "type": "array",
+            "title": "Modelresults"
+          },
+          "ensemble": {
+            "items": {
+              "$ref": "#/components/schemas/EnsembleScenario"
+            },
+            "type": "array",
+            "title": "Ensemble"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locationId",
+          "baselinePeriod",
+          "scenarios",
+          "provenance",
+          "caveats"
+        ],
+        "title": "ScenarioResponse"
+      },
+      "ScenarioResponse-Output": {
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "title": "Locationid"
+          },
+          "baselinePeriod": {
+            "type": "string",
+            "title": "Baselineperiod"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/Scenario"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/climateM1__models__climate__Provenance"
+          },
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Caveats"
+          },
+          "modelResults": {
+            "items": {
+              "$ref": "#/components/schemas/ModelResult"
+            },
+            "type": "array",
+            "title": "Modelresults"
+          },
+          "ensemble": {
+            "items": {
+              "$ref": "#/components/schemas/EnsembleScenario"
+            },
+            "type": "array",
+            "title": "Ensemble"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locationId",
+          "baselinePeriod",
+          "scenarios",
+          "provenance",
+          "caveats"
+        ],
+        "title": "ScenarioResponse"
+      },
+      "ScenarioValue": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "rainfallMm": {
+            "type": "number",
+            "title": "Rainfallmm"
+          },
+          "temperatureC": {
+            "type": "number",
+            "title": "Temperaturec"
+          },
+          "gridCell": {
+            "$ref": "#/components/schemas/GridCell"
+          },
+          "sampleDays": {
+            "type": "integer",
+            "title": "Sampledays"
+          },
+          "expectedDays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expecteddays"
+          },
+          "missingDays": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missingdays"
+          },
+          "completenessPct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completenesspct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "rainfallMm",
+          "temperatureC",
+          "gridCell",
+          "sampleDays"
+        ],
+        "title": "ScenarioValue"
+      },
+      "SeasonalPoint": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "rainfallMm": {
+            "type": "number",
+            "title": "Rainfallmm"
+          },
+          "temperatureC": {
+            "type": "number",
+            "title": "Temperaturec"
+          },
+          "drySpellDays": {
+            "type": "integer",
+            "title": "Dryspelldays"
+          },
+          "completenessPct": {
+            "type": "number",
+            "title": "Completenesspct"
+          },
+          "completenessStatus": {
+            "type": "string",
+            "title": "Completenessstatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "label",
+          "rainfallMm",
+          "temperatureC",
+          "drySpellDays",
+          "completenessPct",
+          "completenessStatus"
+        ],
+        "title": "SeasonalPoint"
+      },
+      "Site": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "maximum": 75.0,
+            "minimum": -60.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "title": "Site",
+        "description": "Where the field is, for a farm anywhere in the world (NASA data is global)."
+      },
+      "SoilInputs": {
+        "properties": {
+          "texture": {
+            "type": "string",
+            "enum": [
+              "sand",
+              "loamy_sand",
+              "sandy_loam",
+              "loam",
+              "clay_loam",
+              "clay",
+              "unknown"
+            ],
+            "title": "Texture",
+            "default": "unknown"
+          },
+          "texture_source": {
+            "type": "string",
+            "enum": [
+              "farmer",
+              "map_estimate",
+              "unknown"
+            ],
+            "title": "Texture Source",
+            "default": "unknown"
+          },
+          "ph": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 14.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ph"
+          },
+          "ph_source": {
+            "type": "string",
+            "enum": [
+              "farmer",
+              "map_estimate",
+              "unknown"
+            ],
+            "title": "Ph Source",
+            "default": "unknown"
+          },
+          "drainage": {
+            "type": "string",
+            "enum": [
+              "poor",
+              "moderate",
+              "good",
+              "unknown"
+            ],
+            "title": "Drainage",
+            "default": "unknown"
+          },
+          "drainage_source": {
+            "type": "string",
+            "enum": [
+              "farmer",
+              "map_estimate",
+              "unknown"
+            ],
+            "title": "Drainage Source",
+            "default": "unknown"
+          }
+        },
+        "type": "object",
+        "title": "SoilInputs"
+      },
+      "StressRequest": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "maximum": 89.875,
+            "minimum": -59.875,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "scenario": {
+            "type": "string",
+            "enum": [
+              "ssp245",
+              "ssp370"
+            ],
+            "title": "Scenario",
+            "default": "ssp245"
+          },
+          "start_year": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 2027.0,
+            "title": "Start Year",
+            "default": 2041
+          },
+          "end_year": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 2027.0,
+            "title": "End Year",
+            "default": 2060
+          },
+          "rotation_request": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rotation Request"
+          },
+          "baseline_water_budget_m3": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Baseline Water Budget M3"
+          },
+          "irrigation_reduction_fraction": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMaximum": 1.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irrigation Reduction Fraction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "rotation_request",
+          "baseline_water_budget_m3"
+        ],
+        "title": "StressRequest"
+      },
+      "SuitabilityInput": {
+        "properties": {
+          "factor": {
+            "type": "string",
+            "title": "Factor"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "source_module": {
+            "type": "string",
+            "enum": [
+              "M1",
+              "M2",
+              "M3",
+              "M5",
+              "M4",
+              "farmer"
+            ],
+            "title": "Source Module"
+          },
+          "field_path": {
+            "type": "string",
+            "title": "Field Path"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "factor",
+          "value",
+          "unit",
+          "source_module",
+          "field_path"
+        ],
+        "title": "SuitabilityInput",
+        "description": "A value M4 passed into M2 suitability screening, and exactly where it came from.\n\nM4 only selects an existing value (e.g. M1's ensemble mean); it never computes one."
+      },
+      "TwinRequest": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "maximum": 89.875,
+            "minimum": -59.875,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "scenario": {
+            "type": "string",
+            "enum": [
+              "ssp245",
+              "ssp370"
+            ],
+            "title": "Scenario",
+            "default": "ssp245"
+          },
+          "start_year": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 2027.0,
+            "title": "Start Year",
+            "default": 2041
+          },
+          "end_year": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 2027.0,
+            "title": "End Year",
+            "default": 2060
+          },
+          "top_k": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Top K",
+            "default": 3
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "title": "TwinRequest"
+      },
+      "Units": {
+        "properties": {
+          "rainfall": {
+            "type": "string",
+            "title": "Rainfall",
+            "default": "mm/year"
+          },
+          "temperature": {
+            "type": "string",
+            "title": "Temperature",
+            "default": "\u00b0C daily mean"
+          },
+          "drySpells": {
+            "type": "string",
+            "title": "Dryspells",
+            "default": "consecutive days with rainfall < 1 mm/day"
+          }
+        },
+        "type": "object",
+        "title": "Units"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "climateM1__models__climate__Provenance": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "product": {
+            "type": "string",
+            "title": "Product"
+          },
+          "variable": {
+            "type": "string",
+            "title": "Variable"
+          },
+          "coordinates": {
+            "$ref": "#/components/schemas/Coordinates"
+          },
+          "gridResolution": {
+            "type": "string",
+            "title": "Gridresolution"
+          },
+          "dateRange": {
+            "type": "string",
+            "title": "Daterange"
+          },
+          "missingData": {
+            "type": "boolean",
+            "title": "Missingdata"
+          },
+          "retrievedAt": {
+            "type": "string",
+            "title": "Retrievedat"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "caveat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caveat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "product",
+          "variable",
+          "coordinates",
+          "gridResolution",
+          "dateRange",
+          "missingData",
+          "retrievedAt"
+        ],
+        "title": "Provenance"
+      },
+      "intelligenceM4__schemas__Provenance": {
+        "properties": {
+          "source_module": {
+            "type": "string",
+            "enum": [
+              "M1",
+              "M2",
+              "M3",
+              "M5",
+              "M4",
+              "farmer"
+            ],
+            "title": "Source Module"
+          },
+          "field_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Path"
+          },
+          "dataset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "grid_resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grid Resolution"
+          },
+          "retrieved_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieved At"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_module"
+        ],
+        "title": "Provenance"
+      }
+    }
+  }
+}

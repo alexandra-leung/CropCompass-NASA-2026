@@ -1,0 +1,82 @@
+{
+  "added": [
+    "tests.test_m2_plan_engine::test_candidates_change_family_and_include_a_legume",
+    "tests.test_m2_plan_engine::test_fixed_rotations_are_evaluated_in_order",
+    "tests.test_m2_plan_engine::test_harvest_value_and_income_score",
+    "tests.test_m2_plan_engine::test_hot_scenario_can_make_a_crop_marginal",
+    "tests.test_m2_plan_engine::test_kc_curve_follows_fao56_stages",
+    "tests.test_m2_plan_engine::test_m5_evaluator_uses_plan_engine",
+    "tests.test_m2_plan_engine::test_monoculture_ranks_below_a_legume_rotation",
+    "tests.test_m2_plan_engine::test_monthly_climate_needs_all_four_seasons",
+    "tests.test_m2_plan_engine::test_no_climate_means_no_water_numbers_not_invented",
+    "tests.test_m2_plan_engine::test_plans_route_uses_m3_farm",
+    "tests.test_m2_plan_engine::test_reference_data_loads_for_all_crops",
+    "tests.test_m2_plan_engine::test_shap_values_add_up_to_score",
+    "tests.test_m2_plan_engine::test_water_budget_decides_feasibility",
+    "tests.test_m3_mapping::test_auto_outline_is_not_invented",
+    "tests.test_m3_mapping::test_demo_farms_sit_on_registered_locations",
+    "tests.test_m3_mapping::test_get_farm_profile_matches_m4_contract",
+    "tests.test_m3_mapping::test_invalid_polygons_rejected[bad0]",
+    "tests.test_m3_mapping::test_invalid_polygons_rejected[bad1]",
+    "tests.test_m3_mapping::test_invalid_polygons_rejected[bad2]",
+    "tests.test_m3_mapping::test_m4_analyze_uses_m3_profile",
+    "tests.test_m3_mapping::test_mm_m3_round_trip",
+    "tests.test_m3_mapping::test_nearest_location_uses_m1_registry",
+    "tests.test_m3_mapping::test_outlines_accepted_worldwide_unless_mauritius_required",
+    "tests.test_m3_mapping::test_point_in_ring",
+    "tests.test_m3_mapping::test_priorities_are_normalised",
+    "tests.test_m3_mapping::test_rain_only_means_zero_budget",
+    "tests.test_m3_mapping::test_routes_boundary_measure_and_save",
+    "tests.test_m3_mapping::test_routes_create_patch_delete",
+    "tests.test_m3_mapping::test_routes_list_get_context",
+    "tests.test_m3_mapping::test_routes_locations_and_nearest",
+    "tests.test_m3_mapping::test_soil_confidence_levels",
+    "tests.test_m3_mapping::test_soil_unknown_values_stay_null_and_are_listed",
+    "tests.test_m3_mapping::test_soil_value_needs_a_source",
+    "tests.test_m3_mapping::test_square_boundary_has_requested_area",
+    "tests.test_m3_mapping::test_unknown_crop_and_location_rejected",
+    "tests.test_m3_mapping::test_unknown_farm_raises",
+    "tests.test_m3_mapping::test_validation_lists_missing_and_contradictions",
+    "tests.test_m4_providers::test_m3_unknown_farm_is_unavailable"
+  ],
+  "removed": [
+    "tests.test_m4_providers::test_m3_not_implemented_yet"
+  ],
+  "failures": [
+    {
+      "classname": "tests.test_m4_blind_spots",
+      "name": "test_real_data_blind_spots",
+      "time": "0.007"
+    },
+    {
+      "classname": "tests.test_m4_blind_spots",
+      "name": "test_real_data_module_status",
+      "time": "0.029"
+    },
+    {
+      "classname": "tests.test_m4_blind_spots",
+      "name": "test_m3_missing_profile_and_m5_missing_results_are_info",
+      "time": "0.007"
+    },
+    {
+      "classname": "tests.test_m4_blind_spots",
+      "name": "test_saved_blind_spots_example_matches_current_output",
+      "time": "0.027"
+    },
+    {
+      "classname": "tests.test_m4_evidence",
+      "name": "test_saved_example_matches_current_endpoint_output",
+      "time": "0.028"
+    },
+    {
+      "classname": "tests.test_m4_integration",
+      "name": "test_end_to_end_analyze",
+      "time": "1.925"
+    },
+    {
+      "classname": "tests.test_m4_integration",
+      "name": "test_saved_analyze_example_is_consistent",
+      "time": "0.032"
+    }
+  ]
+}
