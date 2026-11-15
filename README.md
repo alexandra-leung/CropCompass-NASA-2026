@@ -219,9 +219,7 @@ python -m pytest -q tests/test_m4_evidence.py
 python -m pytest -q tests
 ```
 
-Use `tests` as the collection root. Unqualified `python -m pytest -q` also
-collects the nested legacy project under `backend/CropCompass-Nasa/backend/`,
-whose duplicate package names conflict with the unified backend.
+Use `tests` as the collection root when running the backend suite.
 
 For Windows PowerShell, use two VS Code terminals. In Terminal 1:
 

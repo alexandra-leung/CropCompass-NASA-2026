@@ -47,9 +47,9 @@ def get_crops():
 
         return {
             "total": len(catalog),
-            "crops": catalog.where(
-                catalog.notna(), None
-            ).to_dict(orient="records"),
+            "crops": catalog.astype(object)
+            .where(catalog.notna(), None)
+            .to_dict(orient="records"),
         }
 
     except FileNotFoundError as exc:

@@ -318,7 +318,7 @@ Until these exist, M4 reports `not_implemented` and records the missing evidence
 | To | Issue |
 |---|---|
 | M2 | `crop_catalog.csv` has no temperature/rainfall/pH ranges, so suitability is always `insufficient_data`. |
-| M2 | `water_wallet.py` uses `parents[3]` and cannot find `crop_water_coefficients.csv`. No water route is registered, and the newer `/water-budget` exists only in `backend/CropCompass-Nasa/`. Which copy is canonical? |
+| M2 | No water-budget route is registered in the unified backend, so the Water Wallet calculations are not exposed through the API. |
 | M1 | Historical POWER rainfall (about 590–870 mm/yr) and NEX-GDDP projected rainfall (about 1,350–2,450 mm/yr) differ by roughly a factor of two to three at the same site. Please confirm the precipitation conversion. |
 | M1 | History caching lives in the route handler. Could it move into `services/history.py` so in-process consumers benefit? |
 | M1 | `Scenario.id` / `EnsembleScenario.id` are hard-coded `Literal["ssp245","ssp370"]`, so adding a registry scenario would fail M1's own validation. |
