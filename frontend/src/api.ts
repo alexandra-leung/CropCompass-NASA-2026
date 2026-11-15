@@ -14,6 +14,8 @@ import fbCrops from './fallback/crops.json'
 import fbGenerate from './fallback/generate.json'
 import fbSuit from './fallback/suitability.json'
 import fbPlans from './fallback/plans.json'
+import fbM5Stress from './fallback/m5_stress.json'
+import fbTwins from './fallback/m5_twins.json'
 
 export type Source = 'live' | 'cached' | 'none'
 export type Res<T> = { data: T | null; source: Source; error?: string }
@@ -70,10 +72,13 @@ export const suitability = (crop: string, ph?: number | null) =>
 
 // ---------------- M5 resilience
 export const climateTwin = (lat: number, lon: number, scenario: string, signal?: AbortSignal) =>
-  withFallback<any>('/api/resilience/climate-twin', fbTwin, post({ latitude: lat, longitude: lon, scenario, start_year: 2041, end_year: 2060, top_k: 3 }), 240000, signal)
-export const stressTest = (lat: number, lon: number, scenario: string, rotations: { id: string; crops: string[] }[], ph: number | null, budgetM3: number, signal?: AbortSignal) =>
-  withFallback<any>('/api/resilience/stress-test', fbStress,
-    post({ latitude: lat, longitude: lon, scenario, rotation_request: { soil_ph: ph, rotations }, baseline_water_budget_m3: budgetM3, irrigation_reduction_fraction: 0.5 }), 240000, signal)
+  withFallback<any>('/api/resilience/climate-twin', (fbTwins as any)[`${lat}|${lon}|${scenario}`] ?? fbTwin, post({ latitude: lat, longitude: lon, scenario, start_year: 2041, end_year: 2060, top_k: 3 }), 240000, signal)
+export const stressTest = (lat: number, lon: number, scenario: string, rotation_request: any, budgetM3: number, key: string, signal?: AbortSignal) =>
+  withFallback<any>('/api/resilience/stress-test', (fbM5Stress as any)[key] ?? null,
+    post({ latitude: lat, longitude: lon, scenario, rotation_request, baseline_water_budget_m3: budgetM3, irrigation_reduction_fraction: 0.5 }), 240000, signal)
+export const rescue = (stressOutput: any, signal?: AbortSignal) =>
+  withFallback<any>('/api/resilience/rescue-mode', null, post({ stress_output: stressOutput }), 30000, signal)
+export const suggestBoundary = (lat: number, lon: number) => call<any>(`/api/farms/boundary/suggest?lat=${lat}&lon=${lon}`, undefined, 40000)
 
 // ---------------- M4 intelligence
 export const analyze = (farm: any, scenario: string) =>
@@ -85,7 +90,7 @@ export const ask = (question: string, analysis: any) =>
 export const cached = {
   history: (loc: string): Res<any> | null => (loc === 'pamplemousses-04' ? { data: fbHistory, source: 'cached' } : null),
   scenarios: (loc: string): Res<any> | null => (loc === 'pamplemousses-04' ? { data: fbScenarios, source: 'cached' } : null),
-  twin: (): Res<any> => ({ data: fbTwin, source: 'cached' }),
+  twin: (lat?: number, lon?: number, scenario?: string): Res<any> => ({ data: (fbTwins as any)[`${lat}|${lon}|${scenario}`] ?? fbTwin, source: 'cached' }),
   stress: (): Res<any> => ({ data: fbStress, source: 'cached' }),
 }
 

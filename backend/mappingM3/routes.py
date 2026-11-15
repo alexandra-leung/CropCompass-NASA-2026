@@ -131,6 +131,7 @@ class PatchRequest(BaseModel):
     priorities: dict[str, float] | None = None
     constraints: list[str] | None = None
     boundary: dict[str, Any] | None = None
+    prices_rs_per_kg: dict[str, float] | None = None
 
 
 @router.patch("/{farm_id}", summary="Change some fields of a farm (e.g. the water slider)")

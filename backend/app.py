@@ -6,7 +6,7 @@ from agricultureM2.plans_routes import router as plans_router
 from intelligenceM4.routes import router as intelligence_router
 from mappingM3.routes import router as mapping_router
 from resilienceM5.m1_adapter import provide_m1_climate
-from resilienceM5.m2_adapter import evaluate_m2_scenario
+from resilienceM5.m2_adapter import evaluate_with_plan_engine
 from resilienceM5.routes import router as resilience_router
 from resilienceM5.scenario_engine import register_m1_provider
 from resilienceM5.stress_test import register_m2_evaluator
@@ -18,7 +18,7 @@ app = FastAPI(
 )
 
 register_m1_provider(provide_m1_climate)
-register_m2_evaluator(evaluate_m2_scenario)
+register_m2_evaluator(evaluate_with_plan_engine)
 
 # M1 - Climate Intelligence
 app.include_router(climate_router)

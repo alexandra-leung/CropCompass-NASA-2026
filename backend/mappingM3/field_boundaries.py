@@ -49,7 +49,7 @@ def _ring(geometry: dict[str, Any]) -> list[list[float]]:
     return coords[0]
 
 
-def validate_polygon(geometry: dict[str, Any], require_mauritius: bool = True) -> None:
+def validate_polygon(geometry: dict[str, Any], require_mauritius: bool = False) -> None:
     ring = _ring(geometry)
     if len(ring) < 4:
         raise ValueError("Polygon ring needs at least 4 positions (3 corners + closing point)")
@@ -128,18 +128,77 @@ def nearest_location(latitude: float, longitude: float) -> dict[str, Any]:
     }
 
 
-def suggest_boundary(latitude: float, longitude: float) -> dict[str, Any]:
-    """Automatic outline suggestion.
+OSM_URL = "https://overpass-api.de/api/interpreter"
+OSM_FIELD_TAGS = ("farmland", "orchard", "meadow", "farmyard", "greenhouse_horticulture", "plant_nursery", "vineyard", "allotments")
 
-    No verified field-boundary prediction (e.g. Fields of The World) is cached for
-    Mauritius in this build, so nothing is invented: the caller should let the
-    farmer draw the field by hand.
-    """
+
+def _point_in_ring(lon: float, lat: float, ring: list[list[float]]) -> bool:
+    inside = False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:]):
+        if (y1 > lat) != (y2 > lat) and lon < (x2 - x1) * (lat - y1) / (y2 - y1) + x1:
+            inside = not inside
+    return inside
+
+
+def _unavailable(reason: str) -> dict[str, Any]:
     return {
         "status": "unavailable",
         "method": "auto_suggested",
         "geometry": None,
-        "reason": "No verified field-boundary prediction is cached for this point.",
+        "reason": reason,
         "fallback": "Draw the field by hand on the map.",
         "planned_source": "Fields of The World, global field boundaries (10 m)",
+    }
+
+
+def suggest_boundary(latitude: float, longitude: float) -> dict[str, Any]:
+    """Automatic outline: the mapped OpenStreetMap farmland polygon at this point.
+
+    Only a real mapped polygon is returned (never an invented shape); the farmer
+    confirms or redraws it. Works anywhere OSM volunteers have mapped fields.
+    """
+    import json
+    import os
+    from urllib.parse import urlencode
+    from urllib.request import Request, urlopen
+
+    if os.getenv("M3_OSM_DISABLED") == "1":
+        return _unavailable("Automatic outlines are switched off (M3_OSM_DISABLED=1).")
+    q = (f'[out:json][timeout:20];way(around:250,{latitude},{longitude})[landuse~"^({"|".join(OSM_FIELD_TAGS)})$"];'
+         "out tags geom 25;")
+    try:
+        req = Request(OSM_URL, data=urlencode({"data": q}).encode(), headers={"User-Agent": "CropCompass-M3/1.0 (NASA Space Apps 2026)"})
+        with urlopen(req, timeout=25) as r:
+            elements = json.loads(r.read().decode("utf-8")).get("elements", [])
+    except Exception as exc:  # network or service problem: fall back to drawing
+        return _unavailable(f"OpenStreetMap could not be reached ({type(exc).__name__}).")
+    best = None
+    for el in elements:
+        pts = [[round(g["lon"], 7), round(g["lat"], 7)] for g in el.get("geometry", []) if "lat" in g and "lon" in g]
+        if len(pts) < 4 or pts[0] != pts[-1]:
+            continue
+        geom = {"type": "Polygon", "coordinates": [pts]}
+        area = polygon_area_ha(geom)
+        if not 0.01 <= area <= 100:
+            continue
+        inside = _point_in_ring(longitude, latitude, pts)
+        clat, clon = centroid(geom)
+        d = haversine_km(latitude, longitude, clat, clon)
+        rank = (not inside, d, area)
+        if best is None or rank < best[0]:
+            best = (rank, geom, area, el, inside, d)
+    if best is None:
+        return _unavailable("No farmland is mapped in OpenStreetMap within 250 m of this point.")
+    _, geom, area, el, inside, d = best
+    return {
+        "status": "suggested",
+        "method": "auto_suggested",
+        "geometry": geom,
+        "area_ha": round(area, 3),
+        "contains_point": inside,
+        "distance_km": round(d, 3),
+        "landuse": el.get("tags", {}).get("landuse"),
+        "source": "OpenStreetMap landuse polygon (© OpenStreetMap contributors, ODbL)",
+        "source_url": f"https://www.openstreetmap.org/way/{el.get('id')}",
+        "note": "Mapped by volunteers; check it matches your field before saving.",
     }

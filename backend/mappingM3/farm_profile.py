@@ -99,6 +99,7 @@ class FarmProfileIn(BaseModel):
     irrigation: Irrigation = Field(default_factory=Irrigation)
     current_rotation: list[str] | None = None
     priorities: Priorities = Field(default_factory=Priorities)
+    prices_rs_per_kg: dict[str, float] | None = Field(default=None, description="Farmer's own selling price per kg, by crop_id (used for harvest value).")
     constraints: list[Constraint] = Field(default_factory=list)
     boundary: FieldBoundary | None = None
 

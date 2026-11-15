@@ -19,6 +19,7 @@ class PlansRequest(BaseModel):
     rainfall_change_pct: float = Field(default=0.0, ge=-60, le=60)
     water_budget_mm: float | None = Field(default=None, ge=0, le=2000, description="Override the farm's budget (what-if)")
     max_alternatives: int = Field(default=3, ge=1, le=6)
+    prices_rs_per_kg: dict[str, float] | None = Field(default=None, description="Farmer's own price per kg, by crop_id.")
     rotations: list[list[str]] | None = Field(default=None, description="Evaluate exactly these rotations (stress tests) instead of generating alternatives.")
 
 
@@ -46,6 +47,7 @@ async def plans(req: PlansRequest) -> dict[str, Any]:
     out = build_plans(current=farm.current_rotation, seasonal=seasonal, budget_mm=budget, area_ha=farm.field_area_ha,
                       soil_ph=farm.soil.ph, priorities=farm.priorities.model_dump(),
                       d_temp=req.temperature_change_c, d_rain_pct=req.rainfall_change_pct, max_alternatives=req.max_alternatives,
-                      fixed_rotations=req.rotations)
+                      fixed_rotations=req.rotations,
+                      prices=req.prices_rs_per_kg or getattr(farm, 'prices_rs_per_kg', None))
     out.update({"farm_id": farm.farm_id, "location_id": farm.location_id, "climate_error": err})
     return out

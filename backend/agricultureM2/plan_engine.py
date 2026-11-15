@@ -35,6 +35,7 @@ SEASON_OF_MONTH = {12: "DJF", 1: "DJF", 2: "DJF", 3: "MAM", 4: "MAM", 5: "MAM", 
 CALENDAR = {3: [[11, 12, 1, 2], [3, 4, 5, 6], [7, 8, 9, 10]], 2: [[11, 12, 1, 2, 3, 4], [5, 6, 7, 8, 9, 10]], 1: [[11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]}
 SEASON_LABEL = {3: ["Nov–Feb", "Mar–Jun", "Jul–Oct"], 2: ["Nov–Apr", "May–Oct"], 1: ["Nov–Oct"]}
 IRRIGATION_EFFICIENCY = 0.75
+KEYS = ("water", "soil", "climate", "income")
 HEAVY_RAIN_MM = 150.0
 
 ASSUMPTIONS = [
@@ -43,13 +44,15 @@ ASSUMPTIONS = [
     "ET0: FAO-24 Blaney-Criddle with daylight factor for 20° S; crop water use ETc = Kc × ET0 (FAO-56 Kc).",
     "Effective rain: USDA-SCS monthly method; irrigation efficiency 75 %.",
     "Suitability: season mean temperature vs FAO ECOCROP optimal range (approximate ranges, verify locally).",
-    "Score: farmer-weighted water, soil and climate indices; income not scored (no verified prices).",
+    "Harvest value: Mauritius average yield (Statistics Mauritius 2023-24) x your price per kg x field area; marginal climate x0.75, unsuitable x0.3, water short of need x (water you have / water needed). Gross value, costs not deducted.",
+    "Score: farmer-weighted water, soil, climate and income indices; water and income are relative to the best plan compared.",
 ]
 SOURCES = [
     {"name": "FAO Irrigation and Drainage Paper 56 (Kc, growth stages)", "url": "https://www.fao.org/4/x0490e/x0490e0b.htm"},
     {"name": "FAO Irrigation and Drainage Paper 24 (Blaney-Criddle ET0)", "url": "https://www.fao.org/4/s2022e/s2022e07.htm"},
     {"name": "FAO ECOCROP crop requirements", "url": "https://gaez.fao.org/pages/ecocrop"},
     {"name": "NASA POWER (via M1)", "url": "https://power.larc.nasa.gov/"},
+    {"name": "Statistics Mauritius & FAREI: area and production of food crops 2024", "url": "https://mauritius-chamber-of-agriculture.org/wp-content/uploads/2025/04/Area-harvested-production-of-foodcrops-2024.pdf"},
 ]
 
 
@@ -66,9 +69,10 @@ def crops() -> dict[str, dict[str, Any]]:
     cat = {r["crop_id"]: r for r in _csv("crop_catalog.csv")}
     kc = {r["crop_id"]: r for r in _csv("crop_water_coefficients.csv")}
     rng = {r["crop_id"]: r for r in _csv("crop_ranges.csv")} if (BASE / "crop_ranges.csv").exists() else {}
+    eco = {r["crop_id"]: r for r in _csv("crop_economics.csv")} if (BASE / "crop_economics.csv").exists() else {}
     out: dict[str, dict[str, Any]] = {}
     for cid, c in cat.items():
-        k, r = kc.get(cid), rng.get(cid)
+        k, r, e = kc.get(cid), rng.get(cid), eco.get(cid)
         out[cid] = {
             "crop_id": cid, "name": c["crop_name"], "family": c["family"],
             "legume": str(c["nitrogen_fixing"]).strip().lower() == "true",
@@ -77,6 +81,8 @@ def crops() -> dict[str, dict[str, Any]]:
                 "ini": float(k["kc_initial"]), "mid": float(k["kc_mid"]), "end": float(k["kc_end"]),
                 "stages": [int(k["days_initial"]), int(k["days_development"]), int(k["days_mid"]), int(k["days_late"])],
             },
+            "yield_t_ha": float(e["yield_t_per_ha"]) if e else None,
+            "price_rs_kg": float(e["example_price_rs_per_kg"]) if e else None,
             "range": None if not r else {
                 "tmin": float(r["temp_opt_min_c"]), "tmax": float(r["temp_opt_max_c"]),
                 "amin": float(r["temp_abs_min_c"]), "amax": float(r["temp_abs_max_c"]),
@@ -125,8 +131,21 @@ def monthly_climate(seasonal: list[dict[str, Any]], d_temp: float = 0.0, d_rain_
 
 # ------------------------------------------------------------------ one plan
 
+def climate_from_monthly(temperature_c: list[float], rain_mm: list[float]) -> list[dict[str, Any]]:
+    """Same 12-month climate rows as monthly_climate(), from monthly means (e.g. a CMIP6 projection)."""
+    out = []
+    for m in range(1, 13):
+        t, rain = float(temperature_c[m - 1]), max(0.0, float(rain_mm[m - 1]))
+        et0 = P_20S[m - 1] * (0.46 * t + 8) * DAYS[m - 1]
+        peff = rain * (125 - 0.2 * rain) / 125 if rain <= 250 else 125 + 0.1 * rain
+        out.append({"month": m, "label": MONTHS[m - 1], "temperature_c": round(t, 2), "rain_mm": round(rain, 1),
+                    "et0_mm": round(et0, 1), "effective_rain_mm": round(max(0.0, peff), 1), "heavy_rain": rain >= HEAVY_RAIN_MM})
+    return out
+
+
 def evaluate(rotation: list[str], climate: list[dict[str, Any]] | None, budget_mm: float | None,
-             area_ha: float | None, soil_ph: float | None, weights: dict[str, float]) -> dict[str, Any]:
+             area_ha: float | None, soil_ph: float | None, weights: dict[str, float],
+             prices: dict[str, float] | None = None) -> dict[str, Any]:
     cat = crops()
     n = len(rotation)
     seasons = CALENDAR.get(n) or CALENDAR[3]
@@ -190,6 +209,23 @@ def evaluate(rotation: list[str], climate: list[dict[str, Any]] | None, budget_m
         bad = [cr["name"] for cr in crop_rows if cr["suitability"] == "unsuitable"]
         failed.append({"constraint": "climate", "message": f"Too hot or cold for {', '.join(bad)}."})
 
+    # harvest value (gross, Rs): average yield x price x area, cut for poor climate fit or too little water
+    harvest, income = [], 0.0
+    for cr, need in zip(crop_rows, per_season):
+        c = cat[cr["crop_id"]]
+        price = (prices or {}).get(cr["crop_id"], c["price_rs_kg"])
+        if c["yield_t_ha"] is None or price is None:
+            harvest.append(None)
+            continue
+        f_clim = {"suitable": 1.0, "marginal": 0.75, "unsuitable": 0.3}.get(cr["suitability"], 1.0)
+        f_water = 1.0 if (need is None or budget_mm is None or need <= budget_mm or need == 0) else max(0.0, budget_mm / need)
+        t = c["yield_t_ha"] * f_clim * f_water * (area_ha or 1.0)
+        value = t * 1000 * price
+        income += value
+        cr["harvest"] = {"tonnes": round(t, 2), "price_rs_per_kg": price, "value_rs": round(value), "climate_factor": f_clim, "water_factor": round(f_water, 2)}
+        harvest.append(value)
+    income_rs = round(income) if any(h is not None for h in harvest) else None
+
     soil = 0.4 * bool(legumes) + 0.3 * (not repeats) + 0.2 * (len(set(fams)) / max(1, n)) + 0.1 * (not bare_heavy)
     clim_vals = [v for v in suit_scores if v is not None]
     climate_score = sum(clim_vals) / len(clim_vals) if clim_vals else None
@@ -203,7 +239,8 @@ def evaluate(rotation: list[str], climate: list[dict[str, Any]] | None, budget_m
                   "total_m3": round(total_mm * area_ha * 10) if (total_mm is not None and area_ha) else None,
                   "monthly_mm": [round(v, 1) for v in monthly_need] if climate else None, "budget_mm_per_season": budget_mm},
         "feasible": feasible, "failed_constraints": failed,
-        "scores": {"water": None, "soil": round(soil, 3), "climate": None if climate_score is None else round(climate_score, 3)},
+        "income": {"harvest_value_rs": income_rs, "area_ha": area_ha or 1.0, "area_assumed": not area_ha},
+        "scores": {"water": None, "soil": round(soil, 3), "climate": None if climate_score is None else round(climate_score, 3), "income": None},
     }
 
 
@@ -217,6 +254,12 @@ def _reasons(p: dict[str, Any], cur: dict[str, Any]) -> list[str]:
         out.append(f"Needs {abs(d)}% {'less' if d >= 0 else 'more'} irrigation than today ({w:.0f} vs {cw:.0f} mm a year).")
     elif w is not None:
         out.append(f"Needs about {w:.0f} mm of irrigation a year.")
+    hv, chv = p["income"]["harvest_value_rs"], cur["income"]["harvest_value_rs"]
+    if p is not cur and hv and chv:
+        d = round((hv / chv - 1) * 100)
+        out.append(f"Harvest worth about Rs {hv:,.0f} a year, {abs(d)}% {'more' if d >= 0 else 'less'} than today (example prices).")
+    elif hv:
+        out.append(f"Harvest worth about Rs {hv:,.0f} a year at example prices.")
     out.append(f"Has a legume ({', '.join(crops()[c]['name'] for c in p['dna']['legumes'])}) that adds nitrogen." if p["dna"]["legumes"] else "No legume, so no nitrogen fixing.")
     out.append("Same crop family twice in a row: pests and disease build up." if p["dna"]["repeated_family_seasons"] else "Crop family changes every season: breaks pest cycles.")
     if p["dna"]["bare_months_in_heavy_rain"]:
@@ -250,25 +293,30 @@ def candidate_rotations(current: list[str], k: int = 40) -> list[list[str]]:
 def build_plans(*, current: list[str], seasonal: list[dict[str, Any]] | None, budget_mm: float | None,
                 area_ha: float | None, soil_ph: float | None, priorities: dict[str, float] | None,
                 d_temp: float = 0.0, d_rain_pct: float = 0.0, max_alternatives: int = 3,
-                fixed_rotations: list[list[str]] | None = None) -> dict[str, Any]:
+                fixed_rotations: list[list[str]] | None = None, prices: dict[str, float] | None = None,
+                climate_rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     pr = priorities or {}
-    w = {k: max(0.0, float(pr.get(k, 0.25))) for k in ("water", "soil", "climate")}
+    w = {k: max(0.0, float(pr.get(k, 0.25) or 0)) for k in KEYS}
     if sum(w.values()) == 0:
-        w = {"water": 1 / 3, "soil": 1 / 3, "climate": 1 / 3}
-    climate = monthly_climate(seasonal or [], d_temp, d_rain_pct)
-    cur = evaluate(current, climate, budget_mm, area_ha, soil_ph, w)
-    rots = [r for r in (fixed_rotations or []) if r and r != current] if fixed_rotations else candidate_rotations(current)
-    cands = [evaluate(r, climate, budget_mm, area_ha, soil_ph, w) for r in rots]
+        w = {k: 0.25 for k in KEYS}
+    climate = climate_rows if climate_rows is not None else monthly_climate(seasonal or [], d_temp, d_rain_pct)
+    cur = evaluate(current, climate, budget_mm, area_ha, soil_ph, w, prices)
+    rots = [r for r in fixed_rotations if r] if fixed_rotations else candidate_rotations(current)
+    cands = [evaluate(r, climate, budget_mm, area_ha, soil_ph, w, prices) for r in rots]
     pool = [cur] + cands
     needs = [p["water"]["total_mm"] for p in pool if p["water"]["total_mm"]]
     low = min(needs) if needs else None
+    incomes = [p["income"]["harvest_value_rs"] for p in pool if p["income"]["harvest_value_rs"]]
+    top = max(incomes) if incomes else None
     for p in pool:
+        hv = p["income"]["harvest_value_rs"]
+        p["scores"]["income"] = None if (hv is None or not top) else round(hv / top, 3)
         tm = p["water"]["total_mm"]
         p["scores"]["water"] = None if (tm is None or low is None) else round(min(1.0, (low + 1) / (tm + 1)), 3)
-        parts = [(w[k], p["scores"][k]) for k in ("water", "soil", "climate") if p["scores"][k] is not None]
+        parts = [(w[k], p["scores"][k]) for k in KEYS if p["scores"][k] is not None]
         tw = sum(x for x, _ in parts)
         p["score"] = round(sum(x * v for x, v in parts) / tw, 3) if tw else None
-        p["score_breakdown"] = {k: (round(w[k] / tw * p["scores"][k], 3) if (tw and p["scores"][k] is not None) else None) for k in ("water", "soil", "climate")}
+        p["score_breakdown"] = {k: (round(w[k] / tw * p["scores"][k], 3) if (tw and p["scores"][k] is not None) else None) for k in KEYS}
     key = lambda p: (not p["feasible"], -(p["score"] or 0))
     seen, alts = set(), []
     for p in (cands if fixed_rotations else sorted(cands, key=key)):
@@ -288,7 +336,7 @@ def build_plans(*, current: list[str], seasonal: list[dict[str, Any]] | None, bu
     for p in plans:
         p["reasons"] = _reasons(p, cur)
     return {
-        "climate": climate, "weights": {k: round(v / sum(w.values()), 3) for k, v in w.items()},
+        "climate": climate, "weights": {k: round(v / sum(w.values()), 3) for k, v in w.items()}, "prices_rs_per_kg": {c: (prices or {}).get(c, v["price_rs_kg"]) for c, v in crops().items()},
         "scenario": {"temperature_change_c": d_temp, "rainfall_change_pct": d_rain_pct, "budget_mm_per_season": budget_mm},
         "plans": plans, "best_plan_id": sorted(plans, key=key)[0]["id"],
         "assumptions": ASSUMPTIONS, "sources": SOURCES,

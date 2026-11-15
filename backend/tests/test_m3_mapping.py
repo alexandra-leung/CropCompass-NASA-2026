@@ -63,8 +63,6 @@ def test_square_boundary_has_requested_area():
     {"type": "Point", "coordinates": [57.5, -20.1]},
     {"type": "Polygon", "coordinates": [[[57.5, -20.1], [57.51, -20.1], [57.5, -20.1]]]},
     {"type": "Polygon", "coordinates": [[[57.5, -20.1], [57.51, -20.1], [57.51, -20.11], [57.5, -20.11]]]},
-    {"type": "Polygon", "coordinates": [[[2.35, 48.85], [2.36, 48.85], [2.36, 48.86], [2.35, 48.85]]]},
-    {"type": "Polygon", "coordinates": [[[-20.1, 57.5], [-20.1, 57.51], [-20.11, 57.51], [-20.1, 57.5]]]},
 ])
 def test_invalid_polygons_rejected(bad):
     from mappingM3.field_boundaries import validate_polygon
@@ -78,7 +76,8 @@ def test_nearest_location_uses_m1_registry():
     assert nearest_location(-20.38, 57.38)["location_id"] == "black-river-01"
 
 
-def test_auto_outline_is_not_invented():
+def test_auto_outline_is_not_invented(monkeypatch):
+    monkeypatch.setenv("M3_OSM_DISABLED", "1")
     from mappingM3.field_boundaries import suggest_boundary
     s = suggest_boundary(-20.1, 57.57)
     assert s["status"] == "unavailable" and s["geometry"] is None
@@ -189,3 +188,17 @@ def test_m4_analyze_uses_m3_profile(client, monkeypatch):
     from intelligenceM4.providers import farm_provider
     res = farm_provider.get_farm_context("black-river-01")
     assert res.status == "ok" and res.data.current_rotation == ["maize", "cowpea", "sweet_potato"]
+
+
+def test_outlines_accepted_worldwide_unless_mauritius_required():
+    from mappingM3.field_boundaries import validate_polygon
+    paris = {"type": "Polygon", "coordinates": [[[2.35, 48.85], [2.36, 48.85], [2.36, 48.86], [2.35, 48.85]]]}
+    validate_polygon(paris)
+    with pytest.raises(ValueError):
+        validate_polygon(paris, require_mauritius=True)
+
+
+def test_point_in_ring():
+    from mappingM3.field_boundaries import _point_in_ring
+    ring = [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]
+    assert _point_in_ring(0.5, 0.5, ring) and not _point_in_ring(1.5, 0.5, ring)

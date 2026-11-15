@@ -22,7 +22,7 @@ export const I = {
 }
 
 const SRC: Record<string, [string, string]> = {
-  live: ['#0C8A84', 'Live'], cached: ['#C98B00', 'Cached'], none: ['#B5523A', 'Not available'],
+  live: ['#0C8A84', 'Live'], cached: ['#C98B00', 'Saved run'], none: ['#B5523A', 'Not available'],
   observed: ['#3B7EA1', 'Observed'], projected: ['#795E22', 'Projected'], modelled: ['#0C8A84', 'Modelled'],
   entered: ['#C98B00', 'You entered'], map: ['#A9BAB5', 'Map estimate'], missing: ['#B5523A', 'Not entered'], pending: ['#A9BAB5', 'Not calculated yet'],
 }

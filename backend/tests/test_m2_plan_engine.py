@@ -97,3 +97,29 @@ def test_fixed_rotations_are_evaluated_in_order():
     out = build_plans(current=["maize", "maize", "maize"], seasonal=None, budget_mm=600, area_ha=1,
                       soil_ph=6.5, priorities=None, fixed_rotations=rots)
     assert [p["rotation"] for p in out["plans"][1:]] == rots
+
+
+def test_harvest_value_and_income_score():
+    from agricultureM2.plan_engine import build_plans, climate_from_monthly
+    rows = climate_from_monthly([25] * 12, [100] * 12)
+    out = build_plans(current=["maize", "maize", "maize"], seasonal=None, budget_mm=900, area_ha=1.0, soil_ph=6.5,
+                      priorities={"income": 1}, fixed_rotations=[["cabbage", "tomato", "cowpea"]], climate_rows=rows)
+    today, alt = out["plans"]
+    assert today["income"]["harvest_value_rs"] > 0 and alt["income"]["harvest_value_rs"] > 0
+    assert max(today["scores"]["income"], alt["scores"]["income"]) == 1.0
+    priced = build_plans(current=["maize", "maize", "maize"], seasonal=None, budget_mm=900, area_ha=1.0, soil_ph=6.5,
+                         priorities=None, climate_rows=rows, fixed_rotations=[["cabbage", "tomato", "cowpea"]], prices={"maize": 50})
+    assert priced["plans"][0]["income"]["harvest_value_rs"] == 2 * today["income"]["harvest_value_rs"]
+
+
+def test_m5_evaluator_uses_plan_engine():
+    from resilienceM5.m2_adapter import evaluate_with_plan_engine
+    from resilienceM5.scenario_engine import MonthlyClimate
+    clim = MonthlyClimate(tuple([25.0] * 12), tuple([100.0] * 12), {"source": "test", "source_urls": ["https://power.larc.nasa.gov/test"]})
+    req = {"rotations": [{"id": "a", "crops": ["maize", "maize", "maize"]}, {"id": "b", "crops": ["cowpea", "cabbage", "maize"]},
+                         {"id": "c", "crops": ["cowpea", "tomato", "maize"]}], "field_area_ha": 1.0}
+    out = evaluate_with_plan_engine(req, clim, 6000)
+    assert [r["id"] for r in out["rotations"]] == ["a", "b", "c"]
+    assert all(isinstance(r["feasible"], bool) for r in out["rotations"])
+    small = evaluate_with_plan_engine(req, clim, 10)
+    assert not any(r["feasible"] for r in small["rotations"])
