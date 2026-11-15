@@ -249,6 +249,61 @@ def test_missing_water_and_resilience_are_unavailable_not_invented():
     assert records["ev-resilience"].value is None
 
 
+def test_m5_outputs_are_preserved_and_traceable_through_the_evidence_api():
+    climate_twin = {
+        "scenario": "ssp245",
+        "period": {"start_year": 2041, "end_year": 2060},
+        "projected_target": {
+            "provenance": {
+                "dataset": "NASA NEX-GDDP-CMIP6",
+                "source_urls": [
+                    "https://www.nccs.nasa.gov/data-collections/nex-gddp-cmip6/"
+                ],
+                "model": "multi-model ensemble",
+                "temperature_unit": "degC",
+                "precipitation_unit": "mm/month",
+            },
+        },
+        "limitations": ["Regional grid values are not field measurements."],
+    }
+    stress_test = {
+        "baseline_water_budget_m3": 120,
+        "irrigation_reduction_fraction": 0.2,
+        "scenarios": [
+            {"scenario_id": "projected_future", "rotations": [
+                {"id": "current", "feasible": None, "score": None, "rank": None,
+                 "water_requirement_m3": None, "failed_constraints": []},
+            ]},
+        ],
+        "limitations": ["M2 does not calculate irrigation feasibility."],
+    }
+    request_bundle = bundle_json(resilience={
+        "scenario": "ssp245",
+        "climate_twin": climate_twin,
+        "stress_tests": [stress_test],
+    })
+
+    response = client.post("/api/intelligence/evidence", json=request_bundle)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    records = {record["id"]: record for record in body["evidence"]}
+
+    twin = records["ev-resilience-climate-twin"]
+    assert twin["value"] == climate_twin
+    assert twin["provenance"]["source_module"] == "M5"
+    assert twin["provenance"]["field_path"] == "resilience.climate_twin"
+    stress = records["ev-resilience-stress-tests"]
+    assert stress["value"] == [stress_test]
+    assert stress["provenance"]["field_path"] == "resilience.stress_tests"
+    assert stress["qualifications"]
+    assert "Regional grid values are not field measurements." in {
+        item["text"] for item in body["limitations"]
+    }
+    assert "M2 does not calculate irrigation feasibility." in {
+        item["text"] for item in body["limitations"]
+    }
+
+
 def test_missing_rotation_gives_insufficient_evidence():
     _, passport = make_passport(agriculture={})
     assert passport.recommendation_status == "insufficient_evidence"

@@ -73,13 +73,13 @@ Provides the farmer-facing interface.
 
 Connects the project modules and explains the evidence behind agricultural recommendations.
 
-**Planned capabilities:**
-- Shared API contracts and orchestration
-- Explainable AI assistant
-- Evidence Passport
-- Dataset provenance
-- Missing-data and uncertainty detection
-- Grounded recommendations and explanations
+**Implemented:** Evidence Passport, blind-spot detection, grounded assistant,
+and `/api/intelligence/analyze`. The Evidence Passport checks that cited
+upstream values resolve to their exact bundle field paths. Actual M5
+Climate Twin and stress-test responses can be attached to an `AnalysisBundle`
+and submitted to the existing `/api/intelligence/evidence` endpoint. M4
+preserves those responses and their source metadata; `/analyze` does not
+automatically invoke M5.
 
 ### M5 — Climate Resilience and Future Adaptation
 
@@ -210,11 +210,12 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-The requirements include the backend test runner and Starlette's preferred
-`httpx2` test-client transport. Run tests from `backend/` with:
+The requirements include Pydantic v2, the backend test runner, HTTPX, and
+Starlette's `httpx2` test-client transport. Run tests from `backend/` with:
 
 ```bash
 python -m pytest -q tests/test_m5_resilience.py
+python -m pytest -q tests/test_m4_evidence.py
 python -m pytest -q tests
 ```
 
@@ -236,6 +237,15 @@ In Terminal 2, from `backend/`:
 python -m pytest -q tests/test_m5_resilience.py
 python -m pytest -q tests
 Invoke-RestMethod http://127.0.0.1:8000/api/resilience/health
+```
+
+If PowerShell blocks `Activate.ps1` under its execution policy, run the
+repository virtual-environment interpreter directly from `backend/`:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q tests/test_m5_resilience.py
+.\.venv\Scripts\python.exe -m pytest -q tests/test_m4_evidence.py
+.\.venv\Scripts\python.exe -m pytest -q tests
 ```
 
 ### Start the backend
@@ -310,6 +320,26 @@ curl -X POST \
 ```
 
 Additional FAO suitability endpoints may be registered as their data providers are implemented.
+
+### M4 — Evidence Passport
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/intelligence/evidence` | Build a traceable Evidence Passport from an `AnalysisBundle` |
+| POST | `/api/intelligence/blind-spots` | Report missing or incomplete evidence |
+| POST | `/api/intelligence/assistant` | Answer questions grounded in the supplied analysis |
+| POST | `/api/intelligence/analyze` | Run the available M1/M2 analysis providers and build a passport |
+
+To include M5 provenance, preserve the complete bundle and add the unchanged
+M5 responses under `resilience.climate_twin` and
+`resilience.stress_tests`, then submit that bundle to
+`/api/intelligence/evidence`. The resulting M5 evidence records retain source
+URLs, products, periods, scenario/model, units, matching method, farmer
+what-if inputs, M2 limitations, and explicit field paths. Null feasibility
+remains unknown. M4 does not automatically call the M5 endpoints from
+`/api/intelligence/analyze`. See the
+[M4 API contract](backend/intelligenceM4/API_CONTRACT.md) and
+[cached-data M5 demonstration](backend/resilienceM5/README.md).
 
 ### M5 — Climate Resilience
 
@@ -423,12 +453,12 @@ The use of a dataset in this list does not imply that every corresponding integr
 | M2 Water Wallet | Not fully integrated with M1 |
 | M2 numerical rotation ranking | Not calibrated |
 | M3 mapping and UX | Team development |
-| M4 explainable AI | Team development |
-| M5 Climate Twin 2.0 | Integrated; 2040 one-year live NASA pipeline test completed |
+| M4 Evidence Passport and explainability APIs | Implemented; M5 response provenance is supported through `/evidence` |
+| M5 Climate Twin 2.0 | Integrated; cached-data 2041–2060 API journey tested; cold-cache latency still unverified |
 | M5 default 2041–2060 live request | Not yet end-to-end validated on a cold cache |
 | M5 → M2 adapter | Registered and live API path exercised; feasibility, scores, and climate/water sensitivity remain unavailable in M2 |
 | M3 verified farm-coordinate integration | Not available; demo coordinates are technical-test points |
-| Backend test suite | 39 tests passed with `python -m pytest -q tests` in the project virtual environment |
+| Backend test suite | 267 passed, 2 skipped with `python -m pytest -q tests`; use `tests` as the collection root |
 
 The project is currently under active development.
 

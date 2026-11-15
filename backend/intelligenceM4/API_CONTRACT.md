@@ -27,6 +27,42 @@ Prefix: `/api/intelligence` (defined in `intelligenceM4/routes.py`).
 
 All models are defined in `intelligenceM4/schemas.py`, and the running Swagger/OpenAPI schema is the authoritative field reference.
 
+### Supplying live M5 results to the Evidence Passport
+
+M5's Climate Twin and stress-test routes are live, but `/analyze` does not
+invoke them automatically: they require explicit farm coordinates, a future
+period, rotation alternatives, and farmer-entered water constraints. To cite
+their actual responses, preserve the `/analyze` bundle, add the unchanged M5
+responses, and POST the resulting bundle to the existing
+`/api/intelligence/evidence` endpoint:
+
+```json
+{
+  "analysis_id": "analysis-from-m4",
+  "farm": {"location_id": "pamplemousses-04"},
+  "selected_scenario": "ssp245",
+  "selected_year": 2050,
+  "climate": {},
+  "agriculture": {},
+  "resilience": {
+    "scenario": "ssp245",
+    "climate_twin": {"...": "unchanged response from /api/resilience/climate-twin"},
+    "stress_tests": [
+      {"...": "unchanged response from /api/resilience/stress-test"}
+    ]
+  }
+}
+```
+
+The abbreviated JSON illustrates placement only; send the complete M4 bundle
+and complete M5 responses. The passport emits `ev-resilience-climate-twin` and
+`ev-resilience-stress-tests` with exact field paths into the bundle. Each
+record preserves the complete M5 object, including NASA source URLs, dataset,
+period, model/scenario, units, grid limitations, monthly values, farmer
+constraints, M2 details, and missing-data caveats. M4 copies those outputs; it
+does not interpret null feasibility as success or calculate a score. M5
+limitations are also copied into the passport's `limitations` list.
+
 ## 2. Integrity rules (enforced in code)
 
 | Rule | Where it is enforced |

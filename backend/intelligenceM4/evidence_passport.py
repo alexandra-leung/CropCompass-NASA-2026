@@ -562,10 +562,37 @@ class _PassportBuilder:
             return
         self.add("ev-resilience", "resilience_supplied", "partial", "M5",
                  subject="resilience",
-                 qualifications=["M4 does not yet interpret M5 stress-test fields "
-                                 "(M5 contract pending)."])
+                 qualifications=["M4 preserves M5 outputs unchanged and does not infer "
+                                  "feasibility, ranking, or agronomic outcomes."])
+        if res.climate_twin is not None:
+            self.add(
+                "ev-resilience-climate-twin", "resilience_supplied", "partial", "M5",
+                subject="climate_twin",
+                value=res.climate_twin,
+                field_path="resilience.climate_twin",
+                method="Unmodified M5 Climate Twin response",
+            )
+        if res.stress_tests:
+            self.add(
+                "ev-resilience-stress-tests", "resilience_supplied", "partial", "M5",
+                subject="stress_tests",
+                value=res.stress_tests,
+                field_path="resilience.stress_tests",
+                method="Unmodified M5 stress-test responses",
+                qualifications=["Null M2 feasibility, score, rank, and water values remain unknown."],
+            )
         for text in res.limitations:
             self.limit(text, "M5")
+        for output in [res.climate_twin, *res.stress_tests]:
+            if output is None:
+                continue
+            limitations = output.get("limitations", [])
+            if not isinstance(limitations, list) or any(
+                not isinstance(text, str) for text in limitations
+            ):
+                raise ValueError("M5 output limitations must be a list of strings")
+            for text in limitations:
+                self.limit(text, "M5")
         self.rule("R-RESILIENCE", ["resilience"], "M5 results supplied")
 
     # -- Status ---------------------------------------------------------------

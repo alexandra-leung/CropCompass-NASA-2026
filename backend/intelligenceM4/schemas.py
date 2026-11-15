@@ -8,8 +8,8 @@ Design rules
   copied or modified).
 * M2 has no response models, so M4 defines read-only mirrors that tolerate
   extra fields (extra="allow") — if M2 adds fields, nothing breaks.
-* M3 / M5 have no implementation yet; FarmContext and ResilienceInput are
-  PROPOSED contracts to agree with those members.
+* M3 farm-profile retrieval and automatic M5 orchestration are not implemented;
+  externally produced M5 responses can be supplied to the evidence interface.
 * Scenario ids, projection years and location ids are validated against M1's
   live registry (via providers.climate_provider), not hard-coded, so new M1
   scenarios/years/locations are accepted automatically.
@@ -265,9 +265,10 @@ class FarmContext(BaseModel):
 
 
 class ResilienceInput(_Loose):
-    """Proposed M5 contract — kept loose until M5 publishes real output."""
+    """M5 outputs supplied to M4 for traceable evidence collection."""
     scenario: ScenarioId | None = None
     year: ProjectionYear | None = None
+    climate_twin: dict[str, Any] | None = None
     stress_tests: list[dict[str, Any]] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
 
@@ -334,7 +335,10 @@ class EvidenceRecord(BaseModel):
     id: str                              # stable id, e.g. "ev-nfix-cowpea"
     claim: str                           # template text, never contains digits
     subject: str | None = None           # crop id, "rotation", "climate:ssp370:2050"
-    value: str | float | int | bool | list[str] | None = None
+    value: (
+        str | float | int | bool | list[str] | list[dict[str, Any]]
+        | dict[str, Any] | None
+    ) = None
     unit: str | None = None
     status: EvidenceStatus
     provenance: Provenance
