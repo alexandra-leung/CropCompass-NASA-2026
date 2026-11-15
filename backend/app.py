@@ -1,5 +1,7 @@
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from climateM1.core.config import CORS_ORIGINS
 from climateM1.api.climate import router as climate_router
 from agricultureM2.routes import router as agriculture_router
 from agricultureM2.plans_routes import router as plans_router
@@ -15,6 +17,13 @@ app = FastAPI(
     title="CropCompass 2.0",
     description="NASA Space Apps Challenge 2026",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 register_m1_provider(provide_m1_climate)
