@@ -1,8 +1,0 @@
-crop_id,temp_opt_min_c,temp_opt_max_c,temp_abs_min_c,temp_abs_max_c,ph_opt_min,ph_opt_max,source,source_url
-maize,18,33,10,40,5.0,7.0,"FAO ECOCROP optimal range (approximate, verify before field use)",https://gaez.fao.org/pages/ecocrop
-tomato,20,27,7,35,5.5,6.8,"FAO ECOCROP optimal range (approximate, verify before field use)",https://gaez.fao.org/pages/ecocrop
-onion,12,25,4,30,6.0,7.0,"FAO ECOCROP optimal range (approximate, verify before field use)",https://gaez.fao.org/pages/ecocrop
-cabbage,15,20,5,27,6.0,6.5,"FAO ECOCROP optimal range (approximate, verify before field use)",https://gaez.fao.org/pages/ecocrop
-cowpea,20,35,8,40,5.5,6.5,"FAO ECOCROP optimal range (approximate, verify before field use)",https://gaez.fao.org/pages/ecocrop
-groundnut,22,28,10,40,5.5,7.0,"FAO ECOCROP optimal range (approximate, verify before field use)",https://gaez.fao.org/pages/ecocrop
-sweet_potato,20,30,10,38,5.5,6.5,"FAO ECOCROP optimal range (approximate, verify before field use)",https://gaez.fao.org/pages/ecocrop

@@ -199,19 +199,10 @@ def test_m2_exception_inside_service_becomes_unavailable(monkeypatch):
 # M3 / M5 (not implemented yet — must degrade, and pick up the contract later)
 # ---------------------------------------------------------------------------
 
-def test_m3_unknown_farm_is_unavailable():
-    # M3 now publishes get_farm_profile; an unknown farm id is "unavailable", not invented.
-    assert farm_provider.farm_profile_implemented()
+def test_m3_not_implemented_yet():
     result = farm_provider.get_farm_context("farm-1")
-    assert result.status == "unavailable"
+    assert result.status == "not_implemented"
     assert result.data is None
-
-
-def test_m3_known_farm_returns_profile():
-    result = farm_provider.get_farm_context("pamplemousses-04")
-    assert result.status == "ok"
-    assert result.data.source == "M3"
-    assert result.data.location_id == "pamplemousses-04"
 
 
 def test_m5_not_implemented_yet():

@@ -110,7 +110,7 @@ def test_end_to_end_analyze(warm_m1):
     AnalyzeResponse.model_validate(body)
 
     assert {m: r["status"] for m, r in body["modules"].items()} == {
-        "M1": "ok", "M2": "partial", "M3": "unavailable", "M5": "not_implemented"}
+        "M1": "ok", "M2": "partial", "M3": "not_implemented", "M5": "not_implemented"}
     agri = body["bundle"]["agriculture"]
     assert agri["rotation"]["rotation"] == ROTATION
     assert len(agri["alternatives"]["alternative_rotations"]) == 3

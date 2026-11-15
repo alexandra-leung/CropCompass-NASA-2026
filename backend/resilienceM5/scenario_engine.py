@@ -261,45 +261,9 @@ async def get_farm_climate(
         raise DataUnavailable(
             "M1 climate provider is not registered; the unified backend must register its in-process adapter"
         )
-    key = f"{latitude:.4f},{longitude:.4f}|{scenario}|{start}-{end}"
-    use_cache = "PYTEST_CURRENT_TEST" not in os.environ
-    saved = _farm_climate_cache().get(key) if use_cache else None
-    if saved:
-        return (MonthlyClimate(tuple(saved["observed"]["temperature_c"]), tuple(saved["observed"]["precipitation_mm"]),
-                               {**saved["observed"]["provenance"], "m5_cache": "saved M1 result", "m5_cached_at": saved["saved_at"]}),
-                MonthlyClimate(tuple(saved["future"]["temperature_c"]), tuple(saved["future"]["precipitation_mm"]),
-                               {**saved["future"]["provenance"], "m5_cache": "saved M1 result", "m5_cached_at": saved["saved_at"]}))
     observed, future = await _registered_m1(
         latitude, longitude, scenario, start, end
     )
     if not isinstance(observed, MonthlyClimate) or not isinstance(future, MonthlyClimate):
         raise TypeError("M1 adapter must return (MonthlyClimate, MonthlyClimate) with provenance")
-    if use_cache and future.provenance.get("source") == "NASA NEX-GDDP-CMIP6":
-        _save_farm_climate(key, observed, future)
     return observed, future
-
-
-# Saved M1 farm climate (history + NEX-GDDP projection): the projection takes minutes to
-# download, so each completed result is kept on disk and reused. Values are unchanged.
-FARM_CLIMATE_CACHE = Path(os.getenv("M5_FARM_CLIMATE_CACHE", str(Path(__file__).resolve().parents[1] / "data" / "processed" / "m5_farm_climate_cache.json")))
-
-
-def _farm_climate_cache() -> dict:
-    try:
-        return json.loads(FARM_CLIMATE_CACHE.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-
-
-def _save_farm_climate(key: str, observed: MonthlyClimate, future: MonthlyClimate) -> None:
-    from datetime import datetime, timezone
-    data = _farm_climate_cache()
-    data[key] = {"saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                 "observed": asdict(observed), "future": asdict(future)}
-    try:
-        FARM_CLIMATE_CACHE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = FARM_CLIMATE_CACHE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
-        tmp.replace(FARM_CLIMATE_CACHE)
-    except OSError:
-        pass
