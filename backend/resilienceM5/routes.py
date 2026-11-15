@@ -111,6 +111,9 @@ def health():
             "status": "ready_for_climate_twin" if m1_connected else "m1_provider_unavailable",
             "m2_evaluator_connected": connected,
             "m2_scenario_feasibility_supported": False,
+            "m2_evaluator": get_m2_evaluator().__name__ if connected else None,
+            "m2_agricultural_feasibility_status": "unverified_model",
+            "m2_water_estimation_supported": connected and get_m2_evaluator().__name__ == "evaluate_with_plan_engine",
             "m1_provider_connected": m1_connected,
             "offline_mode": PowerClient().offline}
 
@@ -142,6 +145,10 @@ async def stress_test_endpoint(request: StressRequest):
     except M2NotConnected as exc:
         raise HTTPException(503, detail=str(exc)) from exc
     try:
+        from .m2_adapter import evaluate_with_plan_engine, validate_plan_request
+        rotation_request = {**request.rotation_request, "latitude": request.latitude, "longitude": request.longitude}
+        if evaluator is evaluate_with_plan_engine:
+            validate_plan_request(rotation_request, request.baseline_water_budget_m3)
         historical, future = await get_farm_climate(
             request.latitude,
             request.longitude,
@@ -149,7 +156,7 @@ async def stress_test_endpoint(request: StressRequest):
             request.start_year,
             request.end_year,
         )
-        return evaluate_scenarios(request.rotation_request, historical, future,
+        return evaluate_scenarios(rotation_request, historical, future,
                                   request.baseline_water_budget_m3,
                                   request.irrigation_reduction_fraction, evaluator)
     except DataUnavailable as exc:

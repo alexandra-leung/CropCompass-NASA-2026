@@ -1,0 +1,136 @@
+{
+  "isolated_backend": "C:\\Users\\kenti\\AppData\\Local\\Temp\\cropcompass-repair-probes-tk28txuw\\backend",
+  "statuses": {
+    "health": 200,
+    "m5_health": 200,
+    "farms": 200,
+    "history_cached": 200,
+    "projections_cached": 200,
+    "rotation": 200,
+    "alternatives": 200,
+    "suitability": 200,
+    "plans_cached": 200,
+    "twin_cached": 200,
+    "stress_qa_cached": 200,
+    "rescue_qa_cached": 200,
+    "analyze_cached": 200,
+    "evidence": 200,
+    "assistant": 200,
+    "missing_inputs_probe": "no_climate",
+    "unknown_crop_validation": 422,
+    "stress_unknown_crop_validation": 422
+  },
+  "missing_inputs_probe": {
+    "status": "no_climate",
+    "feasible": null,
+    "income": {
+      "harvest_value_rs": null,
+      "cost_rs": null,
+      "profit_rs": null,
+      "area_ha": null,
+      "area_assumed": false,
+      "status": "out_of_scope"
+    },
+    "score": 1.0
+  },
+  "m5_exact_pass_through": {
+    "climate_twin": true,
+    "stress_tests": true
+  },
+  "stress_score_comparability": [
+    {
+      "scenario": "projected_future",
+      "changes": [
+        {
+          "rotation_id": "current",
+          "score_comparable": false,
+          "score_change": null
+        },
+        {
+          "rotation_id": "alt1",
+          "score_comparable": false,
+          "score_change": null
+        },
+        {
+          "rotation_id": "alt2",
+          "score_comparable": false,
+          "score_change": null
+        }
+      ]
+    },
+    {
+      "scenario": "historical_restricted_irrigation",
+      "changes": [
+        {
+          "rotation_id": "current",
+          "score_comparable": false,
+          "score_change": null
+        },
+        {
+          "rotation_id": "alt1",
+          "score_comparable": false,
+          "score_change": null
+        },
+        {
+          "rotation_id": "alt2",
+          "score_comparable": false,
+          "score_change": null
+        }
+      ]
+    },
+    {
+      "scenario": "future_restricted_irrigation",
+      "changes": [
+        {
+          "rotation_id": "current",
+          "score_comparable": false,
+          "score_change": null
+        },
+        {
+          "rotation_id": "alt1",
+          "score_comparable": false,
+          "score_change": null
+        },
+        {
+          "rotation_id": "alt2",
+          "score_comparable": false,
+          "score_change": null
+        }
+      ]
+    }
+  ],
+  "rescue_sequences": [
+    {
+      "sequence": [
+        "cowpea",
+        "cabbage",
+        "maize"
+      ],
+      "status": "M2_sequence_only_no_calendar_or_interventions"
+    },
+    {
+      "sequence": [
+        "cowpea",
+        "tomato",
+        "maize"
+      ],
+      "status": "M2_sequence_only_no_calendar_or_interventions"
+    },
+    {
+      "sequence": [
+        "maize",
+        "maize",
+        "maize"
+      ],
+      "status": "M2_sequence_only_no_calendar_or_interventions"
+    }
+  ],
+  "seasonal_probe": {
+    "january_rain_mm": 97.2,
+    "excluded_periods": [
+      "2021-DJF",
+      "2026-DJF"
+    ]
+  },
+  "original_data_hashes_unchanged": true
+}

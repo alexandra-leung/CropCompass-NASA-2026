@@ -66,14 +66,14 @@
       ]
     },
     "M3": {
-      "status": "not_implemented",
+      "status": "unavailable",
       "called": "mappingM3.farm_profile.get_farm_profile",
-      "error": "mappingM3.farm_profile.get_farm_profile: M3 has not published get_farm_profile yet (contract pending).",
+      "error": "mappingM3.farm_profile.get_farm_profile: No farm_id supplied; the farm context from the request was used.",
       "calls": [
         {
           "called": "mappingM3.farm_profile.get_farm_profile",
-          "status": "not_implemented",
-          "error": "M3 has not published get_farm_profile yet (contract pending)."
+          "status": "unavailable",
+          "error": "No farm_id supplied; the farm context from the request was used."
         }
       ]
     },
@@ -103,7 +103,9 @@
         "cowpea",
         "cabbage"
       ],
-      "source": "farmer"
+      "source": "farmer",
+      "demo": null,
+      "input_provenance": {}
     },
     "selected_scenario": "ssp370",
     "selected_year": 2050,
@@ -218,7 +220,7 @@
           "gridResolution": "0.25° × 0.25° (~25 km)",
           "dateRange": "2030, 2040, 2050",
           "missingData": false,
-          "retrievedAt": "2026-11-15T03:38:30.450337+00:00",
+          "retrievedAt": "2026-11-15T06:18:14.099795+00:00",
           "model": "Multi-model ensemble",
           "caveat": "Model outputs are sampled at their nearest grid cells. They are regional projections, not field-level forecasts."
         },
@@ -2101,7 +2103,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "retrieved_at": "2026-11-15T06:18:14.099795+00:00",
           "method": "Multi-model ensemble (M1)"
         },
         "qualifications": []
@@ -2120,7 +2122,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "retrieved_at": "2026-11-15T06:18:14.099795+00:00",
           "method": null
         },
         "qualifications": []
@@ -2139,7 +2141,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "retrieved_at": "2026-11-15T06:18:14.099795+00:00",
           "method": null
         },
         "qualifications": [
@@ -2160,7 +2162,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "retrieved_at": "2026-11-15T06:18:14.099795+00:00",
           "method": null
         },
         "qualifications": []
@@ -2179,7 +2181,7 @@
           "product": "Daily downscaled CMIP6 projections",
           "source_url": null,
           "grid_resolution": "0.25° × 0.25° (~25 km)",
-          "retrieved_at": "2026-11-15T03:38:30.450337+00:00",
+          "retrieved_at": "2026-11-15T06:18:14.099795+00:00",
           "method": null
         },
         "qualifications": [
@@ -2620,17 +2622,6 @@
         ]
       },
       {
-        "code": "M3_NOT_IMPLEMENTED",
-        "category": "module",
-        "severity": "info",
-        "message": "M3 does not yet provide farm profiles, so farm details come only from what was entered directly.",
-        "affects": [],
-        "source_module": "M3",
-        "farmer_action": null,
-        "team_action": "M3: publish the agreed farm profile function.",
-        "citations": []
-      },
-      {
         "code": "M5_RESULTS_NOT_SUPPLIED",
         "category": "module",
         "severity": "info",
@@ -2643,7 +2634,7 @@
       }
     ],
     "recommendation_status": "requires_further_validation",
-    "generated_at": "2026-11-15T03:38:31.068440+00:00"
+    "generated_at": "2026-11-15T06:18:16.214975+00:00"
   },
   "blind_spot_report": {
     "analysis_id": "example-analyze-pamplemousses-04",
@@ -2776,17 +2767,6 @@
         ]
       },
       {
-        "code": "M3_NOT_IMPLEMENTED",
-        "category": "module",
-        "severity": "info",
-        "message": "M3 does not yet provide farm profiles, so farm details come only from what was entered directly.",
-        "affects": [],
-        "source_module": "M3",
-        "farmer_action": null,
-        "team_action": "M3: publish the agreed farm profile function.",
-        "citations": []
-      },
-      {
         "code": "M5_RESULTS_NOT_SUPPLIED",
         "category": "module",
         "severity": "info",
@@ -2801,7 +2781,7 @@
     "module_status": {
       "M1": "ok",
       "M2": "partial",
-      "M3": "not_implemented",
+      "M3": "unavailable",
       "M5": "unavailable"
     }
   }

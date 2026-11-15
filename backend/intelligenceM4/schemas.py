@@ -262,6 +262,8 @@ class FarmContext(BaseModel):
     irrigation_budget_m3: float | None = Field(default=None, ge=0)
     current_rotation: list[str] | None = None
     source: Literal["M3", "farmer"] = "farmer"
+    demo: bool | None = None
+    input_provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 class ResilienceInput(_Loose):

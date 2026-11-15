@@ -5,6 +5,7 @@ import math
 from typing import Any
 
 from agricultureM2.scoring import score_rotations
+from agricultureM2.plan_engine import calendar_months
 from agricultureM2.suitability import check_crop_suitability
 
 from .scenario_engine import MonthlyClimate
@@ -134,6 +135,42 @@ def evaluate_m2_scenario(
     }
 
 
+def validate_plan_request(rotation_request: dict[str, Any], water_budget_m3: float | None) -> None:
+    from agricultureM2.plan_engine import validate_rotation, validate_number
+    if not isinstance(rotation_request, dict):
+        raise ValueError("rotation_request must be an object")
+    rotations = rotation_request.get("rotations")
+    if not isinstance(rotations, list) or len(rotations) < 3:
+        raise ValueError("rotation_request.rotations must contain at least three rotations")
+    ids = set()
+    for rotation in rotations:
+        if not isinstance(rotation, dict) or not isinstance(rotation.get("id"), str) or not rotation["id"].strip():
+            raise ValueError("Each rotation needs a non-empty id")
+        if rotation["id"] in ids:
+            raise ValueError("Duplicate rotation id")
+        ids.add(rotation["id"])
+        validate_rotation(rotation.get("crops"))
+        calendar = rotation.get("rotation_calendar")
+        if calendar is not None:
+            calendar_months(rotation["crops"], calendar)
+    if rotation_request.get("rotation_calendar") is not None:
+        calendar_months(rotations[0]["crops"], rotation_request["rotation_calendar"])
+    if rotation_request.get("field_area_ha") is None:
+        raise ValueError("field_area_ha is required for water volume conversion")
+    validate_number(rotation_request["field_area_ha"], "field_area_ha", positive=True)
+    if water_budget_m3 is None:
+        raise ValueError("water_budget_m3 is required")
+    validate_number(water_budget_m3, "water_budget_m3", minimum=0)
+    for name in ("soil_ph", "latitude", "longitude"):
+        validate_number(rotation_request.get(name), name)
+    for name in ("priorities", "prices_rs_per_kg", "costs_rs_per_ha"):
+        values = rotation_request.get(name)
+        if values is not None and not isinstance(values, dict):
+            raise ValueError(f"{name} must be an object")
+        for key, value in (values or {}).items():
+            validate_number(value, key, minimum=0)
+
+
 def evaluate_with_plan_engine(
     rotation_request: dict[str, Any],
     climate: MonthlyClimate,
@@ -145,6 +182,7 @@ def evaluate_with_plan_engine(
     rotation_request: {"rotations": [{"id", "crops"}...], "soil_ph", "field_area_ha", "priorities", "prices_rs_per_kg"}
     """
     from agricultureM2.plan_engine import build_plans, climate_from_monthly
+    validate_plan_request(rotation_request, water_budget_m3)
 
     rotations = rotation_request.get("rotations") if isinstance(rotation_request, dict) else None
     if not isinstance(rotations, list) or len(rotations) < 3:
@@ -159,29 +197,37 @@ def evaluate_with_plan_engine(
         seqs.append([str(c) for c in r["crops"]])
     if water_budget_m3 is None or not math.isfinite(water_budget_m3) or water_budget_m3 < 0:
         raise ValueError("A finite, nonnegative farmer water budget in m3 is required")
-    area = rotation_request.get("field_area_ha") or 1.0
+    area = rotation_request["field_area_ha"]
     budget_mm = water_budget_m3 / (float(area) * 10)
-    rows = climate_from_monthly(list(climate.temperature_c), list(climate.precipitation_mm))
+    latitude = rotation_request.get("latitude")
+    rows = climate_from_monthly(list(climate.temperature_c), list(climate.precipitation_mm), latitude)
     out = build_plans(current=seqs[0], seasonal=None, budget_mm=budget_mm, area_ha=float(area),
                       soil_ph=rotation_request.get("soil_ph"), priorities=rotation_request.get("priorities"),
                       fixed_rotations=seqs[1:], prices=rotation_request.get("prices_rs_per_kg"), costs=rotation_request.get("costs_rs_per_ha"),
-                      climate_rows=rows)
+                      climate_rows=rows, latitude=latitude, longitude=rotation_request.get("longitude"),
+                      current_months=calendar_months(seqs[0], rotations[0].get("rotation_calendar", rotation_request.get("rotation_calendar"))),
+                      fixed_months=[calendar_months(r["crops"], r.get("rotation_calendar")) for r in rotations[1:]])
     plans = out["plans"]
     if len(plans) != len(seqs):
         raise ValueError("M2 plan engine returned a different number of rotations")
     normalized = []
     for rid, p in zip(ids, plans):
         normalized.append({
-            "id": rid, "feasible": p["feasible"], "score": p["score"], "score_scale": "m2_plan_engine_0_1_relative",
+            "id": rid, "feasible": p["feasible"], "score": p["score"], "score_scale": None,
             "rank": p["rank"], "failed_constraints": p["failed_constraints"],
             "water_requirement_m3": (round(p["water"]["peak_season_mm"] * float(area) * 10, 1)
                                      if p["water"]["peak_season_mm"] is not None else None),
             "details": {"rotation": p["rotation"], "crops": p["crops"], "water": p["water"], "income": p["income"],
                         "scores": p["scores"], "reasons": p["reasons"],
+                        "input_provenance": rotation_request.get("input_provenance", {}),
+                        "demo": rotation_request.get("demo"),
+                        "coordinates": out["coordinates"],
+                        "feasibility_status": p["feasibility_status"],
+                        "calendar_complete": p["calendar_complete"],
                         "monthly_crop_suitability": [{"crop_id": c["crop_id"], "season": c["season_label"],
                                                       "suitability": c["suitability"]} for c in p["crops"]]},
         })
-    return {"rotations": normalized, "score_status": "modelled", "score_scale": "m2_plan_engine_0_1_relative",
+    return {"rotations": normalized, "score_status": "within_scenario_relative_only", "score_scale": None,
             "ranking": [r["id"] for r in sorted(normalized, key=lambda r: r["rank"] or 99)],
             "climate_inputs_used": {"temperature_suitability_calculation_available": True,
                                     "precipitation_water_balance": True,

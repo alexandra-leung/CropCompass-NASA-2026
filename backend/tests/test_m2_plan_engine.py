@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from agricultureM2.plan_engine import build_plans, candidate_rotations, crops, kc_at, monthly_climate
 
-SEASONAL = [{"period": f"2023-{s}", "temperatureC": t, "rainfallMm": r} for s, t, r in
+SEASONAL = [{"period": f"2023-{s}", "temperatureC": t, "rainfallMm": r, "completenessStatus": "complete", "completenessPct": 100} for s, t, r in
             [("DJF", 27.0, 220.0), ("MAM", 25.5, 180.0), ("JJA", 22.5, 90.0), ("SON", 23.5, 60.0)]]
 
 
@@ -47,8 +47,10 @@ def test_candidates_change_family_and_include_a_legume():
 def test_water_budget_decides_feasibility():
     big = build_plans(current=["maize", "cowpea", "sweet_potato"], seasonal=SEASONAL, budget_mm=2000, area_ha=1, soil_ph=None, priorities=None)
     small = build_plans(current=["maize", "cowpea", "sweet_potato"], seasonal=SEASONAL, budget_mm=10, area_ha=1, soil_ph=None, priorities=None)
-    assert big["plans"][0]["feasible"] is True
-    assert small["plans"][0]["feasible"] is False
+    assert big["plans"][0]["feasible"] is not True
+    assert big["plans"][0]["feasibility_status"] == "not_evaluated_missing_validated_agricultural_model"
+    assert small["plans"][0]["feasible"] is None
+    assert small["plans"][0]["model_screen_status"] == "constraints_flagged"
     assert small["plans"][0]["failed_constraints"][0]["constraint"] == "water"
 
 
@@ -99,17 +101,18 @@ def test_fixed_rotations_are_evaluated_in_order():
     assert [p["rotation"] for p in out["plans"][1:]] == rots
 
 
-def test_harvest_value_and_income_score():
-    from agricultureM2.plan_engine import build_plans, climate_from_monthly
-    rows = climate_from_monthly([25] * 12, [100] * 12)
-    out = build_plans(current=["maize", "maize", "maize"], seasonal=None, budget_mm=900, area_ha=1.0, soil_ph=6.5,
-                      priorities={"income": 1}, fixed_rotations=[["cabbage", "tomato", "cowpea"]], climate_rows=rows)
-    today, alt = out["plans"]
-    assert today["income"]["harvest_value_rs"] > 0 and alt["income"]["harvest_value_rs"] > 0
-    assert max(today["scores"]["income"], alt["scores"]["income"]) == 1.0
-    priced = build_plans(current=["maize", "maize", "maize"], seasonal=None, budget_mm=900, area_ha=1.0, soil_ph=6.5,
-                         priorities=None, climate_rows=rows, fixed_rotations=[["cabbage", "tomato", "cowpea"]], prices={"maize": 50})
-    assert priced["plans"][0]["income"]["harvest_value_rs"] == 2 * today["income"]["harvest_value_rs"]
+def test_economics_are_out_of_scope_and_cannot_change_ranking():
+    from agricultureM2.plan_engine import climate_from_monthly
+    args = dict(current=["maize"], seasonal=None, budget_mm=900, area_ha=1.0, soil_ph=6.5,
+                priorities={"income": 1}, fixed_rotations=[["cowpea"]], climate_rows=climate_from_monthly([25]*12, [100]*12))
+    out = build_plans(**args)
+    priced = build_plans(**args, prices={"maize": 99999}, costs={"cowpea":999999})
+    assert out == priced
+    for p in out["plans"]:
+        assert p["income"]["harvest_value_rs"] is None
+        assert p["income"]["profit_rs"] is None
+        assert p["scores"]["income"] is None
+    assert out["weights"]["income"] == 0
 
 
 def test_m5_evaluator_uses_plan_engine():
@@ -120,7 +123,7 @@ def test_m5_evaluator_uses_plan_engine():
                          {"id": "c", "crops": ["cowpea", "tomato", "maize"]}], "field_area_ha": 1.0}
     out = evaluate_with_plan_engine(req, clim, 6000)
     assert [r["id"] for r in out["rotations"]] == ["a", "b", "c"]
-    assert all(isinstance(r["feasible"], bool) for r in out["rotations"])
+    assert all(r["feasible"] is None for r in out["rotations"])
     small = evaluate_with_plan_engine(req, clim, 10)
     assert not any(r["feasible"] for r in small["rotations"])
 
@@ -132,4 +135,5 @@ def test_shap_values_add_up_to_score():
     for p in out["plans"]:
         total = p["shap"]["base_value"] + sum(p["shap"]["values"].values())
         assert abs(total - p["score"]) < 0.01
-        assert p["income"]["profit_rs"] == p["income"]["harvest_value_rs"] - p["income"]["cost_rs"]
+        assert p["income"]["profit_rs"] is None
+        assert "income" not in p["shap"]["values"]

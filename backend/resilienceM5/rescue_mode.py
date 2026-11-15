@@ -17,6 +17,8 @@ def _rotation_sequence(outcome: dict):
     details = outcome.get("details")
     analysis = details.get("analysis") if isinstance(details, dict) else None
     sequence = analysis.get("sequence") if isinstance(analysis, dict) else None
+    if sequence is None and isinstance(details, dict):
+        sequence = details.get("rotation")
     if isinstance(sequence, list) and sequence:
         return sequence
     return None

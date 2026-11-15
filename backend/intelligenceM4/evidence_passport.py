@@ -66,6 +66,8 @@ M4_LIMITATION = (
 # ---------------------------------------------------------------------------
 
 CLAIMS: dict[str, str] = {
+    "farm_demo": "M3 reports whether this farm is illustrative demo data; this is not verification of farmer inputs.",
+    "farm_input_provenance": "Input provenance supplied with the farm context (retained without independent verification).",
     "crop_family": "Crop family is taken from the sourced crop catalog",
     "nfix_present": "The rotation contains a nitrogen-fixing crop",
     "nfix_absent": "The rotation contains no crop marked as nitrogen-fixing in the crop catalog",
@@ -519,6 +521,12 @@ class _PassportBuilder:
 
     def farm(self) -> None:
         farm = self.bundle.farm
+        if farm.demo is not None:
+            self.add("ev-farm-demo", "farm_demo", "supported", farm.source,
+                     subject="farm", value=farm.demo, field_path="farm.demo")
+        if farm.input_provenance:
+            self.add("ev-farm-input-provenance", "farm_input_provenance", "supported", farm.source,
+                     subject="farm", value=farm.input_provenance, field_path="farm.input_provenance")
         if farm.soil_ph is not None:
             self.add("ev-farm-soil-ph", "farm_soil_ph", "supported", farm.source,
                      subject="farm", value=farm.soil_ph, unit="pH",

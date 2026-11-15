@@ -183,7 +183,7 @@ class PowerClient:
             try:
                 record = json.loads(path.read_text(encoding="utf-8"))
                 if record.get("url") == url and isinstance(record["payload"]["properties"]["parameter"], dict):
-                    return {**record, "cache_status": "fresh_cache"}
+                    return {**record, "cache_status": "historical_archive_cache_age_not_verified"}
             except (ValueError, KeyError, TypeError, AttributeError, OSError):
                 pass
         if self.offline:
@@ -265,10 +265,32 @@ async def get_farm_climate(
     use_cache = "PYTEST_CURRENT_TEST" not in os.environ
     saved = _farm_climate_cache().get(key) if use_cache else None
     if saved:
-        return (MonthlyClimate(tuple(saved["observed"]["temperature_c"]), tuple(saved["observed"]["precipitation_mm"]),
-                               {**saved["observed"]["provenance"], "m5_cache": "saved M1 result", "m5_cached_at": saved["saved_at"]}),
-                MonthlyClimate(tuple(saved["future"]["temperature_c"]), tuple(saved["future"]["precipitation_mm"]),
-                               {**saved["future"]["provenance"], "m5_cache": "saved M1 result", "m5_cached_at": saved["saved_at"]}))
+        from .m1_adapter import _to_monthly_climate, _validate_m1_provenance
+        try:
+            pair = []
+            for name, source, first, last, ssp in (
+                ("observed", "NASA POWER", HIST_START, HIST_END, None),
+                ("future", "NASA NEX-GDDP-CMIP6", start, end, scenario),
+            ):
+                record = saved[name]
+                provenance = record["provenance"]
+                climate = _to_monthly_climate({**record,
+                    "temperature_unit": provenance.get("temperature_unit"),
+                    "precipitation_unit": provenance.get("precipitation_unit")})
+                _validate_m1_provenance(climate, source, latitude, longitude,
+                                        f"{first}-01", f"{last}-12", ssp)
+                pair.append(MonthlyClimate(climate.temperature_c, climate.precipitation_mm,
+                    {**provenance, "m5_cache": "validated_saved_M1_result", "m5_cached_at": saved["saved_at"]}))
+            saved_at = datetime.fromisoformat(saved["saved_at"])
+            age = (datetime.now(timezone.utc) - saved_at).total_seconds()
+            if age < 0:
+                raise ValueError("Cache timestamp is in the future")
+            # Legacy records must pass validation above, but lack a method/config
+            # signature and cannot establish that their transformation is current.
+            if saved.get("method_signature") == _farm_cache_signature() and age <= 30 * 86400:
+                return tuple(pair)
+        except (KeyError, TypeError, ValueError, DataUnavailable) as exc:
+            raise DataUnavailable(f"Invalid processed M1 climate cache: {exc}") from exc
     observed, future = await _registered_m1(
         latitude, longitude, scenario, start, end
     )
@@ -286,7 +308,8 @@ FARM_CLIMATE_CACHE = Path(os.getenv("M5_FARM_CLIMATE_CACHE", str(Path(__file__).
 
 def _farm_climate_cache() -> dict:
     try:
-        return json.loads(FARM_CLIMATE_CACHE.read_text(encoding="utf-8"))
+        data = json.loads(FARM_CLIMATE_CACHE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
     except (OSError, ValueError):
         return {}
 
@@ -295,6 +318,7 @@ def _save_farm_climate(key: str, observed: MonthlyClimate, future: MonthlyClimat
     from datetime import datetime, timezone
     data = _farm_climate_cache()
     data[key] = {"saved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                 "method_signature": _farm_cache_signature(),
                  "observed": asdict(observed), "future": asdict(future)}
     try:
         FARM_CLIMATE_CACHE.parent.mkdir(parents=True, exist_ok=True)
@@ -303,3 +327,9 @@ def _save_farm_climate(key: str, observed: MonthlyClimate, future: MonthlyClimat
         tmp.replace(FARM_CLIMATE_CACHE)
     except OSError:
         pass
+
+
+def _farm_cache_signature() -> str:
+    from climateM1.services.model_registry import load_model_registry
+    config = json.dumps(load_model_registry(), sort_keys=True)
+    return "validated-monthly-v2:" + hashlib.sha256(config.encode()).hexdigest()

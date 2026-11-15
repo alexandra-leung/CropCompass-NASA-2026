@@ -1,11 +1,5 @@
-"""
-M3 adapter — farm context.
-
-M3 has no implementation yet. This adapter looks for the PROPOSED service
-function `mappingM3.farm_profile.get_farm_profile(farm_id) -> dict` (see
-intelligenceM4/API_CONTRACT.md). Until it exists, the result is
-"not_implemented" and the farm context supplied in the request is used,
-marked source="farmer".
+"""M3 farm-context adapter. Existing profiles retain demo and input provenance;
+unknown IDs degrade to unavailable and callers may supply their own context.
 """
 
 from __future__ import annotations

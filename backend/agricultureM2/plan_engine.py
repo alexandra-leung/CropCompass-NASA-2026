@@ -64,15 +64,14 @@ KEYS = ("water", "soil", "climate", "income")
 HEAVY_RAIN_MM = 150.0
 
 ASSUMPTIONS = [
+    "Agricultural feasibility is unverified; approximate ranges and water estimates are exploratory only.",
+    "Yield, revenue, profit and market-price optimization are out of scope; income has zero weight.",
+    "Scores are relative to the candidate pool within a scenario, not comparable across scenarios.",
     "Seasons: Nov–Feb, Mar–Jun, Jul–Oct (3-season rotation); a crop uses ceil(growth days / 30) months of its season.",
     "Climate: NASA POWER seasonal means for the farm's M1 location (regional grid, not a field sensor).",
     "ET0: FAO-24 Blaney-Criddle with daylight factor for 20° S; crop water use ETc = Kc × ET0 (FAO-56 Kc).",
     "Effective rain: USDA-SCS monthly method; irrigation efficiency 75 %.",
     "Suitability: season mean temperature vs FAO ECOCROP optimal range (approximate ranges, verify locally).",
-    "Profit: harvest value minus growing cost per hectare for each crop (example costs unless you enter yours).",
-    "Explainable AI: SHAP values split each plan's score into the push from water, soil, climate and income compared with the average plan.",
-    "Harvest value: Mauritius average yield (Statistics Mauritius 2023-24) x your price per kg x field area; marginal climate x0.75, unsuitable x0.3, water short of need x (water you have / water needed). Gross value, costs not deducted.",
-    "Score: farmer-weighted water, soil, climate and income indices; water and income are relative to the best plan compared.",
 ]
 SOURCES = [
     {"name": "FAO Irrigation and Drainage Paper 56 (Kc, growth stages)", "url": "https://www.fao.org/4/x0490e/x0490e0b.htm"},
@@ -140,6 +139,8 @@ def monthly_climate(seasonal: list[dict[str, Any]], d_temp: float = 0.0, d_rain_
     """12 months of temperature, rain and ET0 from M1 seasonal records (e.g. '2023-DJF')."""
     acc: dict[str, list[tuple[float, float]]] = {}
     for rec in seasonal or []:
+        if rec.get("completenessStatus") != "complete" or rec.get("completenessPct", 0) < 100:
+            continue
         code = str(rec.get("period", ""))[-3:]
         if code in ("DJF", "MAM", "JJA", "SON") and rec.get("temperatureC") is not None and rec.get("rainfallMm") is not None:
             acc.setdefault(code, []).append((float(rec["temperatureC"]), float(rec["rainfallMm"])))
@@ -176,6 +177,8 @@ def evaluate(rotation: list[str], climate: list[dict[str, Any]] | None, budget_m
              prices: dict[str, float] | None = None, costs: dict[str, float] | None = None,
              months: list[list[int]] | None = None, north: bool = False) -> dict[str, Any]:
     cat = crops()
+    validate_rotation(rotation)
+    validate_months(rotation, months)
     n = len(rotation)
     seasons = CALENDAR.get(n) or CALENDAR[3]
     labels = SEASON_LABEL.get(n) or SEASON_LABEL[3]
@@ -190,7 +193,7 @@ def evaluate(rotation: list[str], climate: list[dict[str, Any]] | None, budget_m
         c = cat[cid]
         if months and i < len(months) and months[i]:
             # the farmer's own planting window: the crop grows in exactly those months
-            own = [m for m in months[i] if cal[m - 1] is None] or months[i]
+            own = months[i]
             grow = months_ = own
             used = len(grow)
             label_i = f"{MONTHS[grow[0] - 1]}–{MONTHS[grow[-1] - 1]}"
@@ -230,6 +233,8 @@ def evaluate(rotation: list[str], climate: list[dict[str, Any]] | None, budget_m
                           "family": c["family"], "legume": c["legume"], "months": [MONTHS[m - 1] for m in grow],
                           "bare_months": [MONTHS[m - 1] for m in months_[used:]], "longer_than_season": c["growth_days"] > len(months_) * 30,
                           "season_temperature_c": temp, "suitability": status, "suitability_reason": why,
+                          "suitability_evidence_status": "approximate_unverified_ranges",
+                          "range_source": r.get("source") if r else None,
                           "irrigation_need_mm": need})
 
     fams = [cat[c]["family"] for c in rotation]
@@ -240,34 +245,19 @@ def evaluate(rotation: list[str], climate: list[dict[str, Any]] | None, budget_m
 
     known_need = [s for s in per_season if s is not None]
     peak = max(known_need) if known_need else None
-    feasible, failed = True, []
+    # Approximate ranges and uncalibrated ET0 cannot establish agricultural feasibility.
+    failed = []
     if peak is not None and budget_mm is not None and peak > budget_mm + 1e-6:
-        feasible = False
         failed.append({"constraint": "water", "message": f"Needs {peak:.0f} mm in its thirstiest season; you can give {budget_mm:.0f} mm."})
     if any(cr["suitability"] == "unsuitable" for cr in crop_rows):
-        feasible = False
         bad = [cr["name"] for cr in crop_rows if cr["suitability"] == "unsuitable"]
         failed.append({"constraint": "climate", "message": f"Too hot or cold for {', '.join(bad)}."})
+    if any(cr["longer_than_season"] for cr in crop_rows):
+        failed.append({"constraint": "calendar", "message": "Crop duration exceeds its planting window; water totals cover only the window and are incomplete."})
 
-    # harvest value (gross, Rs): average yield x price x area, cut for poor climate fit or too little water
+    # Economics are outside CropCompass's recommendation scope. Keep nullable keys
+    # for existing consumers, but never compute or score example financial values.
     harvest, income, cost_total = [], 0.0, 0.0
-    for cr, need in zip(crop_rows, per_season):
-        c = cat[cr["crop_id"]]
-        price = (prices or {}).get(cr["crop_id"], c["price_rs_kg"])
-        if c["yield_t_ha"] is None or price is None:
-            harvest.append(None)
-            continue
-        f_clim = {"suitable": 1.0, "marginal": 0.75, "unsuitable": 0.3}.get(cr["suitability"], 1.0)
-        f_water = 1.0 if (need is None or budget_mm is None or need <= budget_mm or need == 0) else max(0.0, budget_mm / need)
-        t = c["yield_t_ha"] * f_clim * f_water * (area_ha or 1.0)
-        value = t * 1000 * price
-        cost_ha = (costs or {}).get(cr["crop_id"], c["cost_rs_ha"]) or 0.0
-        cost = cost_ha * (area_ha or 1.0)
-        income += value
-        cost_total += cost
-        cr["harvest"] = {"tonnes": round(t, 2), "price_rs_per_kg": price, "value_rs": round(value), "cost_rs": round(cost),
-                         "profit_rs": round(value - cost), "climate_factor": f_clim, "water_factor": round(f_water, 2)}
-        harvest.append(value)
     income_rs = round(income) if any(h is not None for h in harvest) else None
 
     soil = 0.4 * bool(legumes) + 0.3 * (not repeats) + 0.2 * (len(set(fams)) / max(1, n)) + 0.1 * (not bare_heavy)
@@ -282,15 +272,66 @@ def evaluate(rotation: list[str], climate: list[dict[str, Any]] | None, budget_m
         "water": {"per_season_mm": per_season, "peak_season_mm": peak, "total_mm": total_mm,
                   "total_m3": round(total_mm * area_ha * 10) if (total_mm is not None and area_ha) else None,
                   "monthly_mm": [round(v, 1) for v in monthly_need] if climate else None, "budget_mm_per_season": budget_mm},
-        "feasible": feasible, "failed_constraints": failed,
+        "feasible": None, "failed_constraints": failed,
+        "model_screen_status": "constraints_flagged" if failed else "no_flags_not_validated",
         "income": {"harvest_value_rs": income_rs, "cost_rs": round(cost_total) if income_rs is not None else None,
                    "profit_rs": round(income - cost_total) if income_rs is not None else None,
-                   "area_ha": area_ha or 1.0, "area_assumed": not area_ha},
+                   "area_ha": area_ha, "area_assumed": False, "status": "out_of_scope"},
+        "feasibility_status": "not_evaluated_missing_validated_agricultural_model",
+        "calendar_complete": not any(cr["longer_than_season"] for cr in crop_rows),
         "scores": {"water": None, "soil": round(soil, 3), "climate": None if climate_score is None else round(climate_score, 3), "income": None},
     }
 
 
 # ------------------------------------------------------------------ compare
+
+def validate_rotation(rotation: Any) -> None:
+    if not isinstance(rotation, list) or not 1 <= len(rotation) <= 3:
+        raise ValueError("A rotation must contain 1 to 3 crop IDs; longer calendars are not supported")
+    if any(not isinstance(cid, str) or cid not in crops() for cid in rotation):
+        raise ValueError("Rotation contains an unknown or malformed crop ID")
+
+
+def validate_months(rotation: list[str], months: Any) -> None:
+    if months is None:
+        return
+    if not isinstance(months, list) or len(months) != len(rotation):
+        raise ValueError("Planting calendar must match the rotation length")
+    seen = set()
+    for window in months:
+        if not isinstance(window, list) or not window:
+            raise ValueError("Each planting window needs months")
+        for m in window:
+            if type(m) is not int or not 1 <= m <= 12 or m in seen:
+                raise ValueError("Planting months must be 1..12, without overlaps or duplicates")
+            seen.add(m)
+
+
+def calendar_months(rotation, calendar):
+    if calendar is None:
+        return None
+    if not isinstance(calendar, list) or len(calendar) != len(rotation):
+        raise ValueError("Calendar must match rotation")
+    months = []
+    for cid, window in zip(rotation, calendar):
+        if not isinstance(window, dict) or window.get("crop_id") != cid:
+            raise ValueError("Calendar crop ID must match rotation position")
+        start, end = window.get("start_month"), window.get("end_month")
+        if any(type(m) is not int or not 1 <= m <= 12 for m in (start, end)):
+            raise ValueError("Calendar month must be an integer in 1..12")
+        months.append(month_span(start, end))
+    validate_months(rotation, months)
+    return months
+
+
+
+def validate_number(value: Any, name: str, minimum: float | None = None, positive: bool = False) -> None:
+    if value is None:
+        return
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise ValueError(f"{name} must be a finite number")
+    if (minimum is not None and value < minimum) or (positive and value <= 0):
+        raise ValueError(f"Invalid {name}")
 
 def _reasons(p: dict[str, Any], cur: dict[str, Any]) -> list[str]:
     out = []
@@ -342,16 +383,36 @@ def build_plans(*, current: list[str], seasonal: list[dict[str, Any]] | None, bu
                 fixed_rotations: list[list[str]] | None = None, prices: dict[str, float] | None = None,
                 costs: dict[str, float] | None = None, latitude: float | None = None,
                 current_months: list[list[int]] | None = None,
+                fixed_months: list[list[list[int]] | None] | None = None,
+                longitude: float | None = None,
                 climate_rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    validate_rotation(current)
+    validate_number(area_ha, "field_area_ha", positive=True)
+    validate_number(budget_mm, "budget_mm", minimum=0)
+    validate_number(soil_ph, "soil_ph", minimum=0)
+    for name, value in (("latitude", latitude), ("longitude", longitude), ("d_temp", d_temp), ("d_rain_pct", d_rain_pct)):
+        validate_number(value, name)
+    for mapping in (priorities, prices, costs):
+        for name, value in (mapping or {}).items():
+            validate_number(value, name, minimum=0)
+    if fixed_rotations is not None:
+        if not isinstance(fixed_rotations, list) or not fixed_rotations:
+            raise ValueError("fixed_rotations must be a non-empty list")
+        for rotation in fixed_rotations:
+            validate_rotation(rotation)
+    if fixed_months is not None and len(fixed_months) != len(fixed_rotations or []):
+        raise ValueError("Fixed calendars must match fixed rotations")
     pr = priorities or {}
     w = {k: max(0.0, float(pr.get(k, 0.25) or 0)) for k in KEYS}
+    w["income"] = 0.0
     if sum(w.values()) == 0:
-        w = {k: 0.25 for k in KEYS}
+        w = {"water": 1.0, "soil": 1.0, "climate": 1.0, "income": 0.0}
     north = bool(latitude and latitude > 0)
     climate = climate_rows if climate_rows is not None else monthly_climate(seasonal or [], d_temp, d_rain_pct, latitude)
     cur = evaluate(current, climate, budget_mm, area_ha, soil_ph, w, prices, costs, current_months, north)
     rots = [r for r in fixed_rotations if r] if fixed_rotations else candidate_rotations(current)
-    cands = [evaluate(r, climate, budget_mm, area_ha, soil_ph, w, prices, costs, None, north) for r in rots]
+    cands = [evaluate(r, climate, budget_mm, area_ha, soil_ph, w, prices, costs,
+                      fixed_months[i] if fixed_months else None, north) for i, r in enumerate(rots)]
     pool = [cur] + cands
     needs = [p["water"]["total_mm"] for p in pool if p["water"]["total_mm"]]
     low = min(needs) if needs else None
@@ -366,7 +427,7 @@ def build_plans(*, current: list[str], seasonal: list[dict[str, Any]] | None, bu
         tw = sum(x for x, _ in parts)
         p["score"] = round(sum(x * v for x, v in parts) / tw, 3) if tw else None
         p["score_breakdown"] = {k: (round(w[k] / tw * p["scores"][k], 3) if (tw and p["scores"][k] is not None) else None) for k in KEYS}
-    key = lambda p: (not p["feasible"], -(p["score"] or 0))
+    key = lambda p: (bool(p["failed_constraints"]), -(p["score"] or 0))
     seen, alts = set(), []
     for p in (cands if fixed_rotations else sorted(cands, key=key)):
         sig = tuple(sorted(p["rotation"]))
@@ -397,9 +458,13 @@ def build_plans(*, current: list[str], seasonal: list[dict[str, Any]] | None, bu
                      "values": {k: round(w[k] / tw * (p["scores"][k] - means[k]), 4) for k in feats},
                      "features": {k: {"index": p["scores"][k], "weight": round(w[k] / tw_all, 3), "mean_index": round(means[k], 3)} for k in feats}}
     return {
-        "climate": climate, "weights": {k: round(v / sum(w.values()), 3) for k, v in w.items()}, "prices_rs_per_kg": {c: (prices or {}).get(c, v["price_rs_kg"]) for c, v in crops().items()},
+        "climate": climate, "weights": {k: round(v / sum(w.values()), 3) for k, v in w.items()}, "prices_rs_per_kg": {},
         "scenario": {"temperature_change_c": d_temp, "rainfall_change_pct": d_rain_pct, "budget_mm_per_season": budget_mm},
         "plans": plans, "best_plan_id": sorted(plans, key=key)[0]["id"],
         "assumptions": ASSUMPTIONS, "sources": SOURCES,
         "status": "modelled" if climate else "no_climate",
+        "recommendation_status": "exploratory_not_validated_agricultural_advice",
+        "coordinates": {"latitude": latitude, "longitude": longitude},
+        "excluded_seasonal_periods": [r.get("period") for r in seasonal or []
+            if r.get("completenessStatus") != "complete" or r.get("completenessPct", 0) < 100],
     }

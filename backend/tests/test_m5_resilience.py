@@ -339,7 +339,7 @@ def test_candidate_source_response_is_cached_and_reused_offline(tmp_path, monkey
     offline = PowerClient(cache_dir=tmp_path, offline=True)
     cached = offline.historical(-20.103, 57.575, 2024, 2024)
     assert cached.temperature_c == climate_record.temperature_c
-    assert cached.provenance["cache_status"] == "fresh_cache"
+    assert cached.provenance["cache_status"] == "historical_archive_cache_age_not_verified"
     assert len(calls) == 1
 
 

@@ -32,7 +32,15 @@ def get_cached(cache_key: str, allow_stale: bool = False) -> dict[str, Any] | No
     age = (datetime.now(timezone.utc) - retrieved_at).total_seconds()
     if age > CACHE_TTL_SECONDS and not allow_stale:
         return None
-    return json.loads(row[0])
+    payload = json.loads(row[0])
+    if age > CACHE_TTL_SECONDS:
+        provenance = payload.get("provenance")
+        records = provenance if isinstance(provenance, list) else [provenance]
+        for record in records:
+            if isinstance(record, dict):
+                note = f"Stale cache fallback; cached at {row[1]}; age {int(age)} seconds; live refresh failed."
+                record["caveat"] = " ".join(filter(None, [record.get("caveat"), note]))
+    return payload
 
 
 def save_cached(cache_key: str, payload: dict[str, Any]) -> None:

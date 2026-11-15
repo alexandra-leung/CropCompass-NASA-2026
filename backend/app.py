@@ -1,5 +1,9 @@
 
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+import math
 from climateM1.api.climate import router as climate_router
 from agricultureM2.routes import router as agriculture_router
 from agricultureM2.plans_routes import router as plans_router
@@ -16,6 +20,23 @@ app = FastAPI(
     description="NASA Space Apps Challenge 2026",
     version="1.0.0"
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_response(request, exc):
+    # Python's JSON parser accepts NaN/Infinity. Validation rejects them, but
+    # echoing the invalid numeric input in a strict JSON error response raises
+    # another exception. Preserve the errors, rendering only those values as text.
+    def finite_json(value):
+        if isinstance(value, float) and not math.isfinite(value):
+            return str(value)
+        if isinstance(value, dict):
+            return {key: finite_json(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [finite_json(item) for item in value]
+        return value
+
+    return JSONResponse(status_code=422, content={"detail": finite_json(jsonable_encoder(exc.errors()))})
 
 register_m1_provider(provide_m1_climate)
 register_m2_evaluator(evaluate_with_plan_engine)

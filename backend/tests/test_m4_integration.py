@@ -109,7 +109,7 @@ def test_end_to_end_analyze(warm_m1):
     AnalyzeResponse.model_validate(body)
 
     assert {m: r["status"] for m, r in body["modules"].items()} == {
-        "M1": "ok", "M2": "partial", "M3": "not_implemented", "M5": "not_implemented"}
+        "M1": "ok", "M2": "partial", "M3": "unavailable", "M5": "not_implemented"}
     assert body["blind_spot_report"]["module_status"]["M5"] == "unavailable"
     agri = body["bundle"]["agriculture"]
     assert agri["rotation"]["rotation"] == ROTATION
@@ -301,3 +301,21 @@ def test_saved_analyze_example_is_consistent():
     assert passport == expected
     assert client.post("/api/intelligence/blind-spots",
                        json=saved["bundle"]).json() == saved["blind_spot_report"]
+
+
+@pytest.mark.parametrize("farm_id,status", [("pamplemousses-04", "ok"), ("unknown-farm", "unavailable"), (None, "unavailable")])
+def test_m3_status_and_provenance(warm_m1, farm_id, status):
+    farm = {"location_id":"pamplemousses-04", "current_rotation": ROTATION}
+    if farm_id:
+        farm["farm_id"] = farm_id
+    body = analyze(farm=farm)
+    assert body["modules"]["M3"]["status"] == status
+    if status == "ok":
+        assert body["bundle"]["farm"]["demo"] is True
+        records = evidence(body)
+        assert records["ev-farm-demo"]["value"] is True
+        assert records["ev-farm-input-provenance"]["value"] == body["bundle"]["farm"]["input_provenance"]
+    else:
+        assert body["bundle"]["farm"]["source"] == "farmer"
+        assert body["bundle"]["farm"]["field_area_ha"] is None
+    assert_no_upstream_numbers_without_source(body)

@@ -252,6 +252,14 @@ def get_farm_profile(farm_id: str) -> dict[str, Any]:
         "irrigation_budget_m3": irrigation_budget_m3(p),
         "current_rotation": p.current_rotation,
         "source": "M3",
+        "demo": p.demo,
+        "input_provenance": {
+            "soil": p.soil.model_dump(mode="json"),
+            "irrigation": p.irrigation.model_dump(mode="json"),
+            "boundary": p.boundary.model_dump(mode="json") if p.boundary else None,
+            "field_area_ha": "illustrative_seed" if p.demo else "caller_supplied_unverified",
+            "current_rotation": "illustrative_seed" if p.demo else "caller_supplied_unverified",
+        },
     }
 
 

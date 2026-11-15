@@ -97,7 +97,7 @@ def test_get_farm_profile_matches_m4_contract():
     from intelligenceM4.schemas import FarmContext
     from mappingM3.farm_profile import get_farm_profile
     ctx = get_farm_profile("pamplemousses-04")
-    assert set(ctx) == {"farm_id", "location_id", "soil_ph", "field_area_ha", "irrigation_budget_m3", "current_rotation", "source"}
+    assert set(ctx) == {"farm_id", "location_id", "soil_ph", "field_area_ha", "irrigation_budget_m3", "current_rotation", "source", "demo", "input_provenance"}
     assert ctx["source"] == "M3" and ctx["irrigation_budget_m3"] == 3600.0
     assert ctx["soil_ph"] is None               # unknown stays unknown
     FarmContext.model_validate(ctx)
